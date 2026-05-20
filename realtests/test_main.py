@@ -41,3 +41,9 @@ class TestMain:
         with patch("builtins.input",
                    return_value="AAPL MACD 12,26,9"):
             main.main()
+
+    def test_bb_dispatch(self):
+        """Verify main() dispatches to BB."""
+        with patch("builtins.input",
+                   return_value="AAPL BB 20,2.0"):
+            main.main()

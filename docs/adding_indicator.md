@@ -2,7 +2,7 @@
 
 This document describes the process for adding a new technical indicator to
 quant_indicators. Follow these steps in order. Each step references the
-existing SMA, EMA, and RSI implementations as templates.
+existing SMA, EMA, RSI, and MACD implementations as templates.
 
 ## 1. Information to Gather
 
@@ -84,13 +84,13 @@ def calculate_<indicator>(ticker: str, window: int,
     return result
 ```
 
-Place the new function below the existing indicators (after `calculate_rsi`
-at line 203) and above `main()`. Separate it from neighbouring functions
-with two blank lines (PEP 8).
+Place the new function below the existing indicators (after `calculate_macd`)
+and above `main()`. Separate it from neighbouring functions with two blank
+lines (PEP 8).
 
 ### 2b. Add a default window to `_DEFAULT_WINDOWS`
 
-Add one entry to the dictionary at line 29:
+Add one entry to the `_DEFAULT_WINDOWS` dictionary:
 
 ```python
 _DEFAULT_WINDOWS: dict[str, int] = {
@@ -105,20 +105,22 @@ _DEFAULT_WINDOWS: dict[str, int] = {
 
 Three changes inside `main()`:
 
-1. **Prompt** (line 222) — add the new indicator name to the list shown to
-   the user:
+1. **Prompt** — add the new indicator name to the list shown to the user
+   in the `input()` call:
    ```python
    user_input = input("Enter ticker(s), indicator (SMA/RSI/EMA/<INDICATOR>)"
                       " [bar_size] [window] [C<count>]: ")
    ```
 
-2. **Validation set** (line 250) — add the uppercased name:
+2. **Validation set** — add the uppercased name to the
+   `indicator.upper()` check:
    ```python
    indicator = indicator.upper()
    if indicator not in ("SMA", "RSI", "EMA", "<INDICATOR>"):
    ```
 
-3. **Dispatch match/case** (lines 298–308) — add a new case block:
+3. **Dispatch match/case** — add a new case block inside the
+   `match indicator:` block:
    ```python
    case "<INDICATOR>":
        result = calculate_<indicator>(ticker, window,
@@ -128,13 +130,8 @@ Three changes inside `main()`:
 
 ### 2d. Follow the commenting guidelines
 
-- Add a module-header-style comment at the top of the new `calculate_*`
-  block if the logic spans multiple steps.
-- Write a Google-style docstring (Args, Returns, Raises, plus Note or
-  Warning for edge cases).
-- Use type hints on all function parameters and return values.
-- Add inline comments only to explain *why*, not *what*.
-- Keep all lines under 80 characters.
+Follow the [commenting guidelines](commenting_guidelines.md) for docstring
+style, type hints, inline comments, and line length.
 
 ## 3. Mock Tests
 
@@ -266,27 +263,30 @@ def test_count_exceeds_data(self, mock_stock_data):
         calculate_<indicator>("TEST", 2, count=5)
 ```
 
-**Indicator-specific boundary tests** (as needed -- e.g. for RSI):
+**Indicator-specific boundary tests** (as needed -- adapt these examples
+to your indicator's unique edge cases):
 
 ```python
 def test_all_gains(self, mock_stock_data):
-    """Verify RSI is 100 when every price change is positive."""
+    """Verify <indicator> produces the expected extreme value
+    when every price change is positive."""
     mock_stock_data([10, 11, 12, 13, 14])
-    result = calculate_rsi("TEST", 3)
+    result = calculate_<indicator>("TEST", 3)
     assert result.iloc[-1] == 100.0
 
 def test_all_losses(self, mock_stock_data):
-    """Verify RSI is 0 when every price change is negative."""
+    """Verify <indicator> produces the expected extreme value
+    when every price change is negative."""
     mock_stock_data([10, 9, 8, 7, 6])
-    result = calculate_rsi("TEST", 3)
+    result = calculate_<indicator>("TEST", 3)
     assert result.iloc[-1] == 0.0
 
-def test_constant_prices_rsi(self, mock_stock_data):
-    """Verify RSI raises IndexError on constant prices
-    (zero/zero division)."""
+def test_constant_prices_edge(self, mock_stock_data):
+    """Verify <indicator> handles all-identical prices
+    (may raise or return a value)."""
     mock_stock_data([50, 50, 50, 50, 50, 50])
-    with pytest.raises(IndexError):
-        calculate_rsi("TEST", 3)
+    result = calculate_<indicator>("TEST", 3)
+    assert result.iloc[-1] is not None
 ```
 
 **Data size summary**
@@ -432,11 +432,11 @@ python3 run_real_tests.py
 pytest realtests/test_calculate_<indicator>.py::TestCalculate<Indicator>::test_<indicator>_window_5 -v
 ```
 
-When running real tests directly with `pytest` (not through
-`run_real_tests.py`), there is no built-in spacing. Use
-`python3 run_real_tests.py` to run all real tests with a 1-second pause
-between each, or insert a `time.sleep(1)` call manually before each real
-test assertion if running a single file.
+When running real tests directly with `pytest realtests/` (not through
+`run_real_tests.py`), a conftest hook automatically inserts 1 second of
+spacing between tests. To disable this (e.g. for parallel execution), set
+`REALTEST_NO_SLEEP=1`. Use `python3 run_real_tests.py` to also run with
+1-second spacing but with per-test section headers and an overall summary.
 
 ## 6. Update README
 
@@ -456,3 +456,11 @@ echo "AAPL <INDICATOR> <default_window> C5" | python3 main.py
 If the default window differs from the existing indicators' norms, add a
 row to the default-windows description in the How It Works or Usage
 section.
+
+## 7. Versioning & Changelog
+
+After completing the implementation, tests, and documentation, follow the
+[changelog update process](update_changelog.md) to bump the version and
+record the changes.
+
+Adding a new indicator is a **minor** version bump (X.Y+1.0).

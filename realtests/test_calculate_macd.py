@@ -36,5 +36,15 @@ class TestCalculateMacd:
     def test_macd_window_one(self):
         """Verify MACD with fast=1 produces positive results."""
         m, s, h = calculate_macd("AAPL", fast=1, slow=5,
-                                 signal=2)
+                                  signal=2)
         assert m.iloc[-1] > 0.0
+
+    def test_macd_bearish_divergence_pattern(self):
+        """Verify MACD on SPY contains both positive and negative
+        histogram values (bearish/bullish crossovers occur)."""
+        m, s, h = calculate_macd("SPY", fast=12, slow=26,
+                                  signal=9, count=20)
+        assert (h > 0).any(), ("Histogram should have positive"
+                               " values (bullish crossover)")
+        assert (h < 0).any(), ("Histogram should have negative"
+                               " values (bearish crossover)")

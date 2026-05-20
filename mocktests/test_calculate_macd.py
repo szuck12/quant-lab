@@ -143,7 +143,47 @@ class TestCalculateMacd:
         rising series."""
         mock_stock_data([10.0, 12, 14, 16, 18, 20, 22, 24])
         m, s, h = calculate_macd("TEST", fast=2, slow=4,
-                                 signal=2)
+                                  signal=2)
         assert m.iloc[-1] == pytest.approx(1.9165, abs=0.01)
         assert s.iloc[-1] == pytest.approx(1.8773, abs=0.01)
         assert h.iloc[-1] == pytest.approx(0.0392, abs=0.01)
+
+    def test_macd_crossover(self, mock_stock_data):
+        """Verify histogram changes sign during a trend reversal
+        (MACD crosses the signal line)."""
+        prices = ([10.0] * 8 + [11, 12, 13, 14, 15, 16, 17, 18,
+                  19, 20] + [19, 18, 17, 16, 15, 14, 13, 12, 11,
+                  10])
+        mock_stock_data(prices)
+        m, s, h = calculate_macd("TEST", fast=3, slow=8,
+                                  signal=3, count=15)
+        assert (h > 0).any(), ("Histogram should have positive"
+                               " values after crossing above")
+        assert (h < 0).any(), ("Histogram should have negative"
+                               " values after crossing below")
+
+    def test_histogram_consistency(self, mock_stock_data):
+        """Verify histogram == macd_line - signal_line for every
+        returned value."""
+        mock_stock_data([10.0, 12, 14, 16, 18, 20, 22, 24])
+        m, s, h = calculate_macd("TEST", fast=2, slow=4,
+                                  signal=2, count=3)
+        for i in range(len(h)):
+            assert h.iloc[i] == pytest.approx(m.iloc[i]
+                                              - s.iloc[i],
+                                              abs=1e-10)
+
+    def test_reverse_fast_slow(self, mock_stock_data):
+        """Verify MACD(fast, slow) == -MACD(slow, fast)
+        (mathematical identity of the difference of EMAs)."""
+        mock_stock_data([10.0, 12, 14, 16, 18, 20, 22, 24])
+        m1, s1, h1 = calculate_macd("TEST", fast=3, slow=7,
+                                     signal=3, count=3)
+        m2, s2, h2 = calculate_macd("TEST", fast=7, slow=3,
+                                     signal=3, count=3)
+        assert m1.iloc[-1] == pytest.approx(-m2.iloc[-1],
+                                            abs=1e-10)
+        assert s1.iloc[-1] == pytest.approx(-s2.iloc[-1],
+                                            abs=1e-10)
+        assert h1.iloc[-1] == pytest.approx(-h2.iloc[-1],
+                                            abs=1e-10)

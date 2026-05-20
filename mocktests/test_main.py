@@ -10,6 +10,8 @@ import main
 _MOCK_SERIES = pd.Series([42.0])
 _MOCK_MACD = (pd.Series([42.0]), pd.Series([12.0]),
               pd.Series([30.0]))
+_MOCK_BB = (pd.Series([44.0]), pd.Series([42.0]),
+            pd.Series([40.0]))
 
 
 class TestMain:
@@ -89,6 +91,30 @@ class TestMain:
                 main.main()
                 mock_macd.assert_called_once_with(
                     "AAPL", fast=12, slow=26, signal=9,
+                    interval="1d", count=1)
+
+    def test_valid_bb_dispatch(self):
+        """Verify main() calls calculate_bb for a BB input
+        with explicit parameters."""
+        with patch("builtins.input",
+                   return_value="AAPL BB 20,2.5"):
+            with patch("main.calculate_bb",
+                       return_value=_MOCK_BB) as mock_bb:
+                main.main()
+                mock_bb.assert_called_once_with(
+                    "AAPL", window=20, num_std=2.5,
+                    interval="1d", count=1)
+
+    def test_default_window_bb(self):
+        """Verify BB defaults to (20, 2.0) when not
+        provided."""
+        with patch("builtins.input",
+                   return_value="AAPL BB"):
+            with patch("main.calculate_bb",
+                       return_value=_MOCK_BB) as mock_bb:
+                main.main()
+                mock_bb.assert_called_once_with(
+                    "AAPL", window=20, num_std=2.0,
                     interval="1d", count=1)
 
     # ---- C<count> syntax ----
@@ -215,6 +241,14 @@ class TestMain:
         """Verify main() exits when MACD gets a plain integer
         instead of comma-separated params."""
         with patch("builtins.input", return_value="AAPL MACD 20"):
+            with pytest.raises(SystemExit):
+                main.main()
+
+    @pytest.mark.parametrize("params", ["26,12,9", "12,12,9"])
+    def test_macd_fast_not_less_than_slow(self, params):
+        """Verify main() exits when fast >= slow for MACD."""
+        with patch("builtins.input",
+                   return_value=f"AAPL MACD {params}"):
             with pytest.raises(SystemExit):
                 main.main()
 
