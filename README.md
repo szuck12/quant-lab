@@ -242,18 +242,18 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
 │   │                              # default window, count parameter,
 │   │                              # edge cases (all same prices).
 │   │
- │   ├── test_calculate_macd.py     # Tests for calculate_macd(): basic
- │   │                              # calculation, default params, count,
- │   │                              # fast/slow ordering, edge cases.
- │   │
- │   ├── test_calculate_bb.py       # Tests for calculate_bb(): basic
- │   │                              # calculation, default params, count,
- │   │                              # band ordering, custom num_std.
- │   ├── test_calculate_vwap.py     # Tests for calculate_vwap(): basic
- │   │                              # calculation, default window, count,
- │   │                              # parameter, zero volume, edge cases.
- │   │
- │   ├── test_data_period.py        # Tests for _data_period(): validates
+│   ├── test_calculate_macd.py     # Tests for calculate_macd(): basic
+│   │                              # calculation, default params, count,
+│   │                              # fast/slow ordering, edge cases.
+│   │
+│   ├── test_calculate_bb.py       # Tests for calculate_bb(): basic
+│   │                              # calculation, default params, count,
+│   │                              # band ordering, custom num_std.
+│   ├── test_calculate_vwap.py     # Tests for calculate_vwap(): basic
+│   │                              # calculation, default window, count,
+│   │                              # parameter, zero volume, edge cases.
+│   │
+│   ├── test_data_period.py        # Tests for _data_period(): validates
 │   │                              # every threshold in _DATA_PERIOD_MAP
 │   │                              # for every interval.
 │   │
