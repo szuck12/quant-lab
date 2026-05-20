@@ -1,6 +1,6 @@
 # quant_indicators
 
-A command-line tool that fetches stock price data via [yfinance](https://github.com/ranaroussi/yfinance) and computes one of three technical indicators: Simple Moving Average (SMA), Exponential Moving Average (EMA), or Relative Strength Index (RSI). Input is provided through stdin and the result is printed to stdout. The tool is designed for quick terminal lookups — you type a ticker and an indicator, and you get back a number.
+A command-line tool that fetches stock price data via [yfinance](https://github.com/ranaroussi/yfinance) and computes one of four technical indicators: Simple Moving Average (SMA), Exponential Moving Average (EMA), Relative Strength Index (RSI), or Moving Average Convergence Divergence (MACD). Input is provided through stdin and the result is printed to stdout. The tool is designed for quick terminal lookups — you type a ticker and an indicator, and you get back a number.
 
 yfinance provides access to Yahoo Finance market data. The tool does not require an API key or account.
 
@@ -33,9 +33,9 @@ ticker(s) indicator [bar_size] [window] [C<count>]
 | Token | Meaning | Allowed Values | Default |
 |-------|---------|----------------|---------|
 | `ticker(s)` | Stock symbol(s), comma-separated | Any symbol yfinance recognises (e.g. AAPL, MSFT, GOOG, SPY, BTC-USD, EURUSD=X) | Required |
-| `indicator` | Indicator to compute | `SMA`, `EMA`, `RSI` (case-insensitive) | Required |
+| `indicator` | Indicator to compute | `SMA`, `EMA`, `RSI`, `MACD` (case-insensitive) | Required |
 | `bar_size` | Width of each price bar | `1m`, `2m`, `5m`, `15m`, `30m`, `90m`, `60m`, `1h`, `1d`, `5d`, `1wk`, `1mo`, `3mo` | `1d` |
-| `window` | Lookback period in bars | Any positive integer | SMA=50, EMA=20, RSI=14 |
+| `window` | Lookback period in bars (for MACD: comma-separated fast,slow,signal, e.g. `12,26,9`) | Any positive integer, or comma-separated triple for MACD | SMA=50, EMA=20, RSI=14, MACD=(12,26,9) |
 | `C<count>` | Number of recent values to return | `C` followed by any positive integer (e.g. `C1`, `C10`, `C100`) | `1` |
 
 ### Argument Parsing Rules
@@ -58,7 +58,7 @@ Multiple tickers are separated by commas in the first token (e.g. `AAPL,MSFT`). 
 |-----------|---------|
 | Fewer than 2 tokens | `Error: expected at least 2 values (ticker(s) indicator [bar_size] [window] [C<count>])` |
 | No valid tickers after parsing | `Error: no valid tickers provided` |
-| Indicator not SMA, RSI, or EMA | `Error: indicator must be SMA, RSI, or EMA` |
+| Indicator not SMA, RSI, EMA, or MACD | `Error: indicator must be SMA, RSI, EMA, or MACD` |
 | Unrecognised argument (not an interval, not C-prefixed, not an integer) | `Error: unrecognised argument '<arg>'` |
 | Duplicate bar size | `Error: duplicate bar size '<arg>'` |
 | Duplicate window | `Error: duplicate window '<arg>'` |
@@ -67,6 +67,10 @@ Multiple tickers are separated by commas in the first token (e.g. `AAPL,MSFT`). 
 | Non-positive count | `Error: count must be positive` |
 | Non-positive window | `Error: window must be positive` |
 | Insufficient historical data for the requested window + count | `IndexError: Insufficient data for <INDICATOR>(<window>) with count=<count>` |
+| Plain integer given for MACD window (not comma-separated) | `Error: MACD requires comma-separated parameters (e.g. 12,26,9)` |
+| Invalid MACD params (wrong number of values, non-integer) | `Error: invalid MACD parameters '...' (use fast,slow,signal, e.g. 12,26,9)` |
+| MACD fast period >= slow period | `Error: fast period (X) must be less than slow period (Y)` |
+| MACD param not a positive integer | `Error: MACD parameters must be positive` |
 
 ### Examples
 
@@ -94,6 +98,15 @@ echo "AAPL,GOOG,TSLA EMA 50 C3 1wk" | python3 main.py
 
 # Intradata with a short window
 echo "SPY SMA 20 5m" | python3 main.py
+
+# MACD with default parameters (12,26,9)
+echo "AAPL MACD" | python3 main.py
+
+# MACD with custom fast, slow, and signal periods
+echo "MSFT MACD 5,13,4" | python3 main.py
+
+# MACD with count and custom bar size
+echo "AAPL MACD 12,26,9 C3 1wk" | python3 main.py
 ```
 
 ## How It Works
@@ -124,10 +137,11 @@ The tool follows a five-step pipeline:
     - **SMA**: `close.rolling(window=window).mean()` — simple moving average.
     - **EMA**: `close.ewm(span=window, adjust=False).mean()` — exponential moving average using the standard span-based decay.
     - **RSI**: Price changes are split into gains and losses. Each is averaged using Wilder smoothing (`ewm(alpha=1/window, adjust=False).mean()`), then the RSI is computed as `100 - (100 / (1 + avg_gain / avg_loss))`.
+    - **MACD**: Three time series are computed: the MACD line (EMA(fast) - EMA(slow)), the signal line (EMA of the MACD line with period `signal`), and the histogram (MACD line - signal line). All three use `ewm(span=..., adjust=False).mean()`.
 
-    NaN rows from the leading edge of the rolling / EWM calculation are dropped. The last `count` values of the remaining Series are returned.
+    NaN rows from the leading edge of the rolling / EWM calculation are dropped. The last `count` values of the remaining Series (or Series triple for MACD) are returned.
 
-5. **Output formatting**. If `count=1`, a single line is printed: `TICKER WINDOW-INDICATOR: value`. If `count > 1`, a header line with the ticker and range is printed, followed by one value per line.
+5. **Output formatting**. If `count=1`, a single line is printed: `TICKER WINDOW-INDICATOR: value` (for MACD: `TICKER MACD(fast,slow,signal): MACD=... Signal=... Hist=...`). If `count > 1`, a header line with the ticker and range is printed, followed by one value per line.
 
 ### RSI Calculation Details
 
@@ -142,7 +156,8 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
 ├── main.py                        # CLI entry point and all calculation logic.
 │                                  # Contains: _data_period(), get_stock_data(),
 │                                  # calculate_sma(), calculate_ema(),
-│                                  # calculate_rsi(), and main().
+│                                  # calculate_rsi(), calculate_macd(),
+│                                  # and main().
 │
 ├── run_mock_tests.py              # Runs all mock tests via pytest with a
 │                                  # summary report (pass/fail counts per
@@ -163,6 +178,10 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
 ├── LICENSE                        # MIT license.
 │
 ├── docs/
+│   ├── adding_indicator.md        # Step-by-step process for adding
+│   │                              # a new indicator to the project
+│   │                              # (implementation, tests, docs).
+│   │
 │   └── commenting_guidelines.md   # Code commenting conventions used
 │                                  # throughout the project (docstring
 │                                  # style, inline comment rules).
@@ -193,6 +212,10 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
 │   │                              # default window, count parameter,
 │   │                              # edge cases (all same prices).
 │   │
+│   ├── test_calculate_macd.py     # Tests for calculate_macd(): basic
+│   │                              # calculation, default params, count,
+│   │                              # fast/slow ordering, edge cases.
+│   │
 │   ├── test_data_period.py        # Tests for _data_period(): validates
 │   │                              # every threshold in _DATA_PERIOD_MAP
 │   │                              # for every interval.
@@ -218,6 +241,7 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
     ├── test_calculate_sma.py      # End-to-end SMA tests with real data.
     ├── test_calculate_ema.py      # End-to-end EMA tests with real data.
     ├── test_calculate_rsi.py      # End-to-end RSI tests with real data.
+    ├── test_calculate_macd.py     # End-to-end MACD tests with real data.
     ├── test_get_stock_data.py     # Tests that data is actually fetched
     │                              # from Yahoo Finance.
     └── test_main.py               # End-to-end CLI tests including
@@ -233,7 +257,7 @@ The project has two test suites: mock tests and real tests.
 Mock tests patch `main.yf.Ticker` so no real API calls are made. The `conftest.py` fixture creates a `MagicMock` that returns a predefined pandas DataFrame of `Close` prices. This means:
 
 - **Deterministic** — tests always produce the same results regardless of market conditions or network availability.
-- **Fast** — ~200 tests run in about 5 seconds.
+- **Fast** — ~240 tests run in about 5 seconds.
 - **Comprehensive** — covers calculation logic, edge cases, parser dispatch, count behaviour, multi-ticker input, duplicate detection, and error conditions.
 
 ### Real Tests

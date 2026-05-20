@@ -34,3 +34,10 @@ class TestMain:
         with patch("builtins.input",
                    return_value="AAPL,MSFT SMA 30"):
             main.main()
+
+    def test_macd_dispatch(self):
+        """Verify main() dispatches to MACD with default
+        interval."""
+        with patch("builtins.input",
+                   return_value="AAPL MACD 12,26,9"):
+            main.main()

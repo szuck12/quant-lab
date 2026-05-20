@@ -26,10 +26,11 @@ _DATA_PERIOD_MAP = {
 
 _VALID_INTERVALS = frozenset(_DATA_PERIOD_MAP.keys())
 
-_DEFAULT_WINDOWS: dict[str, int] = {
+_DEFAULT_WINDOWS: dict[str, int | tuple[int, int, int]] = {
     "SMA": 50,
     "EMA": 20,
     "RSI": 14,
+    "MACD": (12, 26, 9),
 }
 
 
@@ -203,23 +204,77 @@ def calculate_rsi(ticker: str, window: int,
     return result
 
 
+def calculate_macd(ticker: str, fast: int = 12, slow: int = 26,
+                   signal: int = 9, interval: str = "1d",
+                   count: int = 1
+                   ) -> tuple[pd.Series, pd.Series, pd.Series]:
+    """Compute MACD line, signal line, and histogram for a ticker.
+
+    Uses the standard definition:
+      MACD line   = EMA(fast) - EMA(slow)
+      Signal line = EMA(MACD line, signal)
+      Histogram   = MACD line - Signal line
+
+    Args:
+        ticker: Stock symbol (e.g. "AAPL").
+        fast: Fast EMA period.
+        slow: Slow EMA period.
+        signal: Signal EMA period.
+        interval: Bar size ("1d", "1wk", "1mo").
+        count: Number of most recent value-triplets to return.
+
+    Returns:
+        A tuple (macd_line, signal_line, histogram), each a
+        Series of the last `count` values.
+
+    Raises:
+        IndexError: If insufficient data exists for the given
+                    parameters.
+    """
+    period = _data_period(slow + signal + count, interval)
+    stock = get_stock_data(ticker, period=period, interval=interval)
+    close = stock.history(period=period, interval=interval)["Close"]
+
+    macd_line = (close.ewm(span=fast, adjust=False).mean()
+                 - close.ewm(span=slow, adjust=False).mean())
+    signal_line = macd_line.ewm(span=signal,
+                                adjust=False).mean()
+    histogram = macd_line - signal_line
+
+    non_nan = ~(macd_line.isna() | signal_line.isna()
+                | histogram.isna())
+    macd_line = macd_line[non_nan].iloc[-count:]
+    signal_line = signal_line[non_nan].iloc[-count:]
+    histogram = histogram[non_nan].iloc[-count:]
+
+    if len(macd_line) < count:
+        raise IndexError(
+            f"Insufficient data for MACD({fast},{slow},{signal})"
+            f" with count={count}"
+        )
+    return macd_line, signal_line, histogram
+
+
 def main() -> None:
     """Parse user input and dispatch to the requested indicator.
 
     Expects at least two space-separated values: ticker(s) and
-    indicator name (SMA, RSI, or EMA).  Multiple tickers are
-    separated with commas (e.g. ``AAPL,MSFT``).  Optional trailing
-    arguments can appear in any order:
+    indicator name (SMA, RSI, EMA, or MACD).  Multiple tickers
+    are separated with commas (e.g. ``AAPL,MSFT``).  Optional
+    trailing arguments can appear in any order:
 
       * A recognised bar size sets the interval ("1d", "1wk", "1mo").
       * A plain positive integer sets the lookback window.
       * "C" followed by a positive integer (e.g. "C10") sets the
         number of most-recent indicator values to return.
+      * For MACD, three comma-separated integers set the fast,
+        slow, and signal periods (e.g. "12,26,9").
 
     Defaults are "1d" for interval, indicator-specific windows
-    (SMA=50, EMA=20, RSI=14), and count=1.
+    (SMA=50, EMA=20, RSI=14, MACD=(12,26,9)), and count=1.
     """
-    user_input = input("Enter ticker(s), indicator (SMA/RSI/EMA)"
+    user_input = input("Enter ticker(s), indicator"
+                       " (SMA/RSI/EMA/MACD)"
                        " [bar_size] [window] [C<count>]: ")
     parts = user_input.strip().split()
 
@@ -247,16 +302,17 @@ def main() -> None:
         sys.exit(1)
 
     indicator = indicator.upper()
-    if indicator not in ("SMA", "RSI", "EMA"):
-        print("Error: indicator must be SMA, RSI, or EMA")
+    if indicator not in ("SMA", "RSI", "EMA", "MACD"):
+        print("Error: indicator must be SMA, RSI, EMA, or MACD")
         sys.exit(1)
 
     interval = "1d"
-    window = _DEFAULT_WINDOWS[indicator]
+    window = _DEFAULT_WINDOWS[indicator]  # type: ignore[assignment]
     count = 1
     seen_interval = False
     seen_window = False
     seen_count = False
+    macd_params: tuple[int, int, int] | None = None
 
     for arg in rest:
         lowered = arg.lower()
@@ -280,6 +336,35 @@ def main() -> None:
                 print("Error: count must be positive")
                 sys.exit(1)
             seen_count = True
+        elif indicator == "MACD" and "," in arg:
+            if seen_window:
+                print("Error: duplicate MACD parameters"
+                      f" '{arg}'")
+                sys.exit(1)
+            try:
+                ft_str, sl_str, sg_str = arg.split(",")
+                ft, sl, sg = (int(ft_str), int(sl_str),
+                              int(sg_str))
+            except ValueError:
+                print("Error: invalid MACD parameters"
+                      f" '{arg}'"
+                      " (use fast,slow,signal,"
+                      " e.g. 12,26,9)")
+                sys.exit(1)
+            if ft <= 0 or sl <= 0 or sg <= 0:
+                print("Error: MACD parameters must be"
+                      " positive")
+                sys.exit(1)
+            if ft >= sl:
+                print(f"Error: fast period ({ft}) must be"
+                      f" less than slow period ({sl})")
+                sys.exit(1)
+            macd_params = (ft, sl, sg)
+            seen_window = True
+        elif indicator == "MACD":
+            print("Error: MACD requires comma-separated"
+                  " parameters (e.g. 12,26,9)")
+            sys.exit(1)
         else:
             try:
                 w = int(arg)
@@ -295,6 +380,9 @@ def main() -> None:
             window = w
             seen_window = True
 
+    if indicator == "MACD" and macd_params is None:
+        macd_params = window  # type: ignore[assignment]
+
     for ticker in tickers:
         match indicator:
             case "SMA":
@@ -306,8 +394,28 @@ def main() -> None:
             case "RSI":
                 result = calculate_rsi(ticker, window,
                                        interval=interval, count=count)
+            case "MACD":
+                fast, slow, signal = macd_params
+                m_line, s_line, hist = calculate_macd(
+                    ticker, fast=fast, slow=slow,
+                    signal=signal,
+                    interval=interval, count=count
+                )
 
-        if count == 1:
+        if indicator == "MACD":
+            if count == 1:
+                print(f"{ticker} MACD({fast},{slow},{signal}):"
+                      f" MACD={m_line.iloc[-1]:.2f}"
+                      f" Signal={s_line.iloc[-1]:.2f}"
+                      f" Hist={hist.iloc[-1]:.2f}")
+            else:
+                print(f"{ticker} MACD({fast},{slow},{signal})"
+                      f" (last {count}):")
+                for i in range(count):
+                    print(f"  MACD={m_line.iloc[i]:.2f}"
+                          f" Signal={s_line.iloc[i]:.2f}"
+                          f" Hist={hist.iloc[i]:.2f}")
+        elif count == 1:
             print(f"{ticker} {window}-{indicator}:"
                   f" {result.iloc[-1]:.2f}")
         else:

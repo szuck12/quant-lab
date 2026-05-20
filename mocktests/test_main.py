@@ -8,6 +8,8 @@ import main
 
 
 _MOCK_SERIES = pd.Series([42.0])
+_MOCK_MACD = (pd.Series([42.0]), pd.Series([12.0]),
+              pd.Series([30.0]))
 
 
 class TestMain:
@@ -64,6 +66,30 @@ class TestMain:
                 main.main()
                 mock_rsi.assert_called_once_with(
                     "MSFT", 14, interval="1d", count=1)
+
+    def test_valid_macd_dispatch(self):
+        """Verify main() calls calculate_macd for MACD input
+        with explicit parameters."""
+        with patch("builtins.input",
+                   return_value="AAPL MACD 12,26,9"):
+            with patch("main.calculate_macd",
+                       return_value=_MOCK_MACD) as mock_macd:
+                main.main()
+                mock_macd.assert_called_once_with(
+                    "AAPL", fast=12, slow=26, signal=9,
+                    interval="1d", count=1)
+
+    def test_default_window_macd(self):
+        """Verify MACD defaults to (12,26,9) when not
+        provided."""
+        with patch("builtins.input",
+                   return_value="AAPL MACD"):
+            with patch("main.calculate_macd",
+                       return_value=_MOCK_MACD) as mock_macd:
+                main.main()
+                mock_macd.assert_called_once_with(
+                    "AAPL", fast=12, slow=26, signal=9,
+                    interval="1d", count=1)
 
     # ---- C<count> syntax ----
 
@@ -167,8 +193,9 @@ class TestMain:
                 main.main()
 
     def test_invalid_indicator(self):
-        """Verify main() exits when an unrecognised indicator is given."""
-        with patch("builtins.input", return_value="AAPL MACD 20"):
+        """Verify main() exits when an unrecognised indicator
+        is given."""
+        with patch("builtins.input", return_value="AAPL XYZ 20"):
             with pytest.raises(SystemExit):
                 main.main()
 
@@ -181,6 +208,13 @@ class TestMain:
     def test_count_non_numeric(self):
         """Verify main() exits when C<count> has no digits."""
         with patch("builtins.input", return_value="AAPL SMA C"):
+            with pytest.raises(SystemExit):
+                main.main()
+
+    def test_macd_requires_comma_separated(self):
+        """Verify main() exits when MACD gets a plain integer
+        instead of comma-separated params."""
+        with patch("builtins.input", return_value="AAPL MACD 20"):
             with pytest.raises(SystemExit):
                 main.main()
 
