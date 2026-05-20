@@ -12,8 +12,12 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   based on SMA and population standard deviation (ddof=0, matching
   TradingView's ta.bb()).  Configurable window and number of
   standard deviations via comma-separated syntax (e.g. "20,2.5").
+- Volume Weighted Average Price (VWAP) indicator — rolling sum of
+  Typical Price × Volume divided by rolling sum of Volume,
+  matching TradingView's ta.vwap().
 - 16 mock tests and 6 real tests for BB.
-- BB dispatch tests in both test suites.
+- 15 mock tests and 5 real tests for VWAP.
+- BB and VWAP dispatch tests in both test suites.
 
 ## [1.0.0] - 2026-05-19
 

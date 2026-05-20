@@ -18,8 +18,16 @@ def mock_stock_data():
     """
     patchers = []
 
-    def _make(close_prices):
-        df = pd.DataFrame({"Close": close_prices})
+    def _make(close_prices, high_prices=None, low_prices=None,
+              volume_prices=None):
+        data = {"Close": close_prices}
+        if high_prices is not None:
+            data["High"] = high_prices
+        if low_prices is not None:
+            data["Low"] = low_prices
+        if volume_prices is not None:
+            data["Volume"] = volume_prices
+        df = pd.DataFrame(data)
         mock_ticker = MagicMock()
         mock_ticker.history.return_value = df
         p = patch("main.yf.Ticker", return_value=mock_ticker)

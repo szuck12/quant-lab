@@ -32,6 +32,7 @@ _DEFAULT_WINDOWS: dict[str, int | tuple] = {
     "RSI": 14,
     "MACD": (12, 26, 9),
     "BB": (20, 2.0),
+    "VWAP": 20,
 }
 
 
@@ -99,6 +100,25 @@ def _fetch_close(ticker: str, period: str,
     hist = stock.history(period=period, interval=interval)
     print(f"Fetched {len(hist)} rows for {ticker}")
     return hist["Close"]
+
+
+def _fetch_ohlcv(ticker: str, period: str,
+                 interval: str = "1d") -> pd.DataFrame:
+    """Fetch OHLCV data for a ticker and print the row count.
+
+    Args:
+        ticker: Stock symbol (e.g. "AAPL").
+        period: History window (e.g. "1d", "1mo", "1y").
+        interval: Bar size (e.g. "1d", "1wk", "1mo").
+
+    Returns:
+        A DataFrame with Open, High, Low, Close, Volume columns
+        indexed by date.
+    """
+    stock = yf.Ticker(ticker)
+    hist = stock.history(period=period, interval=interval)
+    print(f"Fetched {len(hist)} rows for {ticker}")
+    return hist
 
 
 def calculate_sma(ticker: str, window: int,
@@ -317,13 +337,55 @@ def calculate_bb(ticker: str, window: int = 20,
     return upper, middle, lower
 
 
+def calculate_vwap(ticker: str, window: int = 20,
+                   interval: str = "1d",
+                   count: int = 1) -> pd.Series:
+    """Compute the latest Volume Weighted Average Price for a
+    ticker.
+
+    Uses the standard definition:
+      Typical Price = (High + Low + Close) / 3
+      VWAP = sum(TP * Volume) over window
+             / sum(Volume) over window
+
+    Args:
+        ticker: Stock symbol (e.g. "AAPL").
+        window: Lookback period in bars.
+        interval: Bar size ("1d", "1wk", "1mo").
+        count: Number of most recent VWAP values to return.
+
+    Returns:
+        A Series of the last `count` VWAP values (single element
+        when count=1).
+
+    Raises:
+        IndexError: If insufficient data exists for the given
+                    window.
+    """
+    period = _data_period(window + count, interval)
+    ohlcv = _fetch_ohlcv(ticker, period=period, interval=interval)
+
+    typical = (ohlcv["High"] + ohlcv["Low"] + ohlcv["Close"]) / 3.0
+    pv = typical * ohlcv["Volume"]
+    cum_pv = pv.rolling(window=window).sum()
+    cum_v = ohlcv["Volume"].rolling(window=window).sum()
+    vwap = cum_pv / cum_v
+
+    result = vwap.dropna().iloc[-count:]
+    if result.empty or len(result) < count:
+        raise IndexError(
+            f"Insufficient data for VWAP({window}) with count={count}"
+        )
+    return result
+
+
 def main() -> None:
     """Parse user input and dispatch to the requested indicator.
 
     Expects at least two space-separated values: ticker(s) and
-    indicator name (SMA, RSI, EMA, MACD, or BB).  Multiple tickers
-    are separated with commas (e.g. ``AAPL,MSFT``).  Optional
-    trailing arguments can appear in any order:
+    indicator name (SMA, RSI, EMA, MACD, BB, or VWAP).  Multiple
+    tickers are separated with commas (e.g. ``AAPL,MSFT``).
+    Optional trailing arguments can appear in any order:
 
       * A recognised bar size sets the interval ("1d", "1wk", "1mo").
       * A plain positive integer sets the lookback window.
@@ -335,11 +397,11 @@ def main() -> None:
         number of standard deviations (e.g. "20,2.0").
 
     Defaults are "1d" for interval, indicator-specific windows
-    (SMA=50, EMA=20, RSI=14, MACD=(12,26,9), BB=(20,2.0)),
-    and count=1.
+    (SMA=50, EMA=20, RSI=14, MACD=(12,26,9), BB=(20,2.0),
+    VWAP=20), and count=1.
     """
     user_input = input("Enter ticker(s), indicator"
-                       " (SMA/RSI/EMA/MACD/BB)"
+                       " (SMA/RSI/EMA/MACD/BB/VWAP)"
                        " [bar_size] [window] [C<count>]: ")
     parts = user_input.strip().split()
 
@@ -367,9 +429,10 @@ def main() -> None:
         sys.exit(1)
 
     indicator = indicator.upper()
-    if indicator not in ("SMA", "RSI", "EMA", "MACD", "BB"):
+    if indicator not in ("SMA", "RSI", "EMA", "MACD", "BB",
+                         "VWAP"):
         print("Error: indicator must be SMA, RSI, EMA, MACD,"
-              " or BB")
+              " BB, or VWAP")
         sys.exit(1)
 
     interval = "1d"
@@ -507,6 +570,10 @@ def main() -> None:
                     num_std=bb_std,
                     interval=interval, count=count
                 )
+            case "VWAP":
+                result = calculate_vwap(ticker, window,
+                                        interval=interval,
+                                        count=count)
 
         if indicator == "BB":
             if count == 1:

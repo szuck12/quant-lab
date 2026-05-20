@@ -2,7 +2,7 @@
 
 Current version: **1.1.0** — [Changelog](CHANGELOG.md)
 
-A command-line tool that fetches stock price data via [yfinance](https://github.com/ranaroussi/yfinance) and computes one of five technical indicators: Simple Moving Average (SMA), Exponential Moving Average (EMA), Relative Strength Index (RSI), Moving Average Convergence Divergence (MACD), or Bollinger Bands (BB). Input is provided through stdin and the result is printed to stdout. The tool is designed for quick terminal lookups — you type a ticker and an indicator, and you get back a number.
+A command-line tool that fetches stock price data via [yfinance](https://github.com/ranaroussi/yfinance) and computes one of six technical indicators: Simple Moving Average (SMA), Exponential Moving Average (EMA), Relative Strength Index (RSI), Moving Average Convergence Divergence (MACD), Bollinger Bands (BB), or Volume Weighted Average Price (VWAP). Input is provided through stdin and the result is printed to stdout. The tool is designed for quick terminal lookups — you type a ticker and an indicator, and you get back a number.
 
 yfinance provides access to Yahoo Finance market data. The tool does not require an API key or account.
 
@@ -35,9 +35,9 @@ ticker(s) indicator [bar_size] [window] [C<count>]
 | Token | Meaning | Allowed Values | Default |
 |-------|---------|----------------|---------|
 | `ticker(s)` | Stock symbol(s), comma-separated | Any symbol yfinance recognises (e.g. AAPL, MSFT, GOOG, SPY, BTC-USD, EURUSD=X) | Required |
-| `indicator` | Indicator to compute | `SMA`, `EMA`, `RSI`, `MACD`, `BB` (case-insensitive) | Required |
+| `indicator` | Indicator to compute | `SMA`, `EMA`, `RSI`, `MACD`, `BB`, `VWAP` (case-insensitive) | Required |
 | `bar_size` | Width of each price bar | `1m`, `2m`, `5m`, `15m`, `30m`, `90m`, `60m`, `1h`, `1d`, `5d`, `1wk`, `1mo`, `3mo` | `1d` |
-| `window` | Lookback period in bars (for MACD: comma-separated fast,slow,signal, e.g. `12,26,9`; for BB: comma-separated window,num_std, e.g. `20,2.5`) | Any positive integer, or comma-separated values for MACD/BB | SMA=50, EMA=20, RSI=14, MACD=(12,26,9), BB=(20,2.0) |
+| `window` | Lookback period in bars (for MACD: comma-separated fast,slow,signal, e.g. `12,26,9`; for BB: comma-separated window,num_std, e.g. `20,2.5`) | Any positive integer, or comma-separated values for MACD/BB | SMA=50, EMA=20, RSI=14, MACD=(12,26,9), BB=(20,2.0), VWAP=20 |
 | `C<count>` | Number of recent values to return | `C` followed by any positive integer (e.g. `C1`, `C10`, `C100`) | `1` |
 
 ### Argument Parsing Rules
@@ -60,7 +60,7 @@ Multiple tickers are separated by commas in the first token (e.g. `AAPL,MSFT`). 
 |-----------|---------|
 | Fewer than 2 tokens | `Error: expected at least 2 values (ticker(s) indicator [bar_size] [window] [C<count>])` |
 | No valid tickers after parsing | `Error: no valid tickers provided` |
-| Indicator not recognised | `Error: indicator must be SMA, RSI, EMA, MACD, or BB` |
+| Indicator not recognised | `Error: indicator must be SMA, RSI, EMA, MACD, BB, or VWAP` |
 | Unrecognised argument (not an interval, not C-prefixed, not an integer) | `Error: unrecognised argument '<arg>'` |
 | Duplicate bar size | `Error: duplicate bar size '<arg>'` |
 | Duplicate window | `Error: duplicate window '<arg>'` |
@@ -122,6 +122,12 @@ echo "MSFT BB 20,2.5" | python3 main.py
 
 # Bollinger Bands with count and weekly bars
 echo "GOOG BB 20,2.0 C5 1wk" | python3 main.py
+
+# VWAP with default window (20-day)
+echo "AAPL VWAP" | python3 main.py
+
+# VWAP with custom window and weekly bars
+echo "MSFT VWAP 10 1wk" | python3 main.py
 ```
 
 ## How It Works
@@ -147,13 +153,14 @@ The tool follows a five-step pipeline:
 
 3. **Data fetching**. `yf.Ticker(ticker).history(period=..., interval=...)` is called to retrieve a DataFrame of price data. The tool prints the number of rows received (e.g. `Fetched 252 rows for AAPL`). When multiple tickers are specified, each ticker is fetched independently with its own API call, so a failed request for one ticker does not affect the others.
 
-4. **Indicator calculation**. The `Close` column is extracted from the DataFrame and passed to the appropriate calculation function:
+4. **Indicator calculation**. For SMA, EMA, RSI, MACD, and BB the `Close` column is extracted from the DataFrame and passed to the appropriate calculation function. For VWAP the full OHLCV DataFrame is used:
 
     - **SMA**: `close.rolling(window=window).mean()` — simple moving average.
     - **EMA**: `close.ewm(span=window, adjust=False).mean()` — exponential moving average using the standard span-based decay.
     - **RSI**: Price changes are split into gains and losses. Each is averaged using Wilder smoothing (`ewm(alpha=1/window, adjust=False).mean()`), then the RSI is computed as `100 - (100 / (1 + avg_gain / avg_loss))`.
      - **MACD**: Three time series are computed: the MACD line (EMA(fast) - EMA(slow)), the signal line (EMA of the MACD line with period `signal`), and the histogram (MACD line - signal line). All three use `ewm(span=..., adjust=False).mean()`.
      - **BB**: Three bands are computed: the middle band (SMA of the close price), the upper band (middle + `num_std` × standard deviation), and the lower band (middle − `num_std` × standard deviation). The standard deviation uses population normalisation (`ddof=0`), matching TradingView's `ta.bb()`.
+     - **VWAP**: The typical price `(High + Low + Close) / 3` is multiplied by Volume and accumulated over a rolling window. The result is divided by the rolling sum of Volume, matching TradingView's `ta.vwap()`.
 
     NaN rows from the leading edge of the rolling / EWM calculation are dropped. The last `count` values of the remaining Series (or Series triple for MACD) are returned.
 
@@ -171,8 +178,10 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
 .
 ├── main.py                        # CLI entry point and all calculation logic.
 │                                  # Contains: _data_period(), get_stock_data(),
+│                                  # _fetch_close(), _fetch_ohlcv(),
 │                                  # calculate_sma(), calculate_ema(),
 │                                  # calculate_rsi(), calculate_macd(),
+│                                  # calculate_bb(), calculate_vwap(),
 │                                  # and main().
 │
 ├── CHANGELOG.md                   # Version history and release notes.
@@ -240,6 +249,9 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
  │   ├── test_calculate_bb.py       # Tests for calculate_bb(): basic
  │   │                              # calculation, default params, count,
  │   │                              # band ordering, custom num_std.
+ │   ├── test_calculate_vwap.py     # Tests for calculate_vwap(): basic
+ │   │                              # calculation, default window, count,
+ │   │                              # parameter, zero volume, edge cases.
  │   │
  │   ├── test_data_period.py        # Tests for _data_period(): validates
 │   │                              # every threshold in _DATA_PERIOD_MAP
@@ -268,6 +280,7 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
     ├── test_calculate_rsi.py      # End-to-end RSI tests with real data.
     ├── test_calculate_macd.py     # End-to-end MACD tests with real data.
     ├── test_calculate_bb.py       # End-to-end BB tests with real data.
+    ├── test_calculate_vwap.py     # End-to-end VWAP tests with real data.
     ├── test_get_stock_data.py     # Tests that data is actually fetched
     │                              # from Yahoo Finance.
     └── test_main.py               # End-to-end CLI tests including
@@ -283,7 +296,7 @@ The project has two test suites: mock tests and real tests.
 Mock tests patch `main.yf.Ticker` so no real API calls are made. The `conftest.py` fixture creates a `MagicMock` that returns a predefined pandas DataFrame of `Close` prices. This means:
 
 - **Deterministic** — tests always produce the same results regardless of market conditions or network availability.
-- **Fast** — ~258 tests run in about 5 seconds.
+- **Fast** — ~278 tests run in about 5 seconds.
 - **Comprehensive** — covers calculation logic, edge cases, parser dispatch, count behaviour, multi-ticker input, duplicate detection, and error conditions.
 
 ### Real Tests

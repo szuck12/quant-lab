@@ -47,3 +47,9 @@ class TestMain:
         with patch("builtins.input",
                    return_value="AAPL BB 20,2.0"):
             main.main()
+
+    def test_vwap_dispatch(self):
+        """Verify main() dispatches to VWAP."""
+        with patch("builtins.input",
+                   return_value="AAPL VWAP 20"):
+            main.main()
