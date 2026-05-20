@@ -149,10 +149,9 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
 │                                  # file). Uses a custom ResultCollector
 │                                  # pytest plugin to capture results.
 │
-├── run_real_test.py               # Collects all integration tests, picks one
-│                                  # at random, and runs it. Uses a
-│                                  # NodeCollector plugin to enumerate test
-│                                  # node IDs without running them.
+├── run_real_tests.py               # Runs all integration tests sequentially
+│                                   # with a 1-second pause between each to
+│                                   # avoid yfinance rate limits.
 │
 ├── pytest.ini                     # Pytest configuration. Currently sets a
 │                                  # filter to ignore DeprecationWarnings
@@ -244,24 +243,22 @@ Real tests call the live yfinance API and use whatever data it returns. They ver
 - **Slower** — each test makes at least one network request.
 - **Network-dependent** — fail if the machine is offline or yfinance is unreachable.
 - **Time-dependent** — results may differ on weekends, holidays, or outside market hours.
+- **Rate-limited** — yfinance enforces request throttling. The convenience script below spaces tests one second apart.
 
 ### Running Tests
 
 ```bash
-# All mock tests with summary report
+# All mock tests (fast, no network)
 python3 run_mock_tests.py
 
-# One random integration test
-python3 run_real_test.py
+# All real tests (1s spacing avoids rate limits)
+python3 run_real_tests.py
 
 # All tests (mock + real)
 pytest mocktests/ realtests/
 
-# Only mock tests via pytest
-pytest mocktests/ -v
-
 # A single test file
-pytest mocktests/test_main.py -v
+pytest mocktests/test_calculate_sma.py -v
 ```
 
 ## License
