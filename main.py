@@ -206,9 +206,10 @@ def calculate_rsi(ticker: str, window: int,
 def main() -> None:
     """Parse user input and dispatch to the requested indicator.
 
-    Expects at least two space-separated values: ticker and indicator
-    name (SMA, RSI, or EMA).  Optional trailing arguments can appear
-    in any order:
+    Expects at least two space-separated values: ticker(s) and
+    indicator name (SMA, RSI, or EMA).  Multiple tickers are
+    separated with commas (e.g. ``AAPL,MSFT``).  Optional trailing
+    arguments can appear in any order:
 
       * A recognised bar size sets the interval ("1d", "1wk", "1mo").
       * A plain positive integer sets the lookback window.
@@ -218,16 +219,33 @@ def main() -> None:
     Defaults are "1d" for interval, indicator-specific windows
     (SMA=50, EMA=20, RSI=14), and count=1.
     """
-    user_input = input("Enter ticker, indicator (SMA/RSI/EMA)"
+    user_input = input("Enter ticker(s), indicator (SMA/RSI/EMA)"
                        " [bar_size] [window] [C<count>]: ")
     parts = user_input.strip().split()
 
     if len(parts) < 2:
         print("Error: expected at least 2 values"
-              " (ticker indicator [bar_size] [window] [C<count>])")
+              " (ticker(s) indicator [bar_size] [window]"
+              " [C<count>])")
         sys.exit(1)
 
-    ticker, indicator, *rest = parts
+    # Rejoin comma-fragment tokens so "AAPL , MSFT" is treated as
+    # "AAPL,MSFT" rather than three separate tokens.
+    merged = [parts[0]]
+    for token in parts[1:]:
+        if token == "," or merged[-1].endswith(","):
+            merged[-1] += token
+        elif token.startswith(","):
+            merged[-1] += token
+        else:
+            merged.append(token)
+
+    raw_tickers, indicator, *rest = merged
+    tickers = [t.strip() for t in raw_tickers.split(",") if t.strip()]
+    if not tickers:
+        print("Error: no valid tickers provided")
+        sys.exit(1)
+
     indicator = indicator.upper()
     if indicator not in ("SMA", "RSI", "EMA"):
         print("Error: indicator must be SMA, RSI, or EMA")
@@ -277,23 +295,26 @@ def main() -> None:
             window = w
             seen_window = True
 
-    match indicator:
-        case "SMA":
-            result = calculate_sma(ticker, window,
-                                   interval=interval, count=count)
-        case "EMA":
-            result = calculate_ema(ticker, window,
-                                   interval=interval, count=count)
-        case "RSI":
-            result = calculate_rsi(ticker, window,
-                                   interval=interval, count=count)
+    for ticker in tickers:
+        match indicator:
+            case "SMA":
+                result = calculate_sma(ticker, window,
+                                       interval=interval, count=count)
+            case "EMA":
+                result = calculate_ema(ticker, window,
+                                       interval=interval, count=count)
+            case "RSI":
+                result = calculate_rsi(ticker, window,
+                                       interval=interval, count=count)
 
-    if count == 1:
-        print(f"{ticker} {window}-{indicator}: {result.iloc[-1]:.2f}")
-    else:
-        print(f"{ticker} {window}-{indicator} (last {count}):")
-        for val in result:
-            print(f"  {val:.2f}")
+        if count == 1:
+            print(f"{ticker} {window}-{indicator}:"
+                  f" {result.iloc[-1]:.2f}")
+        else:
+            print(f"{ticker} {window}-{indicator}"
+                  f" (last {count}):")
+            for val in result:
+                print(f"  {val:.2f}")
 
 
 if __name__ == "__main__":

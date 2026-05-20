@@ -28,3 +28,9 @@ class TestMain:
         """Verify main() works with a weekly bar interval."""
         with patch("builtins.input", return_value="GOOG SMA 10 1wk"):
             main.main()
+
+    def test_multi_ticker_sma(self):
+        """Verify main() dispatches to SMA for two tickers."""
+        with patch("builtins.input",
+                   return_value="AAPL,MSFT SMA 30"):
+            main.main()

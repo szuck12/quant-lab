@@ -225,3 +225,118 @@ class TestMain:
         with patch("builtins.input", return_value="AAPL SMA 1wk 1mo"):
             with pytest.raises(SystemExit):
                 main.main()
+
+    # ---- multi-ticker ----
+
+    def test_two_tickers_sma(self):
+        """Verify main() dispatches to SMA for each of two tickers."""
+        with patch("builtins.input", return_value="AAPL,MSFT SMA 20"):
+            with patch("main.calculate_sma",
+                       return_value=_MOCK_SERIES) as mock_sma:
+                main.main()
+                assert mock_sma.call_count == 2
+                mock_sma.assert_any_call(
+                    "AAPL", 20, interval="1d", count=1)
+                mock_sma.assert_any_call(
+                    "MSFT", 20, interval="1d", count=1)
+
+    def test_three_tickers_ema(self):
+        """Verify main() dispatches to EMA for three tickers."""
+        with patch("builtins.input",
+                   return_value="AAPL,GOOG,TSLA EMA"):
+            with patch("main.calculate_ema",
+                       return_value=_MOCK_SERIES) as mock_ema:
+                main.main()
+                assert mock_ema.call_count == 3
+
+    def test_two_tickers_rsi(self):
+        """Verify main() dispatches to RSI for two tickers."""
+        with patch("builtins.input", return_value="AAPL,MSFT RSI 14"):
+            with patch("main.calculate_rsi",
+                       return_value=_MOCK_SERIES) as mock_rsi:
+                main.main()
+                assert mock_rsi.call_count == 2
+
+    def test_spaced_commas(self):
+        """Verify whitespace around commas is normalised."""
+        with patch("builtins.input",
+                   return_value="AAPL , MSFT SMA 20"):
+            with patch("main.calculate_sma",
+                       return_value=_MOCK_SERIES) as mock_sma:
+                main.main()
+                assert mock_sma.call_count == 2
+
+    def test_double_comma(self):
+        """Verify an empty ticker between two commas is filtered."""
+        with patch("builtins.input",
+                   return_value="AAPL,,MSFT SMA 20"):
+            with patch("main.calculate_sma",
+                       return_value=_MOCK_SERIES) as mock_sma:
+                main.main()
+                assert mock_sma.call_count == 2
+
+    def test_multi_ticker_with_count(self):
+        """Verify count is passed to each ticker dispatch."""
+        with patch("builtins.input", return_value="AAPL,MSFT SMA C3"):
+            with patch("main.calculate_sma",
+                       return_value=_MOCK_SERIES) as mock_sma:
+                main.main()
+                assert mock_sma.call_count == 2
+                mock_sma.assert_any_call(
+                    "AAPL", 50, interval="1d", count=3)
+                mock_sma.assert_any_call(
+                    "MSFT", 50, interval="1d", count=3)
+
+    def test_multi_ticker_with_interval(self):
+        """Verify interval is passed to each ticker dispatch."""
+        with patch("builtins.input",
+                   return_value="AAPL,MSFT EMA 1wk"):
+            with patch("main.calculate_ema",
+                       return_value=_MOCK_SERIES) as mock_ema:
+                main.main()
+                assert mock_ema.call_count == 2
+                mock_ema.assert_any_call(
+                    "AAPL", 20, interval="1wk", count=1)
+                mock_ema.assert_any_call(
+                    "MSFT", 20, interval="1wk", count=1)
+
+    def test_multi_ticker_all_args(self):
+        """Verify window, interval, and count with two tickers."""
+        with patch("builtins.input",
+                   return_value="AAPL,MSFT RSI 30 1mo C5"):
+            with patch("main.calculate_rsi",
+                       return_value=_MOCK_SERIES) as mock_rsi:
+                main.main()
+                assert mock_rsi.call_count == 2
+                mock_rsi.assert_any_call(
+                    "AAPL", 30, interval="1mo", count=5)
+                mock_rsi.assert_any_call(
+                    "MSFT", 30, interval="1mo", count=5)
+
+    def test_multi_ticker_print_single(self, capsys):
+        """Verify output for two tickers with count=1."""
+        with patch("builtins.input",
+                   return_value="AAPL,MSFT SMA 50"):
+            with patch("main.calculate_sma",
+                       return_value=_MOCK_SERIES):
+                main.main()
+        captured = capsys.readouterr()
+        expected = "AAPL 50-SMA: 42.00\nMSFT 50-SMA: 42.00\n"
+        assert captured.out == expected
+
+    def test_multi_ticker_print_multiple(self, capsys):
+        """Verify output for two tickers with count>1."""
+        data = pd.Series([45.23, 44.10])
+        with patch("builtins.input",
+                   return_value="AAPL,MSFT RSI C2"):
+            with patch("main.calculate_rsi",
+                       return_value=data):
+                main.main()
+        captured = capsys.readouterr()
+        lines = captured.out.splitlines()
+        assert lines[0] == "AAPL 14-RSI (last 2):"
+        assert lines[1] == "  45.23"
+        assert lines[2] == "  44.10"
+        assert lines[3] == "MSFT 14-RSI (last 2):"
+        assert lines[4] == "  45.23"
+        assert lines[5] == "  44.10"
