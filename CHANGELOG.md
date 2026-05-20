@@ -15,7 +15,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - 16 mock tests and 6 real tests for BB.
 - BB dispatch tests in both test suites.
 
-## [1.0.0] - 2026-05-20
+## [1.0.0] - 2026-05-19
 
 ### Added
 
