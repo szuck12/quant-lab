@@ -42,4 +42,3 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   update_changelog process.
 - MIT License.
 
-[1.0.0]: https://github.com/anomalyco/quant_indicators/releases/tag/v1.0.0
