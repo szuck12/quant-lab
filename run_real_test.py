@@ -1,3 +1,6 @@
+# run_real_test.py
+# Picks and runs a random real (yfinance-backed) test from realtests/
+
 import sys
 import random
 import pytest
@@ -14,7 +17,11 @@ class NodeCollector:
 
 
 def pick_random_realtest() -> str | None:
-    """Collect all realtests and return one random node ID."""
+    """Collect all realtests and return one random node ID.
+
+    Returns:
+        A pytest node ID string, or None if no tests were found.
+    """
     collector = NodeCollector()
     pytest.main(["realtests/", "--collect-only", "-q", "--tb=short"],
                 plugins=[collector])
@@ -23,7 +30,8 @@ def pick_random_realtest() -> str | None:
     return random.choice(collector.nodeids)
 
 
-def main():
+def main() -> None:
+    """Pick a random realtest and run it, exiting with pytest's exit code."""
     node = pick_random_realtest()
     if node is None:
         print("No realtests found to run")

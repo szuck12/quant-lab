@@ -81,7 +81,7 @@ For multi-step algorithms or complex indicator logic, use block comments above t
 # RSI Calculation
 # 1. Compute daily price changes
 # 2. Separate gains and losses
-# 3. Average gain / loss over the lookback window
+# 3. Apply Wilder smoothing to gains and losses
 # 4. Normalize to 0-100 range
 # -------------------------------------------------------------------
 ```
@@ -136,11 +136,12 @@ Use `Note:` and `Warning:` in docstrings to flag edge cases or important caveats
 
 ```python
 def calculate_rsi(data: pd.Series, window: int = 14) -> pd.Series:
-    """Compute Relative Strength Index.
+    """Compute Relative Strength Index using Wilder smoothing.
 
     Note:
-        The first `window` rows will be NaN since there is
-        insufficient data to compute the initial RSI.
+        The first row is always NaN (division of zero by zero
+        from the initial seed).  All subsequent values are valid
+        after at least one price change.
 
     Warning:
         A period of all-zero price changes will produce a
@@ -174,8 +175,8 @@ def calculate_rsi(ticker: str, window: int) -> float:
     delta = close.diff()
     gain = delta.where(delta > 0, 0.0)
     loss = -delta.where(delta < 0, 0.0)
-    avg_gain = gain.rolling(window=window).mean()
-    avg_loss = loss.rolling(window=window).mean()
+    avg_gain = gain.ewm(alpha=1.0 / window, adjust=False).mean()
+    avg_loss = loss.ewm(alpha=1.0 / window, adjust=False).mean()
 
     rs = avg_gain / avg_loss
     rsi = 100.0 - (100.0 / (1.0 + rs))

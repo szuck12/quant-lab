@@ -1,3 +1,6 @@
+# run_mock_tests.py
+# Runs all mock tests with a summary report of pass/fail results
+
 import sys
 import pytest
 
@@ -20,7 +23,15 @@ class ResultCollector:
 
 
 def run_tests(args: list[str], label: str = "") -> int:
-    """Run pytest with the given args and print a summary block."""
+    """Run pytest with the given args and print a summary block.
+
+    Args:
+        args: Command-line arguments forwarded to pytest.
+        label: Optional heading printed above the summary.
+
+    Returns:
+        Exit code 0 if all tests passed, 1 otherwise.
+    """
     collector = ResultCollector()
     pytest.main(args, plugins=[collector])
     total = collector.passed + collector.failed
@@ -44,7 +55,8 @@ def run_tests(args: list[str], label: str = "") -> int:
     return 0 if collector.failed == 0 else 1
 
 
-def main():
+def main() -> int:
+    """Run mock tests under mocktests/ with verbose output."""
     return run_tests(["mocktests/", "-v", "--tb=short"], "MOCKTESTS")
 
 

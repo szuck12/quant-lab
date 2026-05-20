@@ -1,3 +1,6 @@
+# test_data_period.py
+# Tests for the internal _data_period() mapping function
+
 import pytest
 from main import _data_period
 
@@ -164,8 +167,11 @@ class TestDataPeriod:
     ])
   
     def test_data_period(self, interval, window, expected):
+        """Verify _data_period returns the correct period for every
+        (interval, window) combination across all supported intervals."""
         assert _data_period(window, interval) == expected
 
     def test_invalid_interval(self):
+        """Verify an unknown interval raises ValueError."""
         with pytest.raises(ValueError, match="Unsupported interval '2h'"):
             _data_period(20, "2h")

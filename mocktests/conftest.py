@@ -1,3 +1,6 @@
+# conftest.py
+# Shared pytest fixtures for mock tests (fake yfinance Ticker objects)
+
 import pytest
 from unittest.mock import MagicMock, patch
 import pandas as pd
