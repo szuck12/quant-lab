@@ -204,6 +204,9 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
 │
 ├── LICENSE                        # MIT license.
 │
+├── TODO.md                        # Planned work, priorities, and ideas
+│                                  # (see docs/maintain_todo.md).
+│
 ├── docs/
 │   ├── adding_indicator.md        # Step-by-step process for adding
 │   │                              # a new indicator to the project
@@ -286,6 +289,9 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
     └── test_main.py               # End-to-end CLI tests including
                                    # multi-ticker dispatch.
 ```
+
+`TODO.md` tracks planned work and ideas — see
+[docs/maintain_todo.md](docs/maintain_todo.md) for how to maintain it.
 
 ## Tests
 

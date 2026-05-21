@@ -4,6 +4,14 @@ This document describes the process for adding a new technical indicator to
 quant_indicators. Follow these steps in order. Each step references the
 existing SMA, EMA, RSI, and MACD implementations as templates.
 
+## 0. Create a TODO Entry
+
+Before implementing, add a TODO item to `TODO.md` (see
+[docs/maintain_todo.md](maintain_todo.md)).  Determine the priority based on
+how important the change is — requested changes are not automatically high
+priority.  Use an unchecked box (`[ ]`) and move the item to **In Progress**
+once you start implementation.
+
 ## 1. Information to Gather
 
 Before writing code, clarify these points with the person requesting
@@ -464,3 +472,6 @@ After completing the implementation, tests, and documentation, follow the
 record the changes.
 
 Adding a new indicator is a **minor** version bump (X.Y+1.0).
+
+After the release is recorded in `CHANGELOG.md`, move the indicator's TODO
+entry from **In Progress** to **Done** and check the box (`[x]`).
