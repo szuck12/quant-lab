@@ -19,7 +19,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - 15 mock tests and 5 real tests for VWAP.
 - BB and VWAP dispatch tests in both test suites.
 
-## [1.0.0] - 2026-05-19
+## [1.0.0] - 2026-05-18
 
 ### Added
 
