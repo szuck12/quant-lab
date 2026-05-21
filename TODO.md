@@ -2,7 +2,7 @@
 
 ## In Progress
 
-(Items currently being worked on — at most 1–2 at a time.)
+(Items currently being worked on.)
 
 ## Done
 
