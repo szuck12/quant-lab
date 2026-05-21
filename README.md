@@ -306,8 +306,8 @@ Real tests call the live yfinance API and use whatever data it returns. They ver
 - **Slower** — each test makes at least one network request.
 - **Network-dependent** — fail if the machine is offline or yfinance is unreachable.
 - **Time-dependent** — results may differ on weekends, holidays, or outside market hours.
-- **Rate-limited** — yfinance enforces request throttling. When running
-  `pytest realtests/` a conftest hook automatically inserts 1 second of
+- **Rate-limited** — yfinance enforces request throttling. Each real test
+  takes ~1 second because a conftest hook automatically inserts 1 second of
   spacing between tests. Disable with `REALTEST_NO_SLEEP=1`.
   `run_real_tests.py` also provides spacing with per-test section headers
   and a summary report.
