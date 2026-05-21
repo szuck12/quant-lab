@@ -17,6 +17,10 @@
 
 (Should get done, not urgent.)
 
+- [ ] Test MACD accuracy against known reference values (#indicator, #test)
+- [ ] Test BB accuracy against known reference values (#indicator, #test)
+- [ ] Improve structure of MACD and BB indicator output (#cli)
+
 ## Low Priority
 
 (Nice-to-haves.)
@@ -24,3 +28,6 @@
 ## Ideas
 
 (Interesting ideas not yet committed to implementation.)
+
+- [ ] Allow multiple indicators to be calculated in a single command-line
+      input (#cli)
