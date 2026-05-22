@@ -6,6 +6,7 @@
 
 ## Done
 
+- [x] Add Average Volume (AV) indicator (#indicator)
 - [x] Fix realtest conftest 1s delay applying to mock tests when running
       `pytest mocktests/ realtests/` together (#test, #bug)
 

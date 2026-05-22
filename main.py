@@ -33,6 +33,7 @@ _DEFAULT_WINDOWS: dict[str, int | tuple] = {
     "MACD": (12, 26, 9),
     "BB": (20, 2.0),
     "VWAP": 20,
+    "AV": 20,
 }
 
 
@@ -379,11 +380,49 @@ def calculate_vwap(ticker: str, window: int = 20,
     return result
 
 
+def calculate_av(ticker: str, window: int,
+                 interval: str = "1d",
+                 count: int = 1) -> pd.Series:
+    """Compute the latest Average Volume values for a ticker.
+
+    Simple rolling mean of Volume over the given window, matching
+    the SMA pattern applied to volume data.
+
+    Args:
+        ticker: Stock symbol (e.g. "AAPL").
+        window: Lookback period in bars.
+        interval: Bar size ("1d", "1wk", "1mo").
+        count: Number of most recent AV values to return.
+
+    Returns:
+        A Series of the last `count` AV values (single element
+        when count=1).
+
+    Raises:
+        IndexError: If insufficient data exists for the given
+                    window.
+
+    Note:
+        Zero-volume periods produce AV=0.0, which is a valid
+        result (unlike VWAP which would divide by zero).
+    """
+    period = _data_period(window + count, interval)
+    ohlcv = _fetch_ohlcv(ticker, period=period, interval=interval)
+
+    av = ohlcv["Volume"].rolling(window=window).mean()
+    result = av.dropna().iloc[-count:]
+    if result.empty or len(result) < count:
+        raise IndexError(
+            f"Insufficient data for AV({window}) with count={count}"
+        )
+    return result
+
+
 def main() -> None:
     """Parse user input and dispatch to the requested indicator.
 
     Expects at least two space-separated values: ticker(s) and
-    indicator name (SMA, RSI, EMA, MACD, BB, or VWAP).  Multiple
+    indicator name (SMA, RSI, EMA, MACD, BB, VWAP, or AV).  Multiple
     tickers are separated with commas (e.g. ``AAPL,MSFT``).
     Optional trailing arguments can appear in any order:
 
@@ -398,10 +437,10 @@ def main() -> None:
 
     Defaults are "1d" for interval, indicator-specific windows
     (SMA=50, EMA=20, RSI=14, MACD=(12,26,9), BB=(20,2.0),
-    VWAP=20), and count=1.
+    VWAP=20, AV=20), and count=1.
     """
     user_input = input("Enter ticker(s), indicator"
-                       " (SMA/RSI/EMA/MACD/BB/VWAP)"
+                       " (SMA/RSI/EMA/MACD/BB/VWAP/AV)"
                        " [bar_size] [window] [C<count>]: ")
     parts = user_input.strip().split()
 
@@ -430,9 +469,9 @@ def main() -> None:
 
     indicator = indicator.upper()
     if indicator not in ("SMA", "RSI", "EMA", "MACD", "BB",
-                         "VWAP"):
+                         "VWAP", "AV"):
         print("Error: indicator must be SMA, RSI, EMA, MACD,"
-              " BB, or VWAP")
+              " BB, VWAP, or AV")
         sys.exit(1)
 
     interval = "1d"
@@ -574,6 +613,10 @@ def main() -> None:
                 result = calculate_vwap(ticker, window,
                                         interval=interval,
                                         count=count)
+            case "AV":
+                result = calculate_av(ticker, window,
+                                      interval=interval,
+                                      count=count)
 
         if indicator == "BB":
             if count == 1:

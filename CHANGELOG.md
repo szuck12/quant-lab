@@ -5,6 +5,15 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com) and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-05-21
+
+### Added
+- Average Volume (AV) indicator — simple rolling mean of Volume
+  over a configurable window, matching the SMA pattern applied to
+  volume data.  Supports all bar intervals.
+- 16 mock tests and 5 real tests for AV.
+- AV dispatch tests in both test suites.
+
 ## [1.1.0] - 2026-05-20
 
 ### Added

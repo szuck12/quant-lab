@@ -13,6 +13,7 @@ _MOCK_MACD = (pd.Series([42.0]), pd.Series([12.0]),
 _MOCK_BB = (pd.Series([44.0]), pd.Series([42.0]),
             pd.Series([40.0]))
 _MOCK_SERIES_VWAP = pd.Series([105.0])
+_MOCK_SERIES_AV = pd.Series([20000.0])
 
 
 class TestMain:
@@ -124,6 +125,28 @@ class TestMain:
                    return_value="AAPL VWAP"):
             with patch("main.calculate_vwap",
                        return_value=_MOCK_SERIES_VWAP) as mock_fn:
+                main.main()
+                mock_fn.assert_called_once_with(
+                    "AAPL", 20, interval="1d", count=1)
+
+    def test_valid_av_dispatch(self):
+        """Verify main() calls calculate_av for an AV input
+        with explicit window."""
+        with patch("builtins.input",
+                   return_value="AAPL AV 20"):
+            with patch("main.calculate_av",
+                       return_value=_MOCK_SERIES_AV) as mock_fn:
+                main.main()
+                mock_fn.assert_called_once_with(
+                    "AAPL", 20, interval="1d", count=1)
+
+    def test_default_window_av(self):
+        """Verify AV defaults to window=20 when not
+        provided."""
+        with patch("builtins.input",
+                   return_value="AAPL AV"):
+            with patch("main.calculate_av",
+                       return_value=_MOCK_SERIES_AV) as mock_fn:
                 main.main()
                 mock_fn.assert_called_once_with(
                     "AAPL", 20, interval="1d", count=1)
