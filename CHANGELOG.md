@@ -11,8 +11,13 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Average Volume (AV) indicator — simple rolling mean of Volume
   over a configurable window, matching the SMA pattern applied to
   volume data.  Supports all bar intervals.
+- Relative Volume (RVOL) indicator — ratio of current Volume to
+  its rolling mean over a configurable window.  Values > 1.0
+  indicate above-average volume; < 1.0 below-average.  Default
+  window of 10 matches TradingView's standard.
 - 16 mock tests and 5 real tests for AV.
-- AV dispatch tests in both test suites.
+- 15 mock tests and 5 real tests for RVOL.
+- AV and RVOL dispatch tests in both test suites.
 
 ## [1.1.0] - 2026-05-20
 

@@ -14,6 +14,7 @@ _MOCK_BB = (pd.Series([44.0]), pd.Series([42.0]),
             pd.Series([40.0]))
 _MOCK_SERIES_VWAP = pd.Series([105.0])
 _MOCK_SERIES_AV = pd.Series([20000.0])
+_MOCK_SERIES_RVOL = pd.Series([1.2])
 
 
 class TestMain:
@@ -150,6 +151,28 @@ class TestMain:
                 main.main()
                 mock_fn.assert_called_once_with(
                     "AAPL", 20, interval="1d", count=1)
+
+    def test_valid_rvol_dispatch(self):
+        """Verify main() calls calculate_rvol for an RVOL input
+        with explicit window."""
+        with patch("builtins.input",
+                   return_value="AAPL RVOL 10"):
+            with patch("main.calculate_rvol",
+                       return_value=_MOCK_SERIES_RVOL) as mock_fn:
+                main.main()
+                mock_fn.assert_called_once_with(
+                    "AAPL", 10, interval="1d", count=1)
+
+    def test_default_window_rvol(self):
+        """Verify RVOL defaults to window=10 when not
+        provided."""
+        with patch("builtins.input",
+                   return_value="AAPL RVOL"):
+            with patch("main.calculate_rvol",
+                       return_value=_MOCK_SERIES_RVOL) as mock_fn:
+                main.main()
+                mock_fn.assert_called_once_with(
+                    "AAPL", 10, interval="1d", count=1)
 
     def test_default_window_bb(self):
         """Verify BB defaults to (20, 2.0) when not

@@ -59,3 +59,9 @@ class TestMain:
         with patch("builtins.input",
                    return_value="AAPL AV 20"):
             main.main()
+
+    def test_rvol_dispatch(self):
+        """Verify main() dispatches to RVOL."""
+        with patch("builtins.input",
+                   return_value="AAPL RVOL 10"):
+            main.main()
