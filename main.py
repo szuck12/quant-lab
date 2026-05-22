@@ -380,7 +380,7 @@ def calculate_vwap(ticker: str, window: int = 20,
     return result
 
 
-def calculate_av(ticker: str, window: int,
+def calculate_av(ticker: str, window: int = 20,
                  interval: str = "1d",
                  count: int = 1) -> pd.Series:
     """Compute the latest Average Volume values for a ticker.
