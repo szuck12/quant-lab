@@ -191,7 +191,7 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
 ```
 .
 ├── main.py                        # CLI entry point and all calculation logic.
-│                                  # Contains: _data_period(), get_stock_data(),
+│                                  # Contains: _data_period(),
 │                                  # _fetch_close(), _fetch_ohlcv(),
 │                                  # calculate_sma(), calculate_ema(),
 │                                  # calculate_rsi(), calculate_macd(),
@@ -281,10 +281,6 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
 │   │                              # every threshold in _DATA_PERIOD_MAP
 │   │                              # for every interval.
 │   │
-│   ├── test_get_stock_data.py     # Tests for get_stock_data(): verifies
-│   │                              # that yf.Ticker is called and
-│   │                              # history() is fetched.
-│   │
 │   └── test_main.py               # Tests for main(): parser dispatch,
 │   │                              # default windows, C<count> syntax,
 │   │                              # duplicate detection, multi-ticker
@@ -305,8 +301,6 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
     ├── test_calculate_macd.py     # End-to-end MACD tests with real data.
     ├── test_calculate_bb.py       # End-to-end BB tests with real data.
     ├── test_calculate_vwap.py     # End-to-end VWAP tests with real data.
-    ├── test_get_stock_data.py     # Tests that data is actually fetched
-    │                              # from Yahoo Finance.
     └── test_main.py               # End-to-end CLI tests including
                                    # multi-ticker dispatch.
 ```

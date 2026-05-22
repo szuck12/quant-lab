@@ -78,8 +78,7 @@ def calculate_<indicator>(ticker: str, window: int,
                     window.
     """
     period = _data_period(window + count, interval)
-    stock = get_stock_data(ticker, period=period, interval=interval)
-    close = stock.history(period=period, interval=interval)["Close"]
+    close = _fetch_close(ticker, period=period, interval=interval)
 
     # ... indicator calculation ...
 

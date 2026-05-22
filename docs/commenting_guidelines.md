@@ -14,15 +14,15 @@ Every `.py` file starts with a brief comment describing the module's purpose.
 All public functions, methods, and classes must have a docstring following the Google style.
 
 ```python
-def get_stock_data(ticker: str, period: str = "1mo") -> pd.DataFrame:
-    """Fetch historical price data for a given ticker.
+def _fetch_close(ticker: str, period: str = "1mo") -> pd.Series:
+    """Fetch Close prices for a given ticker.
 
     Args:
         ticker: Stock symbol (e.g. "AAPL").
         period: Time period (e.g. "1d", "1mo", "1y").
 
     Returns:
-        DataFrame with OHLCV columns indexed by date.
+        Series of Close prices indexed by date.
 
     Raises:
         ValueError: If ticker is empty or invalid.
@@ -169,8 +169,7 @@ Use blank lines to separate logical sections for readability.
 ```python
 def calculate_rsi(ticker: str, window: int) -> float:
     """Compute the latest Relative Strength Index for a ticker."""
-    stock = get_stock_data(ticker, period="max")
-    close = stock.history(period="max")["Close"]
+    close = _fetch_close(ticker, period="max")
 
     delta = close.diff()
     gain = delta.where(delta > 0, 0.0)

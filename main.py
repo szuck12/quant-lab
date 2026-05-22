@@ -62,33 +62,11 @@ def _data_period(window: int, interval: str = "1d") -> str:
             return period
 
 
-def get_stock_data(ticker: str, period: str = "1mo",
-                   interval: str = "1d") -> yf.Ticker:
-    """Fetch a yfinance Ticker object for the given symbol.
-
-    Args:
-        ticker: Stock symbol (e.g. "AAPL").
-        period: History window (e.g. "1d", "1mo", "1y").
-        interval: Bar size (e.g. "1d", "1wk", "1mo").
-
-    Returns:
-        A yfinance Ticker instance. Call `.history()` on it to
-        retrieve a price DataFrame.
-
-    Note:
-        The returned object is the Ticker wrapper, not the
-        DataFrame. This lets callers access info, financials,
-        and other metadata beyond price history.
-    """
-    stock = yf.Ticker(ticker)
-    hist = stock.history(period=period, interval=interval)
-    print(f"Fetched {len(hist)} rows for {ticker}")
-    return stock
-
-
 def _fetch_close(ticker: str, period: str,
-                 interval: str = "1d") -> pd.Series:
+                interval: str = "1d") -> pd.Series:
     """Fetch Close prices for a ticker and print the row count.
+
+    Delegates to _fetch_ohlcv and extracts the Close column.
 
     Args:
         ticker: Stock symbol (e.g. "AAPL").
@@ -98,10 +76,8 @@ def _fetch_close(ticker: str, period: str,
     Returns:
         A Series of Close prices indexed by date.
     """
-    stock = yf.Ticker(ticker)
-    hist = stock.history(period=period, interval=interval)
-    print(f"Fetched {len(hist)} rows for {ticker}")
-    return hist["Close"]
+    ohlcv = _fetch_ohlcv(ticker, period=period, interval=interval)
+    return ohlcv["Close"]
 
 
 def _fetch_ohlcv(ticker: str, period: str,
