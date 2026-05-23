@@ -20,6 +20,7 @@
 
 (Should get done, not urgent.)
 
+- [ ] Split indicator functions from main.py into separate files (#structure)
 - [ ] Test MACD accuracy against known reference values (#indicator, #test)
 - [ ] Test BB accuracy against known reference values (#indicator, #test)
 - [ ] Improve structure of MACD and BB indicator output (#cli)
