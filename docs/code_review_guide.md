@@ -460,13 +460,24 @@ surface design drift.
 
 ### 8h. Next-Action Synthesis
 
-Based on the findings above, list the top 3–5 concrete actions:
+Based on the findings above, produce a list of the top 3–5 actions.
+Each entry must be one of two forms:
 
-1. \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
-2. \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
-3. \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
-4. \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
-5. \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
+1. **Take** — a concrete action that is clearly worthwhile with no
+   further debate needed (e.g. "Remove stale `test_calculate_old.py`
+   from `mocktests/`").  These can be added directly to `TODO.md`.
+2. **Ask** — a question that needs a decision before work proceeds
+   (e.g. "Should `_fetch_ohlcv`'s print statement be routed through
+   `logging.debug` instead of `print`?").  These should be raised to
+   the project owner or team.
+
+| # | Type | Action |
+|---|------|--------|
+| 1 | Take/Ask | \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_ |
+| 2 | Take/Ask | \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_ |
+| 3 | Take/Ask | \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_ |
+| 4 | Take/Ask | \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_ |
+| 5 | Take/Ask | \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_ |
 
 This guide follows the project's commenting conventions
 (see `docs/commenting_guidelines.md`): 80-character line limit,
