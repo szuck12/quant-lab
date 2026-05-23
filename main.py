@@ -101,7 +101,9 @@ def _fetch_ohlcv(ticker: str, period: str,
 
 def calculate_sma(ticker: str, window: int,
                   interval: str = "1d",
-                  count: int = 1) -> pd.Series:
+                  count: int = 1,
+                  _return_raw: bool = False
+                  ) -> pd.Series | tuple:
     """Compute the latest simple moving averages for a ticker.
 
     Args:
@@ -131,12 +133,16 @@ def calculate_sma(ticker: str, window: int,
         raise IndexError(
             f"Insufficient data for SMA({window}) with count={count}"
         )
+    if _return_raw:
+        return result, close
     return result
 
 
 def calculate_ema(ticker: str, window: int,
                   interval: str = "1d",
-                  count: int = 1) -> pd.Series:
+                  count: int = 1,
+                  _return_raw: bool = False
+                  ) -> pd.Series | tuple:
     """Compute the latest exponential moving averages for a ticker.
 
     Uses the standard span-based EMA (adjust=False) so the
@@ -166,6 +172,8 @@ def calculate_ema(ticker: str, window: int,
         raise IndexError(
             f"Insufficient data for EMA({window}) with count={count}"
         )
+    if _return_raw:
+        return result, close
     return result
 
 
@@ -271,8 +279,9 @@ def calculate_macd(ticker: str, fast: int = 12, slow: int = 26,
 def calculate_bb(ticker: str, window: int = 20,
                  num_std: float = 2.0,
                  interval: str = "1d",
-                 count: int = 1
-                 ) -> tuple[pd.Series, pd.Series, pd.Series]:
+                 count: int = 1,
+                 _return_raw: bool = False
+                 ) -> tuple[pd.Series, pd.Series, pd.Series] | tuple:
     """Compute Bollinger Bands (upper, middle, lower) for a ticker.
 
     Middle band is an SMA of the close price.  Upper and lower
@@ -312,12 +321,16 @@ def calculate_bb(ticker: str, window: int = 20,
             f"Insufficient data for BB({window},{num_std})"
             f" with count={count}"
         )
+    if _return_raw:
+        return (upper, middle, lower), close
     return upper, middle, lower
 
 
 def calculate_vwap(ticker: str, window: int = 20,
                    interval: str = "1d",
-                   count: int = 1) -> pd.Series:
+                   count: int = 1,
+                   _return_raw: bool = False
+                   ) -> pd.Series | tuple:
     """Compute the latest Volume Weighted Average Price for a
     ticker.
 
@@ -354,12 +367,16 @@ def calculate_vwap(ticker: str, window: int = 20,
         raise IndexError(
             f"Insufficient data for VWAP({window}) with count={count}"
         )
+    if _return_raw:
+        return result, typical
     return result
 
 
 def calculate_av(ticker: str, window: int = 20,
                  interval: str = "1d",
-                 count: int = 1) -> pd.Series:
+                 count: int = 1,
+                 _return_raw: bool = False
+                 ) -> pd.Series | tuple:
     """Compute the latest Average Volume values for a ticker.
 
     Simple rolling mean of Volume over the given window, matching
@@ -392,6 +409,8 @@ def calculate_av(ticker: str, window: int = 20,
         raise IndexError(
             f"Insufficient data for AV({window}) with count={count}"
         )
+    if _return_raw:
+        return result, ohlcv["Volume"]
     return result
 
 

@@ -52,6 +52,9 @@ increasing time cost — stop early if a blocker is found.
 - [ ] At least 3 different tickers with different windows.
 - [ ] Weekly interval variant (if applicable).
 - [ ] Window=1 variant (if meaningful).
+- [ ] Reasonableness check: for moving-average indicators (SMA, EMA,
+      VWAP, AV, BB), verify the result is within the min-max range of
+      the raw input data using `_return_raw=True`.
 - [ ] Added to `realtests/test_main.py` if dispatch behaviour is unique.
 
 ## 6. Documentation

@@ -416,6 +416,56 @@ def test_<indicator>_dispatch(self):
         main.main()
 ```
 
+### 4c. Reasonableness checks
+
+Real tests should verify that indicator outputs are consistent with the
+raw data they were computed from. The approach depends on the indicator
+type:
+
+**Moving-average indicators (SMA, EMA, VWAP, AV, BB middle band):**
+
+The result of a rolling mean is mathematically guaranteed to fall between
+the minimum and maximum of the raw input data. Use the `_return_raw=True`
+parameter to retrieve both the indicator result and its raw data in a
+single API call:
+
+```python
+def test_<indicator>_window_5(self):
+    """Verify <indicator> for AAPL with window=5 is within the
+    range of its raw input data."""
+    result, raw = calculate_<indicator>("AAPL", 5,
+                                        _return_raw=True)
+    assert raw.min() <= result.iloc[-1] <= raw.max()
+```
+
+For BB, additionally verify that the standard deviation is positive
+for any window > 1 (confirming price variation exists):
+
+```python
+assert raw.iloc[-window:].std(ddof=0) > 0
+```
+
+**Other indicators (RSI, MACD, RVOL):**
+
+These indicators do not produce a result that is bounded by a single
+raw-data series, so the min/max check does not apply. Use stock-agnostic
+bounds instead:
+
+- **RSI**: always verify `0.0 <= result.iloc[-1] <= 100.0`
+- **MACD**: verify `m > 0` / `s > 0` and histogram has both positive
+  and negative values on a diversified ticker like SPY
+- **RVOL**: verify `result > 0.0` and window=1 equals exactly `1.0`
+
+The raw data returned by `_return_raw=True` differs by indicator:
+
+| Indicator | Raw data returned | Source |
+|-----------|-------------------|--------|
+| SMA | `close` (Series) | `_fetch_close()` |
+| EMA | `close` (Series) | `_fetch_close()` |
+| BB | `close` (Series) | `_fetch_close()` |
+| VWAP | `typical` (Series) where TP = (H+L+C)/3 | `_fetch_ohlcv()` |
+| AV | `volume` (Series) from OHLCV | `_fetch_ohlcv()` |
+
 ## 5. Verification
 
 Run the full test suite to check for regressions, then run the new tests

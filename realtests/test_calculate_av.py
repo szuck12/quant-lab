@@ -9,26 +9,35 @@ class TestCalculateAv:
     """Tests for calculate_av() with real yfinance calls."""
 
     def test_av_defaults(self):
-        """Verify AV(20) for AAPL returns a positive value."""
-        result = calculate_av("AAPL")
-        assert result.iloc[-1] > 0.0
+        """Verify AV(20) for AAPL is within the range of its
+        raw volume data."""
+        result, volume = calculate_av("AAPL", _return_raw=True)
+        assert volume.min() <= result.iloc[-1] <= volume.max()
 
     def test_av_window_5(self):
-        """Verify AV(5) for MSFT returns a positive value."""
-        result = calculate_av("MSFT", window=5)
-        assert result.iloc[-1] > 0.0
+        """Verify AV(5) for MSFT is within the range of its
+        raw volume data."""
+        result, volume = calculate_av("MSFT", window=5,
+                                      _return_raw=True)
+        assert volume.min() <= result.iloc[-1] <= volume.max()
 
     def test_av_window_14(self):
-        """Verify AV(14) for GOOG returns a positive value."""
-        result = calculate_av("GOOG", window=14)
-        assert result.iloc[-1] > 0.0
+        """Verify AV(14) for GOOG is within the range of its
+        raw volume data."""
+        result, volume = calculate_av("GOOG", window=14,
+                                      _return_raw=True)
+        assert volume.min() <= result.iloc[-1] <= volume.max()
 
     def test_av_with_weekly_interval(self):
-        """Verify AV works with a weekly bar interval."""
-        result = calculate_av("AAPL", window=10, interval="1wk")
-        assert result.iloc[-1] > 0.0
+        """Verify AV works with a weekly bar interval and is
+        within the range of its raw volume data."""
+        result, volume = calculate_av("AAPL", window=10,
+                                      interval="1wk",
+                                      _return_raw=True)
+        assert volume.min() <= result.iloc[-1] <= volume.max()
 
     def test_av_window_one(self):
         """Verify AV with window=1 equals the last volume."""
-        result = calculate_av("AAPL", window=1)
-        assert result.iloc[-1] > 0.0
+        result, volume = calculate_av("AAPL", window=1,
+                                      _return_raw=True)
+        assert volume.min() <= result.iloc[-1] <= volume.max()

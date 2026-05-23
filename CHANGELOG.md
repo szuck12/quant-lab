@@ -5,6 +5,15 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com) and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2026-05-22
+
+### Added
+- Reasonableness checks for SMA, EMA, VWAP, AV, and BB real tests —
+  each result is verified to fall within the min-max range of its raw
+  input data, catching data source and calculation errors.  Increased
+  specificity of indicator testing (25 assertions added across 5 files).
+  No extra API calls required.
+
 ## [1.2.0] - 2026-05-21
 
 ### Added

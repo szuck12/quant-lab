@@ -1,6 +1,6 @@
 # quant_indicators
 
-Current version: **1.2.0** — [Changelog](CHANGELOG.md)
+Current version: **1.2.1** — [Changelog](CHANGELOG.md)
 
 A command-line tool that fetches stock price data via [yfinance](https://github.com/ranaroussi/yfinance) and computes one of eight technical indicators: Simple Moving Average (SMA), Exponential Moving Average (EMA), Relative Strength Index (RSI), Moving Average Convergence Divergence (MACD), Bollinger Bands (BB), Volume Weighted Average Price (VWAP), Average Volume (AV), or Relative Volume (RVOL). Input is provided through stdin and the result is printed to stdout. The tool is designed for quick terminal lookups — you type a ticker and an indicator, and you get back a number.
 
@@ -272,10 +272,12 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
 │   │                              # parameter, zero volume, edge cases.
 │   ├── test_calculate_av.py       # Tests for calculate_av(): basic
 │   │                              # calculation, default window, count,
-│   │                              # parameter, zero volume, edge cases.
+│   │                              # parameter, zero volume, edge cases
+│   │                              # (added in v1.2.0).
 │   ├── test_calculate_rvol.py     # Tests for calculate_rvol(): basic
 │   │                              # calculation, default window, count,
-│   │                              # parameter, zero volume edge case.
+│   │                              # parameter, zero volume edge case
+│   │                              # (added in v1.2.0).
 │   │
 │   ├── test_data_period.py        # Tests for _data_period(): validates
 │   │                              # every threshold in _DATA_PERIOD_MAP
@@ -301,6 +303,10 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
     ├── test_calculate_macd.py     # End-to-end MACD tests with real data.
     ├── test_calculate_bb.py       # End-to-end BB tests with real data.
     ├── test_calculate_vwap.py     # End-to-end VWAP tests with real data.
+    ├── test_calculate_av.py       # End-to-end AV tests with real data
+    │                              # (added in v1.2.0).
+    ├── test_calculate_rvol.py     # End-to-end RVOL tests with real data
+    │                              # (added in v1.2.0).
     └── test_main.py               # End-to-end CLI tests including
                                    # multi-ticker dispatch.
 ```
@@ -324,6 +330,10 @@ Mock tests patch `main.yf.Ticker` so no real API calls are made. The `conftest.p
 
 Real tests call the live yfinance API and use whatever data it returns. They verify that the integration between the tool and Yahoo Finance actually works:
 
+- **Reasonableness checks** — for moving-average indicators (SMA, EMA,
+  VWAP, AV, BB), the result is verified to fall within the min-max range
+  of its raw input data, providing a tighter, stock-specific correctness
+  guarantee than a simple positive-value assertion.
 - **Slower** — each test makes at least one network request.
 - **Network-dependent** — fail if the machine is offline or yfinance is unreachable.
 - **Time-dependent** — results may differ on weekends, holidays, or outside market hours.

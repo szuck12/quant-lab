@@ -6,6 +6,7 @@
 
 ## Done
 
+- [x] Add reasonableness checks to real tests (#test)
 - [x] Add Relative Volume (RVOL) indicator (#indicator)
 - [x] Add Average Volume (AV) indicator (#indicator)
 - [x] Fix realtest conftest 1s delay applying to mock tests when running
