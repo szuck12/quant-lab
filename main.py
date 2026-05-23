@@ -92,6 +92,10 @@ def _fetch_ohlcv(ticker: str, period: str,
     Returns:
         A DataFrame with Open, High, Low, Close, Volume columns
         indexed by date.
+
+    Raises:
+        Exception: Propagates any exception from yfinance
+            (network error, invalid ticker, rate limit).
     """
     stock = yf.Ticker(ticker)
     hist = stock.history(period=period, interval=interval)
@@ -460,8 +464,8 @@ def main() -> None:
 
     Expects at least two space-separated values: ticker(s) and
     indicator name (SMA, RSI, EMA, MACD, BB, VWAP, AV, or RVOL).
-    Multiple
-    tickers are separated with commas (e.g. ``AAPL,MSFT``).
+    Multiple tickers are separated with commas
+    (e.g. ``AAPL,MSFT``).
     Optional trailing arguments can appear in any order:
 
       * A recognised bar size sets the interval ("1d", "1wk", "1mo").
