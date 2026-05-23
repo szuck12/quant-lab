@@ -360,6 +360,8 @@ Verify that documentation matches the actual code.
 - [ ] `adding_indicator.md` references exist in at least one real
       test file for every pattern it describes.
 - [ ] `maintain_todo.md` lifecycle is followed by `TODO.md`.
+- [ ] New entries are appended at the bottom of their section, not
+      inserted at the top.
 - [ ] `update_changelog.md` rules are followed by `CHANGELOG.md`.
 
 ### 7c. Stale or Duplicate Content

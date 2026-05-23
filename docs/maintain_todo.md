@@ -77,3 +77,10 @@ For completed items, check the box:
 
 Keep descriptions concise but clear enough that someone reading the TODO
 understands what the task involves without needing additional context.
+
+### Entry Ordering
+
+New entries are appended at the **bottom** of their section (after any
+existing entries), not inserted at the top. This preserves a rough
+chronological order within each priority group and avoids merge
+conflicts when multiple people add entries in the same session.
