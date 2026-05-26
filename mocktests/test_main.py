@@ -477,3 +477,15 @@ class TestMain:
         assert lines[3] == "MSFT 14-RSI (last 2):"
         assert lines[4] == "  45.23"
         assert lines[5] == "  44.10"
+
+    def test_multi_ticker_error_isolation(self):
+        """Verify a calculation failure for one ticker doesn't
+        prevent subsequent tickers from being processed."""
+        side_effects = [Exception("Network error"),
+                        _MOCK_SERIES]
+        with patch("builtins.input",
+                   return_value="AAPL,MSFT SMA 20"):
+            with patch("main.calculate_sma",
+                       side_effect=side_effects) as mock_sma:
+                main.main()
+                assert mock_sma.call_count == 2

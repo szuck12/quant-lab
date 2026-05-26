@@ -113,3 +113,10 @@ class TestCalculateRsi:
         mock_stock_data([10, 11])
         with pytest.raises(IndexError):
             calculate_rsi("TEST", 3, count=2)
+
+    def test_default_window_rsi(self, mock_stock_data):
+        """Verify default window=14 is used when no window
+        given."""
+        mock_stock_data(list(range(30)))
+        result = calculate_rsi("TEST")
+        assert 0 <= result.iloc[-1] <= 100

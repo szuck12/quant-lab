@@ -102,3 +102,10 @@ class TestCalculateEma:
         mock_stock_data([10, 11, 12, 13])
         with pytest.raises(IndexError):
             calculate_ema("TEST", 2, count=5)
+
+    def test_default_window_ema(self, mock_stock_data):
+        """Verify default window=20 is used when no window
+        given."""
+        mock_stock_data(list(range(30)))
+        result = calculate_ema("TEST")
+        assert not result.isna().iloc[-1]

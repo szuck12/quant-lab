@@ -97,3 +97,10 @@ class TestCalculateSma:
         mock_stock_data([10, 11, 12, 13])
         with pytest.raises(IndexError):
             calculate_sma("TEST", 2, count=5)
+
+    def test_default_window_sma(self, mock_stock_data):
+        """Verify default window=50 is used when no window
+        given."""
+        mock_stock_data(list(range(60)))
+        result = calculate_sma("TEST")
+        assert result.iloc[-1] == 34.5

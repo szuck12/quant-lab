@@ -78,6 +78,8 @@ def _fetch_close(ticker: str, period: str,
         A Series of Close prices indexed by date.
     """
     ohlcv = _fetch_ohlcv(ticker, period=period, interval=interval)
+    if ohlcv.empty:
+        return pd.Series(dtype=float)
     return ohlcv["Close"]
 
 
@@ -92,19 +94,21 @@ def _fetch_ohlcv(ticker: str, period: str,
 
     Returns:
         A DataFrame with Open, High, Low, Close, Volume columns
-        indexed by date.
-
-    Raises:
-        Exception: Propagates any exception from yfinance
-            (network error, invalid ticker, rate limit).
+        indexed by date. Returns an empty DataFrame if yfinance
+        raises an exception (network error, invalid ticker,
+        rate limit).
     """
     stock = yf.Ticker(ticker)
-    hist = stock.history(period=period, interval=interval)
+    try:
+        hist = stock.history(period=period, interval=interval)
+    except Exception:
+        print(f"Error: failed to fetch data for {ticker}")
+        return pd.DataFrame()
     print(f"Fetched {len(hist)} rows for {ticker}")
     return hist
 
 
-def calculate_sma(ticker: str, window: int,
+def calculate_sma(ticker: str, window: int = 50,
                   interval: str = "1d",
                   count: int = 1,
                   _return_raw: bool = False
@@ -145,7 +149,7 @@ def calculate_sma(ticker: str, window: int,
     return result
 
 
-def calculate_ema(ticker: str, window: int,
+def calculate_ema(ticker: str, window: int = 20,
                   interval: str = "1d",
                   count: int = 1,
                   _return_raw: bool = False
@@ -186,7 +190,7 @@ def calculate_ema(ticker: str, window: int,
     return result
 
 
-def calculate_rsi(ticker: str, window: int,
+def calculate_rsi(ticker: str, window: int = 14,
                   interval: str = "1d",
                   count: int = 1) -> pd.Series:
     """Compute the latest Relative Strength Index values for a ticker.
@@ -640,42 +644,49 @@ def main() -> None:
             seen_window = True
 
     for ticker in tickers:
-        match indicator:
-            case "SMA":
-                result = calculate_sma(ticker, window,
-                                       interval=interval, count=count)
-            case "EMA":
-                result = calculate_ema(ticker, window,
-                                       interval=interval, count=count)
-            case "RSI":
-                result = calculate_rsi(ticker, window,
-                                       interval=interval, count=count)
-            case "MACD":
-                fast, slow, signal = macd_params
-                m_line, s_line, hist = calculate_macd(
-                    ticker, fast=fast, slow=slow,
-                    signal=signal,
-                    interval=interval, count=count
-                )
-            case "BB":
-                bb_window, bb_std = bb_params
-                u, m, l = calculate_bb(
-                    ticker, window=bb_window,
-                    num_std=bb_std,
-                    interval=interval, count=count
-                )
-            case "VWAP":
-                result = calculate_vwap(ticker, window,
-                                        interval=interval,
-                                        count=count)
-            case "AV":
-                result = calculate_av(ticker, window,
-                                      interval=interval,
-                                      count=count)
-            case "RVOL":
-                result = calculate_rvol(ticker, window,
-                                        interval=interval,
-                                        count=count)
+        try:
+            match indicator:
+                case "SMA":
+                    result = calculate_sma(ticker, window,
+                                           interval=interval, count=count)
+                case "EMA":
+                    result = calculate_ema(ticker, window,
+                                           interval=interval, count=count)
+                case "RSI":
+                    result = calculate_rsi(ticker, window,
+                                           interval=interval, count=count)
+                case "MACD":
+                    fast, slow, signal = macd_params
+                    m_line, s_line, hist = calculate_macd(
+                        ticker, fast=fast, slow=slow,
+                        signal=signal,
+                        interval=interval, count=count
+                    )
+                case "BB":
+                    bb_window, bb_std = bb_params
+                    u, m, l = calculate_bb(
+                        ticker, window=bb_window,
+                        num_std=bb_std,
+                        interval=interval, count=count
+                    )
+                case "VWAP":
+                    result = calculate_vwap(ticker, window,
+                                            interval=interval,
+                                            count=count)
+                case "AV":
+                    result = calculate_av(ticker, window,
+                                          interval=interval,
+                                          count=count)
+                case "RVOL":
+                    result = calculate_rvol(ticker, window,
+                                            interval=interval,
+                                            count=count)
+        except IndexError as e:
+            print(f"Error: {e}")
+            continue
+        except Exception as e:
+            print(f"Error: {ticker} failed — {e}")
+            continue
 
         if indicator == "BB":
             if count == 1:
