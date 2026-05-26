@@ -7,14 +7,14 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [1.2.3] - 2026-05-25
 
+### Added
+- `sys.argv` support: arguments can now be passed directly on the
+  command line (`python3 main.py AAPL SMA 50`) without requiring stdin.
+
 ### Changed
 - Extracted indicator calculation logic from `main.py` into a dedicated
   `indicators/` subpackage (one file per indicator) for improved
   testability, merge hygiene, and onboarding.
-
-### Added
-- `sys.argv` support: arguments can now be passed directly on the
-  command line (`python3 main.py AAPL SMA 50`) without requiring stdin.
 
 ## [1.2.2] - 2026-05-25
 
