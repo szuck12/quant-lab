@@ -182,4 +182,14 @@ def calculate_rsi(ticker: str, window: int) -> float:
     return rsi.dropna().iloc[-1]
 ```
 
+## 12. README Project Structure Tree
+
+The file tree in the **Project Structure** section of `README.md` must
+list files in alphabetical order within each directory.  This avoids
+PR drift where new files are appended at the end.
+
+When adding a new file to the tree:
+- Insert it in the correct alphabetical position, not at the end.
+- Match the indentation style of neighbouring entries.
+
 

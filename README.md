@@ -204,14 +204,14 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
 │   │                              # _data_period(), _fetch_close(),
 │   │                              # _fetch_ohlcv().
 │   │
-│   ├── sma.py                     # calculate_sma()
-│   ├── ema.py                     # calculate_ema()
-│   ├── rsi.py                     # calculate_rsi()
-│   ├── macd.py                    # calculate_macd()
-│   ├── bb.py                      # calculate_bb()
-│   ├── vwap.py                    # calculate_vwap()
 │   ├── av.py                      # calculate_av()
-│   └── rvol.py                    # calculate_rvol()
+│   ├── bb.py                      # calculate_bb()
+│   ├── ema.py                     # calculate_ema()
+│   ├── macd.py                    # calculate_macd()
+│   ├── rsi.py                     # calculate_rsi()
+│   ├── rvol.py                    # calculate_rvol()
+│   ├── sma.py                     # calculate_sma()
+│   └── vwap.py                    # calculate_vwap()
 │
 ├── CHANGELOG.md                   # Version history and release notes.
 │
