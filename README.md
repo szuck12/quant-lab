@@ -259,7 +259,7 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
 │
 ├── mocktests/                     # Unit tests with mocked yfinance data.
 │   │                              # The conftest.py fixture patches
-│       │                              # yfinance.Ticker with a MagicMock that
+│   │                              # yfinance.Ticker with a MagicMock that
 │   │                              # returns a predefined DataFrame of
 │   │                              # Close prices. No network calls, no
 │   │                              # real market data — fast and
