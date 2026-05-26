@@ -2,7 +2,7 @@
 # Tests for the internal _data_period() mapping function
 
 import pytest
-from main import _data_period
+from indicators._data import _data_period
 
 
 class TestDataPeriod:

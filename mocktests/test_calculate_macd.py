@@ -2,7 +2,7 @@
 # Tests for calculate_macd() using mocked stock data
 
 import pytest
-from main import calculate_macd
+from indicators import calculate_macd
 
 
 class TestCalculateMacd:

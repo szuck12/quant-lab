@@ -2,7 +2,7 @@
 # Tests for calculate_ema() using mocked stock data
 
 import pytest
-from main import calculate_ema
+from indicators import calculate_ema
 
 
 class TestCalculateEma:

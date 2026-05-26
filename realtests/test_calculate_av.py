@@ -2,7 +2,7 @@
 # Integration tests for calculate_av() with real yfinance data
 
 import pytest
-from main import calculate_av
+from indicators import calculate_av
 
 
 class TestCalculateAv:

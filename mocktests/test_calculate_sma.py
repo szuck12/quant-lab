@@ -2,7 +2,7 @@
 # Tests for calculate_sma() using mocked stock data
 
 import pytest
-from main import calculate_sma
+from indicators import calculate_sma
 
 
 class TestCalculateSma:

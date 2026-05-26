@@ -2,7 +2,7 @@
 # Tests for calculate_rvol() using mocked stock data
 
 import pytest
-from main import calculate_rvol
+from indicators import calculate_rvol
 
 
 class TestCalculateRvol:

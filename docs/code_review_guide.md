@@ -384,21 +384,23 @@ surface design drift.
 
 ### 8a. Module Boundaries and Cohesion
 
-`main.py` is 700 lines encompassing:
+`main.py` is ~260 lines encompassing:
 
-- Constants and configuration (38 lines)
-- Data fetching (59 lines)
-- 8 indicator functions (~330 lines)
+- Imports (7 lines)
 - CLI parsing + validation (~170 lines)
-- Dispatch + output formatting (~90 lines)
+- Dispatch + output formatting (~80 lines)
 - Entry point (2 lines)
 
-- Would extracting indicator functions into `indicators/` subpackage
-  improve testability and reduce merge conflicts?
+Indicator functions and the data layer have been extracted into the
+`indicators/` subpackage (one file per indicator + shared `_data.py`),
+which was item 1 in the Section 8 action plan below.  main.py now
+focuses solely on CLI concerns.
+
+- If a ninth indicator were added, a new file `indicators/<name>.py`
+  would be created — no changes needed to the dispatch logic beyond a
+  new `case` block.
 - Would extracting CLI parsing into a separate function reduce the
   cognitive load of the 170-line parser block?
-- If a ninth indicator were added, is the current file structure
-  sustainable?
 
 ### 8b. CLI Design
 
@@ -477,11 +479,11 @@ Each entry must be one of two forms:
 
 | # | Type | Action |
 |---|------|--------|
-| 1 | Take | Extract indicator functions + data-layer helpers from main.py into an `indicators/` subpackage or dedicated modules. main.py is ~730 lines across 8 indicators, CLI parsing, and data fetching — a split improves testability, merge hygiene, and onboarding. |
+| 1 | DONE | Indicator functions + data-layer helpers extracted from main.py into `indicators/` subpackage (v1.2.3). main.py is now ~260 lines focused on CLI concerns. |
 | 2 | Take | Add `pandas-stubs` and run `mypy main.py --strict` in CI. The codebase already has full type hints; stubs are the only missing piece (8 false-positive errors, all from missing stubs + None tracking). |
 | 3 | Take | Run `ruff check main.py` to catch the one pre-existing style issue (`l` variable name) and add ruff to `requirements.txt` / CI. |
 | 4 | Ask | Should `_fetch_ohlcv`'s `print(f"Fetched {len(hist)} rows ...")` be routed through `logging.debug` instead of `print`? It appears in test output and during CLI use, which may be distracting. |
-| 5 | Ask | Should `sys.argv` support be added alongside stdin (`python3 main.py AAPL SMA 50`)? Currently stdin-only. This would make scripting integration easier but needs careful parsing design. |
+| 5 | DONE | `sys.argv` support added alongside stdin (`python3 main.py AAPL SMA 50`). Both stdin and argv work — main() accepts optional `argv` parameter, if __name__ passes sys.argv[1:] (v1.2.3). |
 
 This guide follows the project's commenting conventions
 (see `docs/commenting_guidelines.md`): 80-character line limit,

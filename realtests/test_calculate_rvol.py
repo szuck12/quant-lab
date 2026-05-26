@@ -2,7 +2,7 @@
 # Integration tests for calculate_rvol() with real yfinance data
 
 import pytest
-from main import calculate_rvol
+from indicators import calculate_rvol
 
 
 class TestCalculateRvol:

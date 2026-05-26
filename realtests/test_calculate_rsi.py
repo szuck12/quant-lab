@@ -2,7 +2,7 @@
 # Integration tests for calculate_rsi() with real yfinance data
 
 import pytest
-from main import calculate_rsi
+from indicators import calculate_rsi
 
 
 class TestCalculateRsi:

@@ -2,7 +2,7 @@
 # Integration tests for calculate_sma() with real yfinance data
 
 import pytest
-from main import calculate_sma
+from indicators import calculate_sma
 
 
 class TestCalculateSma:

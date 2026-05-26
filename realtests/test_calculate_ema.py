@@ -2,7 +2,7 @@
 # Integration tests for calculate_ema() with real yfinance data
 
 import pytest
-from main import calculate_ema
+from indicators import calculate_ema
 
 
 class TestCalculateEma:

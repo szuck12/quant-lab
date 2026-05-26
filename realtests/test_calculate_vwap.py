@@ -2,7 +2,7 @@
 # Integration tests for calculate_vwap() with real yfinance data
 
 import pytest
-from main import calculate_vwap
+from indicators import calculate_vwap
 
 
 class TestCalculateVwap:

@@ -2,7 +2,7 @@
 # Tests for calculate_av() using mocked stock data
 
 import pytest
-from main import calculate_av
+from indicators import calculate_av
 
 
 class TestCalculateAv:

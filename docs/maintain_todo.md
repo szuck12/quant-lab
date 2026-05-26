@@ -69,11 +69,22 @@ common ones:
 | `#cli` | Command-line interface changes |
 | `#infra` | Build, CI, project config |
 
-For completed items, check the box:
+For completed items, check the box and prefix with the completion date
+(`YYYY-MM-DD`):
 
 ```
-- [x] Fix realtest conftest 1s delay applying to mock tests (#test, #bug)
+- [x] 2026-05-25 — Fix realtest conftest 1s delay applying to mock tests
+      (#test, #bug)
 ```
+
+### Done Section Pruning
+
+When the **Done** section has **10 or more** items, prune it to at most
+**9** items by removing the oldest entries.  This keeps the section
+focused on recently completed work without accumulating historical noise.
+
+Never remove items from **In Progress**, **Backlog**, **Planned**, or
+**Ideas** sections — only the Done section is pruned.
 
 Keep descriptions concise but clear enough that someone reading the TODO
 understands what the task involves without needing additional context.

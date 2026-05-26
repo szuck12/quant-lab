@@ -48,17 +48,24 @@ the indicator:
   or other reference they want matched exactly, they can provide
   it -- no need to ask proactively.
 
-## 2. Implementation in `main.py`
+## 2. Implementation in `indicators/` subpackage
 
-### 2a. Add the `calculate_*` function
+### 2a. Create `indicators/<name>.py`
 
-Add a new function following the same signature pattern as the existing
-indicators:
+Create a new file `indicators/<name>.py` following the same signature
+pattern as the existing indicators.  Import data helpers from
+`indicators._data`:
 
 ```python
+import pandas as pd
+
+from indicators._data import _fetch_close, _data_period
+
+
 def calculate_<indicator>(ticker: str, window: int,
                           interval: str = "1d",
-                          count: int = 1) -> pd.Series:
+                          count: int = 1
+                          ) -> pd.Series:
     """Compute the latest <full name> values for a ticker.
 
     <One-paragraph description of the calculation>.
@@ -91,16 +98,39 @@ def calculate_<indicator>(ticker: str, window: int,
     return result
 ```
 
-Place the new function below the existing indicators (after `calculate_macd`)
-and above `main()`. Separate it from neighbouring functions with two blank
-lines (PEP 8).
-
-### 2b. Add a default window to `_DEFAULT_WINDOWS`
-
-Add one entry to the `_DEFAULT_WINDOWS` dictionary:
+If the indicator needs OHLCV data (Open, High, Low, Close, Volume) instead
+of just Close, import `_fetch_ohlcv` instead:
 
 ```python
-_DEFAULT_WINDOWS: dict[str, int] = {
+from indicators._data import _fetch_ohlcv, _data_period
+```
+
+### 2b. Re-export in `indicators/__init__.py`
+
+Add an import line to `indicators/__init__.py`:
+
+```python
+from indicators.<name> import calculate_<indicator>
+```
+
+### 2c. Re-export in `main.py`
+
+Add an import line to `main.py` so that `from main import calculate_<indicator>`
+still works for any external consumers:
+
+```python
+from indicators import calculate_sma, ..., calculate_<indicator>
+```
+
+Maintain alphabetical order in the import list.
+
+### 2d. Add a default window (if applicable)
+
+If the indicator has a sensible default window, add one entry to the
+`_DEFAULT_WINDOWS` dictionary in `indicators/_data.py`:
+
+```python
+_DEFAULT_WINDOWS: dict[str, int | tuple] = {
     "SMA": 50,
     "EMA": 20,
     "RSI": 14,
@@ -108,9 +138,9 @@ _DEFAULT_WINDOWS: dict[str, int] = {
 }
 ```
 
-### 2c. Register the indicator in `main()`
+### 2e. Register the indicator in `main()`
 
-Three changes inside `main()`:
+Three changes inside `main()` in `main.py`:
 
 1. **Prompt** — add the new indicator name to the list shown to the user
    in the `input()` call:
@@ -135,7 +165,7 @@ Three changes inside `main()`:
                                       count=count)
    ```
 
-### 2d. Follow the commenting guidelines
+### 2f. Follow the commenting guidelines
 
 Follow the [commenting guidelines](commenting_guidelines.md) for docstring
 style, type hints, inline comments, and line length.
@@ -323,7 +353,9 @@ columns in the returned DataFrame.
 
 ### 3b. Add dispatch tests to `mocktests/test_main.py`
 
-Add two new test methods to the existing `TestMain` class:
+Add two new test methods to the existing `TestMain` class.
+The import path to patch remains `"main.calculate_<indicator>"` since
+`main.py` re-exports all indicator functions for backward compatibility:
 
 ```python
 def test_valid_<indicator>_dispatch(self):
@@ -366,7 +398,7 @@ These tests call the live yfinance API:
 # data
 
 import pytest
-from main import calculate_<indicator>
+from indicators import calculate_<indicator>
 
 
 class TestCalculate<Indicator>:

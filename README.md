@@ -1,6 +1,6 @@
 # quant_indicators
 
-Current version: **1.2.2** — [Changelog](CHANGELOG.md)
+Current version: **1.2.3** — [Changelog](CHANGELOG.md)
 
 A command-line tool that fetches stock price data via [yfinance](https://github.com/ranaroussi/yfinance) and computes one of eight technical indicators: Simple Moving Average (SMA), Exponential Moving Average (EMA), Relative Strength Index (RSI), Moving Average Convergence Divergence (MACD), Bollinger Bands (BB), Volume Weighted Average Price (VWAP), Average Volume (AV), or Relative Volume (RVOL). Input is provided through stdin and the result is printed to stdout. The tool is designed for quick terminal lookups — you type a ticker and an indicator, and you get back a number.
 
@@ -190,14 +190,28 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
 
 ```
 .
-├── main.py                        # CLI entry point and all calculation logic.
-│                                  # Contains: _data_period(),
-│                                  # _fetch_close(), _fetch_ohlcv(),
-│                                  # calculate_sma(), calculate_ema(),
-│                                  # calculate_rsi(), calculate_macd(),
-│                                  # calculate_bb(), calculate_vwap(),
-│                                  # calculate_av(), calculate_rvol(),
-│                                  # and main().
+├── main.py                        # CLI entry point: parse input, dispatch
+│                                  # to indicator via match/case, format
+│                                  # output.  Re-exports all calculate_*
+│                                  # from indicators/ for backward compat.
+│
+├── indicators/                    # Indicator calculation subpackage.
+│   │
+│   ├── __init__.py                # Re-exports all calculate_* functions.
+│   │
+│   ├── _data.py                   # Shared data layer: _DATA_PERIOD_MAP,
+│   │                              # _VALID_INTERVALS, _DEFAULT_WINDOWS,
+│   │                              # _data_period(), _fetch_close(),
+│   │                              # _fetch_ohlcv().
+│   │
+│   ├── sma.py                     # calculate_sma()
+│   ├── ema.py                     # calculate_ema()
+│   ├── rsi.py                     # calculate_rsi()
+│   ├── macd.py                    # calculate_macd()
+│   ├── bb.py                      # calculate_bb()
+│   ├── vwap.py                    # calculate_vwap()
+│   ├── av.py                      # calculate_av()
+│   └── rvol.py                    # calculate_rvol()
 │
 ├── CHANGELOG.md                   # Version history and release notes.
 │
@@ -245,7 +259,7 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
 │
 ├── mocktests/                     # Unit tests with mocked yfinance data.
 │   │                              # The conftest.py fixture patches
-│   │                              # main.yf.Ticker with a MagicMock that
+│       │                              # yfinance.Ticker with a MagicMock that
 │   │                              # returns a predefined DataFrame of
 │   │                              # Close prices. No network calls, no
 │   │                              # real market data — fast and
@@ -333,7 +347,7 @@ The project has two test suites: mock tests and real tests.
 
 ### Mock Tests
 
-Mock tests patch `main.yf.Ticker` so no real API calls are made. The `conftest.py` fixture creates a `MagicMock` that returns a predefined pandas DataFrame of `Close` prices. This means:
+Mock tests patch `yfinance.Ticker` so no real API calls are made. The `conftest.py` fixture creates a `MagicMock` that returns a predefined pandas DataFrame of `Close` prices. This means:
 
 - **Deterministic** — tests always produce the same results regardless of market conditions or network availability.
 - **Fast** — 310 tests run in under 1 second.

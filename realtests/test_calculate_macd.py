@@ -2,7 +2,7 @@
 # Integration tests for calculate_macd() with real yfinance data
 
 import pytest
-from main import calculate_macd
+from indicators import calculate_macd
 
 
 class TestCalculateMacd:

@@ -2,7 +2,7 @@
 # Tests for calculate_vwap() using mocked stock data
 
 import pytest
-from main import calculate_vwap
+from indicators import calculate_vwap
 
 
 class TestCalculateVwap:

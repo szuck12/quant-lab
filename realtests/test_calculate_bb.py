@@ -2,7 +2,7 @@
 # Integration tests for calculate_bb() with real yfinance data
 
 import pytest
-from main import calculate_bb
+from indicators import calculate_bb
 
 
 class TestCalculateBb:

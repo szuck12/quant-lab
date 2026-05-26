@@ -2,7 +2,7 @@
 # Tests for calculate_bb() using mocked stock data
 
 import pytest
-from main import calculate_bb
+from indicators import calculate_bb
 
 
 class TestCalculateBb:
