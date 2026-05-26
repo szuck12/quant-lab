@@ -2,6 +2,7 @@
 # yfinance API connection and data fetching utilities
 
 import sys
+
 import pandas as pd
 import yfinance as yf
 
@@ -107,7 +108,7 @@ def calculate_sma(ticker: str, window: int,
                   interval: str = "1d",
                   count: int = 1,
                   _return_raw: bool = False
-                  ) -> pd.Series | tuple:
+                  ) -> pd.Series | tuple[pd.Series, pd.Series]:
     """Compute the latest simple moving averages for a ticker.
 
     Args:
@@ -115,10 +116,12 @@ def calculate_sma(ticker: str, window: int,
         window: Number of periods in the moving average.
         interval: Bar size ("1d", "1wk", "1mo").
         count: Number of most recent SMA values to return.
+        _return_raw: If True, return (result, raw_close) tuple.
 
     Returns:
         A Series of the last `count` SMA values (single element
-        when count=1).
+        when count=1).  When _return_raw is True, returns a
+        (result, raw_close) tuple.
 
     Raises:
         IndexError: If insufficient data exists for the given
@@ -146,7 +149,7 @@ def calculate_ema(ticker: str, window: int,
                   interval: str = "1d",
                   count: int = 1,
                   _return_raw: bool = False
-                  ) -> pd.Series | tuple:
+                  ) -> pd.Series | tuple[pd.Series, pd.Series]:
     """Compute the latest exponential moving averages for a ticker.
 
     Uses the standard span-based EMA (adjust=False) so the
@@ -158,10 +161,12 @@ def calculate_ema(ticker: str, window: int,
         window: Span of the EMA (number of periods).
         interval: Bar size ("1d", "1wk", "1mo").
         count: Number of most recent EMA values to return.
+        _return_raw: If True, return (result, raw_close) tuple.
 
     Returns:
         A Series of the last `count` EMA values (single element
-        when count=1).
+        when count=1).  When _return_raw is True, returns a
+        (result, raw_close) tuple.
 
     Raises:
         IndexError: If insufficient data exists for the given
@@ -285,7 +290,9 @@ def calculate_bb(ticker: str, window: int = 20,
                  interval: str = "1d",
                  count: int = 1,
                  _return_raw: bool = False
-                 ) -> tuple[pd.Series, pd.Series, pd.Series] | tuple:
+                 ) -> tuple[pd.Series, pd.Series, pd.Series] \
+                 | tuple[tuple[pd.Series, pd.Series, pd.Series],
+                         pd.Series]:
     """Compute Bollinger Bands (upper, middle, lower) for a ticker.
 
     Middle band is an SMA of the close price.  Upper and lower
@@ -298,10 +305,12 @@ def calculate_bb(ticker: str, window: int = 20,
         num_std: Number of standard deviations for band width.
         interval: Bar size ("1d", "1wk", "1mo").
         count: Number of most recent triplets to return.
+        _return_raw: If True, return ((u,m,l), raw_close) tuple.
 
     Returns:
         A tuple (upper_band, middle_band, lower_band), each a
-        Series of the last ``count`` values.
+        Series of the last ``count`` values.  When _return_raw
+        is True, returns a ((u,m,l), raw_close) tuple.
 
     Raises:
         IndexError: If insufficient data exists for the given
@@ -334,7 +343,7 @@ def calculate_vwap(ticker: str, window: int = 20,
                    interval: str = "1d",
                    count: int = 1,
                    _return_raw: bool = False
-                   ) -> pd.Series | tuple:
+                   ) -> pd.Series | tuple[pd.Series, pd.Series]:
     """Compute the latest Volume Weighted Average Price for a
     ticker.
 
@@ -348,10 +357,12 @@ def calculate_vwap(ticker: str, window: int = 20,
         window: Lookback period in bars.
         interval: Bar size ("1d", "1wk", "1mo").
         count: Number of most recent VWAP values to return.
+        _return_raw: If True, return (result, typical) tuple.
 
     Returns:
         A Series of the last `count` VWAP values (single element
-        when count=1).
+        when count=1).  When _return_raw is True, returns a
+        (result, typical) tuple.
 
     Raises:
         IndexError: If insufficient data exists for the given
@@ -380,7 +391,7 @@ def calculate_av(ticker: str, window: int = 20,
                  interval: str = "1d",
                  count: int = 1,
                  _return_raw: bool = False
-                 ) -> pd.Series | tuple:
+                 ) -> pd.Series | tuple[pd.Series, pd.Series]:
     """Compute the latest Average Volume values for a ticker.
 
     Simple rolling mean of Volume over the given window, matching
@@ -391,10 +402,12 @@ def calculate_av(ticker: str, window: int = 20,
         window: Lookback period in bars.
         interval: Bar size ("1d", "1wk", "1mo").
         count: Number of most recent AV values to return.
+        _return_raw: If True, return (result, raw_volume) tuple.
 
     Returns:
         A Series of the last `count` AV values (single element
-        when count=1).
+        when count=1).  When _return_raw is True, returns a
+        (result, raw_volume) tuple.
 
     Raises:
         IndexError: If insufficient data exists for the given

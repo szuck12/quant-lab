@@ -6,9 +6,6 @@
 
 ## Done
 
-- [x] Add reasonableness checks to real tests (#test)
-- [x] Add Relative Volume (RVOL) indicator (#indicator)
-- [x] Add Average Volume (AV) indicator (#indicator)
 - [x] Fix realtest conftest 1s delay applying to mock tests when running
       `pytest mocktests/ realtests/` together (#test, #bug)
 
@@ -20,7 +17,7 @@
 
 (Should get done, not urgent.)
 
-- [ ] Split indicator functions from main.py into separate files (#structure)
+- [ ] Split indicator functions from main.py into separate files (#refactor)
 - [ ] Test MACD accuracy against known reference values (#indicator, #test)
 - [ ] Test BB accuracy against known reference values (#indicator, #test)
 - [ ] Improve structure of MACD and BB indicator output (#cli)

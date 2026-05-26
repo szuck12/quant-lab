@@ -122,8 +122,8 @@ the MACD line, the signal line, and the histogram.
 
 $$
 \begin{aligned}
-\text{MACD Line}_t &= \text{EMA}_{\text{fast}}(C_t) - \text{EMA}_{\text{slow}}(C_t) \\[2mm]
-\text{Signal Line}_t &= \text{EMA}_{\text{signal}}(\text{MACD Line}_t) \\[2mm]
+\text{MACD Line}_t &= \text{EMA}_{\text{fast}}(C_t) - \text{EMA}_{\text{slow}}(C_t) \\
+\text{Signal Line}_t &= \text{EMA}_{\text{signal}}(\text{MACD Line}_t) \\
 \text{Histogram}_t &= \text{MACD Line}_t - \text{Signal Line}_t
 \end{aligned}
 $$
@@ -198,8 +198,8 @@ $$
 $$
 
 $$
-\text{VWAP}_t = \frac{\displaystyle \sum_{i=0}^{n-1} \text{TP}_{t-i} \cdot V_{t-i}}
-                       {\displaystyle \sum_{i=0}^{n-1} V_{t-i}}
+\text{VWAP}_t = \frac{\sum_{i=0}^{n-1} \text{TP}_{t-i} \cdot V_{t-i}}
+                       {\sum_{i=0}^{n-1} V_{t-i}}
 $$
 
 | Variable | Meaning |
