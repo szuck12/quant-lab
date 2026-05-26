@@ -477,11 +477,11 @@ Each entry must be one of two forms:
 
 | # | Type | Action |
 |---|------|--------|
-| 1 | Take/Ask | \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_ |
-| 2 | Take/Ask | \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_ |
-| 3 | Take/Ask | \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_ |
-| 4 | Take/Ask | \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_ |
-| 5 | Take/Ask | \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_ |
+| 1 | Take | Extract indicator functions + data-layer helpers from main.py into an `indicators/` subpackage or dedicated modules. main.py is ~730 lines across 8 indicators, CLI parsing, and data fetching — a split improves testability, merge hygiene, and onboarding. |
+| 2 | Take | Add `pandas-stubs` and run `mypy main.py --strict` in CI. The codebase already has full type hints; stubs are the only missing piece (8 false-positive errors, all from missing stubs + None tracking). |
+| 3 | Take | Run `ruff check main.py` to catch the one pre-existing style issue (`l` variable name) and add ruff to `requirements.txt` / CI. |
+| 4 | Ask | Should `_fetch_ohlcv`'s `print(f"Fetched {len(hist)} rows ...")` be routed through `logging.debug` instead of `print`? It appears in test output and during CLI use, which may be distracting. |
+| 5 | Ask | Should `sys.argv` support be added alongside stdin (`python3 main.py AAPL SMA 50`)? Currently stdin-only. This would make scripting integration easier but needs careful parsing design. |
 
 This guide follows the project's commenting conventions
 (see `docs/commenting_guidelines.md`): 80-character line limit,
