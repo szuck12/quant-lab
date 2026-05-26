@@ -336,7 +336,7 @@ The project has two test suites: mock tests and real tests.
 Mock tests patch `main.yf.Ticker` so no real API calls are made. The `conftest.py` fixture creates a `MagicMock` that returns a predefined pandas DataFrame of `Close` prices. This means:
 
 - **Deterministic** — tests always produce the same results regardless of market conditions or network availability.
-- **Fast** — ~278 tests run in about 5 seconds.
+- **Fast** — 310 tests run in under 1 second.
 - **Comprehensive** — covers calculation logic, edge cases, parser dispatch, count behaviour, multi-ticker input, duplicate detection, and error conditions.
 
 ### Real Tests

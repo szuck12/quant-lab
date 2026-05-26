@@ -224,7 +224,7 @@ For each indicator, verify the check is correct:
 | **BB** | `close.min() <= middle <= close.max()` | ✅ Middle band is SMA |
 | **BB** | `close.iloc[-window:].std() > 0` (w>1) | ✅ Price variation |
 | **RSI** | `0.0 <= result <= 100.0` | ✅ Definition |
-| **MACD** | `m > 0`, histogram has both signs | Stock-agnostic |
+| **MACD** | `not m.isna()`, histogram has both signs | Stock-agnostic |
 | **RVOL** | `result > 0`, window=1 = 1.0 | Stock-agnostic |
 
 - [ ] Is every assertion mathematically sound (not a heuristic)?
@@ -281,7 +281,7 @@ Cross-reference the README error message table against actual code:
 
 ### 5c. Data Layer Errors
 
-- [ ] yfinance unreachable: does the program handle it gracefully
+- [x] yfinance unreachable: does the program handle it gracefully
       (yfinance raises its own exceptions — are they caught)?
 - [ ] Unknown ticker: yfinance returns an empty DataFrame. Does
       the guard clause catch this?
@@ -297,7 +297,7 @@ Issues that span multiple files or subsystems.
 ### 6a. Multi-Ticker Dispatch
 
 - [ ] Each ticker gets its own yfinance call (correct — no batching).
-- [ ] A failure for one ticker does not prevent others from being
+- [x] A failure for one ticker does not prevent others from being
       calculated (each is in its own loop iteration).
 - [ ] Output order matches input order.
 - [ ] Comma-fragment merging handles edge cases (`AAPL , MSFT`,

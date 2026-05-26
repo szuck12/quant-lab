@@ -452,8 +452,9 @@ raw-data series, so the min/max check does not apply. Use stock-agnostic
 bounds instead:
 
 - **RSI**: always verify `0.0 <= result.iloc[-1] <= 100.0`
-- **MACD**: verify `m > 0` / `s > 0` and histogram has both positive
-  and negative values on a diversified ticker like SPY
+- **MACD**: verify `not m.isna()`, `not s.isna()`, `not h.isna()`
+  (all values are finite) and histogram has both positive and
+  negative values on a diversified ticker like SPY
 - **RVOL**: verify `result > 0.0` and window=1 equals exactly `1.0`
 
 The raw data returned by `_return_raw=True` differs by indicator:

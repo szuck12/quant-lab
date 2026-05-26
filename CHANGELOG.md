@@ -12,6 +12,17 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   formulas and explanations for all eight indicators (SMA, EMA, RSI,
   MACD, BB, VWAP, AV, RVOL).  README and contributing docs updated
   to reference it.
+- Default window parameters for `calculate_sma(50)`, `calculate_ema(20)`,
+  and `calculate_rsi(14)` function signatures, matching `_DEFAULT_WINDOWS`.
+
+### Fixed
+- MACD real tests: replaced market-condition-dependent `m > 0` assertions
+  with stock-agnostic `notna()` checks.
+- yfinance error handling: `_fetch_ohlcv` now catches network/ticker
+  exceptions and returns an empty DataFrame instead of crashing.
+- Multi-ticker failure isolation: a calculation failure for one ticker
+  no longer aborts remaining tickers in the same input (wrapped dispatch
+  in per-ticker try/except).
 
 ## [1.2.1] - 2026-05-22
 
