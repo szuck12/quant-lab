@@ -5,6 +5,14 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com) and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.2] - 2026-05-25
+
+### Added
+- Formulas documentation — `docs/formulas.md` with mathematical
+  formulas and explanations for all eight indicators (SMA, EMA, RSI,
+  MACD, BB, VWAP, AV, RVOL).  README and contributing docs updated
+  to reference it.
+
 ## [1.2.1] - 2026-05-22
 
 ### Added

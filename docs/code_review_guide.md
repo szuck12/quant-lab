@@ -357,6 +357,8 @@ Verify that documentation matches the actual code.
 ### 7b. Cross-Reference Integrity
 
 - [ ] All relative links between docs files work (no 404s if served).
+- [ ] `docs/formulas.md` has a section for every indicator listed
+      in the README, in the same order.
 - [ ] `adding_indicator.md` references exist in at least one real
       test file for every pattern it describes.
 - [ ] `maintain_todo.md` lifecycle is followed by `TODO.md`.

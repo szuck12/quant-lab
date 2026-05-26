@@ -514,6 +514,19 @@ If the default window differs from the existing indicators' norms, add a
 row to the default-windows description in the How It Works or Usage
 section.
 
+### 6c. Update formulas.md
+
+Add a new section to `docs/formulas.md` for the new indicator, placed
+between the existing sections in the same order as the README.  Include:
+
+- The mathematical formula using LaTeX notation (`$$...$$`).
+- A table of variables and their meanings.
+- Any relevant edge-case notes (division by zero, NaN handling, etc).
+
+The section should follow the same structure as the existing
+indicators (e.g. start with a short description, then the formula,
+then the variable table, then notes).
+
 ## 7. Versioning & Changelog
 
 After completing the implementation, tests, and documentation, follow the

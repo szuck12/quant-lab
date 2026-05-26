@@ -1,6 +1,6 @@
 # quant_indicators
 
-Current version: **1.2.1** — [Changelog](CHANGELOG.md)
+Current version: **1.2.2** — [Changelog](CHANGELOG.md)
 
 A command-line tool that fetches stock price data via [yfinance](https://github.com/ranaroussi/yfinance) and computes one of eight technical indicators: Simple Moving Average (SMA), Exponential Moving Average (EMA), Relative Strength Index (RSI), Moving Average Convergence Divergence (MACD), Bollinger Bands (BB), Volume Weighted Average Price (VWAP), Average Volume (AV), or Relative Volume (RVOL). Input is provided through stdin and the result is printed to stdout. The tool is designed for quick terminal lookups — you type a ticker and an indicator, and you get back a number.
 
@@ -165,16 +165,16 @@ The tool follows a five-step pipeline:
 
 3. **Data fetching**. `yf.Ticker(ticker).history(period=..., interval=...)` is called to retrieve a DataFrame of price data. The tool prints the number of rows received (e.g. `Fetched 252 rows for AAPL`). When multiple tickers are specified, each ticker is fetched independently with its own API call, so a failed request for one ticker does not affect the others.
 
-4. **Indicator calculation**. For SMA, EMA, RSI, MACD, and BB the `Close` column is extracted from the DataFrame and passed to the appropriate calculation function. For VWAP, AV, and RVOL the full OHLCV DataFrame is used:
+4. **Indicator calculation**. For SMA, EMA, RSI, MACD, and BB the `Close` column is extracted from the DataFrame and passed to the appropriate calculation function. For VWAP, AV, and RVOL the full OHLCV DataFrame is used.  See [docs/formulas.md](docs/formulas.md) for the complete mathematical formulas.
 
-    - **SMA**: `close.rolling(window=window).mean()` — simple moving average.
-    - **EMA**: `close.ewm(span=window, adjust=False).mean()` — exponential moving average using the standard span-based decay.
-    - **RSI**: Price changes are split into gains and losses. Each is averaged using Wilder smoothing (`ewm(alpha=1/window, adjust=False).mean()`), then the RSI is computed as `100 - (100 / (1 + avg_gain / avg_loss))`.
-     - **MACD**: Three time series are computed: the MACD line (EMA(fast) - EMA(slow)), the signal line (EMA of the MACD line with period `signal`), and the histogram (MACD line - signal line). All three use `ewm(span=..., adjust=False).mean()`.
-     - **BB**: Three bands are computed: the middle band (SMA of the close price), the upper band (middle + `num_std` × standard deviation), and the lower band (middle − `num_std` × standard deviation). The standard deviation uses population normalisation (`ddof=0`), matching TradingView's `ta.bb()`.
-     - **VWAP**: The typical price `(High + Low + Close) / 3` is multiplied by Volume and accumulated over a rolling window. The result is divided by the rolling sum of Volume, matching TradingView's `ta.vwap()`.
-     - **AV**: Volume is averaged over a rolling window using the same SMA approach applied to closing prices. Matches TradingView's `ta.sma()` on volume data.
-     - **RVOL**: Current volume divided by a rolling mean of volume (same AV calculation). Values above 1.0 mean volume is higher than the recent average; below 1.0 means lower. Matches TradingView's Relative Volume.
+    - **SMA**: Simple rolling mean of closing prices over a configurable window.
+    - **EMA**: Exponentially weighted moving average using span-based decay (`adjust=False`), giving more weight to recent prices.
+    - **RSI**: Price changes are split into gains and losses. Each is averaged using Wilder smoothing (`alpha = 1 / window`), then normalised to a 0–100 range.
+    - **MACD**: Three time series: the MACD line (EMA(fast) − EMA(slow)), the signal line (EMA of the MACD line), and the histogram (MACD line − signal line).
+    - **BB**: Three bands: middle (SMA), upper (middle + k × σ), lower (middle − k × σ). Standard deviation uses population normalisation (`ddof=0`), matching TradingView.
+    - **VWAP**: Typical Price `(H + L + C) / 3` weighted by volume over a rolling window.
+    - **AV**: Simple rolling mean of volume, following the same pattern as SMA.
+    - **RVOL**: Current volume divided by its rolling mean (AV). Values above 1.0 mean above-average volume; below 1.0 means below-average.
 
     NaN rows from the leading edge of the rolling / EWM calculation are dropped. The last `count` values of the remaining Series (or Series triple for MACD) are returned.
 
@@ -226,6 +226,9 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
 │   ├── adding_indicator.md        # Step-by-step process for adding
 │   │                              # a new indicator to the project
 │   │                              # (implementation, tests, docs).
+│   │
+│   ├── formulas.md                # Mathematical formulas and
+│   │                              # explanations for all indicators.
 │   │
 │   ├── update_changelog.md        # Versioning and changelog update
 │   │                              # workflow for contributors.
