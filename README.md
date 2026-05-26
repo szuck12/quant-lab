@@ -227,15 +227,21 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
 │   │                              # a new indicator to the project
 │   │                              # (implementation, tests, docs).
 │   │
+│   ├── code_review_guide.md       # Deep-dive architectural review
+│   │                              # checklist for pre-release audits.
+│   │
+│   ├── commenting_guidelines.md   # Code commenting conventions used
+│   │                              # throughout the project (docstring
+│   │                              # style, inline comment rules).
+│   │
 │   ├── formulas.md                # Mathematical formulas and
 │   │                              # explanations for all indicators.
 │   │
-│   ├── update_changelog.md        # Versioning and changelog update
-│   │                              # workflow for contributors.
+│   ├── maintain_todo.md           # How to keep TODO.md up to date
+│   │                              # and how it relates to other docs.
 │   │
-│   └── commenting_guidelines.md   # Code commenting conventions used
-│                                  # throughout the project (docstring
-│                                  # style, inline comment rules).
+│   └── update_changelog.md        # Versioning and changelog update
+│                                  # workflow for contributors.
 │
 ├── mocktests/                     # Unit tests with mocked yfinance data.
 │   │                              # The conftest.py fixture patches
@@ -299,6 +305,10 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
     │                              # and market hours.
     │
     ├── __init__.py                # Package marker.
+    │
+    ├── conftest.py                # Pytest hook that inserts 1-second
+    │                              # spacing between real tests to avoid
+    │                              # yfinance rate limits.
     │
     ├── test_calculate_sma.py      # End-to-end SMA tests with real data.
     ├── test_calculate_ema.py      # End-to-end EMA tests with real data.
