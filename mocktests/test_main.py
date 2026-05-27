@@ -186,6 +186,28 @@ class TestMain:
                     "AAPL", window=20, num_std=2.0,
                     interval="1d", count=1)
 
+    # ---- ATR dispatch ----
+
+    def test_valid_atr_dispatch(self):
+        """Verify main() calls calculate_atr for an ATR input."""
+        with patch("builtins.input",
+                   return_value="AAPL ATR 14"):
+            with patch("main.calculate_atr",
+                       return_value=_MOCK_SERIES) as mock_atr:
+                main.main()
+                mock_atr.assert_called_once_with(
+                    "AAPL", 14, interval="1d", count=1)
+
+    def test_default_window_atr(self):
+        """Verify ATR defaults to window=14 when not provided."""
+        with patch("builtins.input",
+                   return_value="AAPL ATR"):
+            with patch("main.calculate_atr",
+                       return_value=_MOCK_SERIES) as mock_atr:
+                main.main()
+                mock_atr.assert_called_once_with(
+                    "AAPL", 14, interval="1d", count=1)
+
     # ---- C<count> syntax ----
 
     def test_count_with_defaults(self):

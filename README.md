@@ -1,6 +1,6 @@
 # quant_indicators
 
-Current version: **1.2.3** — [Changelog](CHANGELOG.md)
+Current version: **1.3.0** — [Changelog](CHANGELOG.md)
 
 A command-line tool that fetches stock price data via [yfinance](https://github.com/ranaroussi/yfinance) and computes one of eight technical indicators: Simple Moving Average (SMA), Exponential Moving Average (EMA), Relative Strength Index (RSI), Moving Average Convergence Divergence (MACD), Bollinger Bands (BB), Volume Weighted Average Price (VWAP), Average Volume (AV), or Relative Volume (RVOL). Input is provided through stdin and the result is printed to stdout. The tool is designed for quick terminal lookups — you type a ticker and an indicator, and you get back a number.
 
@@ -35,9 +35,9 @@ ticker(s) indicator [bar_size] [window] [C<count>]
 | Token | Meaning | Allowed Values | Default |
 |-------|---------|----------------|---------|
 | `ticker(s)` | Stock symbol(s), comma-separated | Any symbol yfinance recognises (e.g. AAPL, MSFT, GOOG, SPY, BTC-USD, EURUSD=X) | Required |
-| `indicator` | Indicator to compute | `SMA`, `EMA`, `RSI`, `MACD`, `BB`, `VWAP`, `AV`, `RVOL` (case-insensitive) | Required |
+| `indicator` | Indicator to compute | `SMA`, `EMA`, `RSI`, `MACD`, `BB`, `VWAP`, `ATR`, `AV`, `RVOL` (case-insensitive) | Required |
 | `bar_size` | Width of each price bar | `1m`, `2m`, `5m`, `15m`, `30m`, `90m`, `60m`, `1h`, `1d`, `5d`, `1wk`, `1mo`, `3mo` | `1d` |
-| `window` | Lookback period in bars (for MACD: comma-separated fast,slow,signal, e.g. `12,26,9`; for BB: comma-separated window,num_std, e.g. `20,2.5`) | Any positive integer, or comma-separated values for MACD/BB | SMA=50, EMA=20, RSI=14, MACD=(12,26,9), BB=(20,2.0), VWAP=20, AV=20, RVOL=10 |
+| `window` | Lookback period in bars (for MACD: comma-separated fast,slow,signal, e.g. `12,26,9`; for BB: comma-separated window,num_std, e.g. `20,2.5`) | Any positive integer, or comma-separated values for MACD/BB | SMA=50, EMA=20, RSI=14, MACD=(12,26,9), BB=(20,2.0), VWAP=20, ATR=14, AV=20, RVOL=10 |
 | `C<count>` | Number of recent values to return | `C` followed by any positive integer (e.g. `C1`, `C10`, `C100`) | `1` |
 
 ### Argument Parsing Rules
@@ -140,6 +140,15 @@ echo "AAPL RVOL" | python3 main.py
 
 # Relative Volume with custom window and weekly bars
 echo "GOOG RVOL 20 1wk" | python3 main.py
+
+# Average True Range with default window (14-day)
+echo "AAPL ATR" | python3 main.py
+
+# Average True Range with custom window and weekly bars
+echo "MSFT ATR 14 1wk" | python3 main.py
+
+# Average True Range with multiple values
+echo "GOOG ATR 14 C5" | python3 main.py
 ```
 
 ## How It Works
@@ -204,6 +213,7 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
 │   │                              # _data_period(), _fetch_close(),
 │   │                              # _fetch_ohlcv().
 │   │
+│   ├── atr.py                     # calculate_atr()
 │   ├── av.py                      # calculate_av()
 │   ├── bb.py                      # calculate_bb()
 │   ├── ema.py                     # calculate_ema()
@@ -350,7 +360,7 @@ The project has two test suites: mock tests and real tests.
 Mock tests patch `yfinance.Ticker` so no real API calls are made. The `conftest.py` fixture creates a `MagicMock` that returns a predefined pandas DataFrame of `Close` prices. This means:
 
 - **Deterministic** — tests always produce the same results regardless of market conditions or network availability.
-- **Fast** — 310 tests run in under 1 second.
+- **Fast** — 327 tests run in under 1 second.
 - **Comprehensive** — covers calculation logic, edge cases, parser dispatch, count behaviour, multi-ticker input, duplicate detection, and error conditions.
 
 ### Real Tests

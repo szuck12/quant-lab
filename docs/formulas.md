@@ -239,6 +239,45 @@ $$
 
 ---
 
+## Average True Range (ATR)
+
+ATR measures market volatility by computing the Wilder-smoothed
+average of the True Range over a lookback window.  Higher values
+indicate greater volatility.
+
+$$
+\begin{aligned}
+\text{TR}_t &= \max(
+    H_t - L_t,\;
+    |H_t - C_{t-1}|,\;
+    |L_t - C_{t-1}|
+) \\[4pt]
+\text{ATR}_t &= \text{TR}_t \quad \text{if } t = 1 \\
+\text{ATR}_t &= \text{ATR}_{t-1} \times (1 - \alpha) +
+              \text{TR}_t \times \alpha \quad \text{otherwise}
+\end{aligned}
+$$
+
+Where $\alpha = 1 / \text{window}$ (Wilder smoothing).
+
+| Variable | Meaning |
+|----------|---------|
+| $H_t$ | High price at bar `t` |
+| $L_t$ | Low price at bar `t` |
+| $C_{t-1}$ | Close price at bar `t-1` (previous close) |
+| $\text{TR}_t$ | True Range at bar `t` |
+| $\alpha$ | Smoothing factor ($1 / \text{window}$) |
+
+### Notes
+
+- The first TR value uses only the `high - low` spread because
+  there is no previous close, so ATR is always defined for the
+  first bar.
+- Wilder smoothing (`RMA`) matches the same algorithm used in
+  RSI — an EMA with `alpha = 1 / window`.
+
+---
+
 ## Relative Volume (RVOL)
 
 RVOL compares the current bar's volume to its rolling average.

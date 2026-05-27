@@ -4,8 +4,8 @@
 import sys
 
 from indicators import calculate_sma, calculate_ema, calculate_rsi, \
-    calculate_macd, calculate_bb, calculate_vwap, calculate_av, \
-    calculate_rvol
+    calculate_macd, calculate_bb, calculate_vwap, calculate_atr, \
+    calculate_av, calculate_rvol
 from indicators._data import _VALID_INTERVALS, _DEFAULT_WINDOWS
 
 
@@ -13,7 +13,7 @@ def main(argv: list[str] | None = None) -> None:
     """Parse user input and dispatch to the requested indicator.
 
     Expects at least two space-separated values: ticker(s) and
-    indicator name (SMA, RSI, EMA, MACD, BB, VWAP, AV, or RVOL).
+    indicator name (SMA, RSI, EMA, MACD, BB, VWAP, ATR, AV, or RVOL).
     Multiple tickers are separated with commas
     (e.g. ``AAPL,MSFT``).
     Optional trailing arguments can appear in any order:
@@ -35,7 +35,7 @@ def main(argv: list[str] | None = None) -> None:
         user_input = " ".join(argv)
     else:
         user_input = input("Enter ticker(s), indicator"
-                           " (SMA/RSI/EMA/MACD/BB/VWAP/AV/RVOL)"
+                           " (SMA/RSI/EMA/MACD/BB/VWAP/ATR/AV/RVOL)"
                            " [bar_size] [window] [C<count>]: ")
     parts = user_input.strip().split()
 
@@ -64,9 +64,9 @@ def main(argv: list[str] | None = None) -> None:
 
     indicator = indicator.upper()
     if indicator not in ("SMA", "RSI", "EMA", "MACD", "BB",
-                         "VWAP", "AV", "RVOL"):
+                         "VWAP", "ATR", "AV", "RVOL"):
         print("Error: indicator must be SMA, RSI, EMA, MACD,"
-              " BB, VWAP, AV, or RVOL")
+              " BB, VWAP, ATR, AV, or RVOL")
         sys.exit(1)
 
     interval = "1d"
@@ -213,6 +213,10 @@ def main(argv: list[str] | None = None) -> None:
                     result = calculate_av(ticker, window,
                                           interval=interval,
                                           count=count)
+                case "ATR":
+                    result = calculate_atr(ticker, window,
+                                           interval=interval,
+                                           count=count)
                 case "RVOL":
                     result = calculate_rvol(ticker, window,
                                             interval=interval,

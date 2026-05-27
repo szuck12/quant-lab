@@ -2,7 +2,7 @@
 
 ## In Progress
 
-(Items currently being worked on.)
+- [ ] Implement Average True Range (ATR) indicator (#indicator)
 
 ## Done
 

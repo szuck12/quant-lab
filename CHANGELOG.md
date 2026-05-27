@@ -5,6 +5,12 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com) and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-05-25
+
+### Added
+- Average True Range (ATR) — new indicator measuring market volatility
+  using Wilder-smoothed True Range over a configurable window (default 14).
+
 ## [1.2.3] - 2026-05-25
 
 ### Added
