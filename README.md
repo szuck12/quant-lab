@@ -2,7 +2,7 @@
 
 Current version: **1.3.0** — [Changelog](CHANGELOG.md)
 
-A command-line tool that fetches stock price data via [yfinance](https://github.com/ranaroussi/yfinance) and computes one of eight technical indicators: Simple Moving Average (SMA), Exponential Moving Average (EMA), Relative Strength Index (RSI), Moving Average Convergence Divergence (MACD), Bollinger Bands (BB), Volume Weighted Average Price (VWAP), Average Volume (AV), or Relative Volume (RVOL). Input is provided through stdin and the result is printed to stdout. The tool is designed for quick terminal lookups — you type a ticker and an indicator, and you get back a number.
+A command-line tool that fetches stock price data via [yfinance](https://github.com/ranaroussi/yfinance) and computes one of nine technical indicators: Average True Range (ATR), Average Volume (AV), Bollinger Bands (BB), Exponential Moving Average (EMA), Moving Average Convergence Divergence (MACD), Relative Strength Index (RSI), Relative Volume (RVOL), Simple Moving Average (SMA), or Volume Weighted Average Price (VWAP). Input is provided through stdin and the result is printed to stdout. The tool is designed for quick terminal lookups — you type a ticker and an indicator, and you get back a number.
 
 yfinance provides access to Yahoo Finance market data. The tool does not require an API key or account.
 
@@ -35,9 +35,9 @@ ticker(s) indicator [bar_size] [window] [C<count>]
 | Token | Meaning | Allowed Values | Default |
 |-------|---------|----------------|---------|
 | `ticker(s)` | Stock symbol(s), comma-separated | Any symbol yfinance recognises (e.g. AAPL, MSFT, GOOG, SPY, BTC-USD, EURUSD=X) | Required |
-| `indicator` | Indicator to compute | `SMA`, `EMA`, `RSI`, `MACD`, `BB`, `VWAP`, `ATR`, `AV`, `RVOL` (case-insensitive) | Required |
+| `indicator` | Indicator to compute | `ATR`, `AV`, `BB`, `EMA`, `MACD`, `RSI`, `RVOL`, `SMA`, `VWAP` (case-insensitive) | Required |
 | `bar_size` | Width of each price bar | `1m`, `2m`, `5m`, `15m`, `30m`, `90m`, `60m`, `1h`, `1d`, `5d`, `1wk`, `1mo`, `3mo` | `1d` |
-| `window` | Lookback period in bars (for MACD: comma-separated fast,slow,signal, e.g. `12,26,9`; for BB: comma-separated window,num_std, e.g. `20,2.5`) | Any positive integer, or comma-separated values for MACD/BB | SMA=50, EMA=20, RSI=14, MACD=(12,26,9), BB=(20,2.0), VWAP=20, ATR=14, AV=20, RVOL=10 |
+| `window` | Lookback period in bars (for MACD: comma-separated fast,slow,signal, e.g. `12,26,9`; for BB: comma-separated window,num_std, e.g. `20,2.5`) | Any positive integer, or comma-separated values for MACD/BB | ATR=14, AV=20, BB=(20,2.0), EMA=20, MACD=(12,26,9), RSI=14, RVOL=10, SMA=50, VWAP=20 |
 | `C<count>` | Number of recent values to return | `C` followed by any positive integer (e.g. `C1`, `C10`, `C100`) | `1` |
 
 ### Argument Parsing Rules
@@ -60,7 +60,7 @@ Multiple tickers are separated by commas in the first token (e.g. `AAPL,MSFT`). 
 |-----------|---------|
 | Fewer than 2 tokens | `Error: expected at least 2 values (ticker(s) indicator [bar_size] [window] [C<count>])` |
 | No valid tickers after parsing | `Error: no valid tickers provided` |
-| Indicator not recognised | `Error: indicator must be SMA, RSI, EMA, MACD, BB, VWAP, AV, or RVOL` |
+| Indicator not recognised | `Error: indicator must be ATR, AV, BB, EMA, MACD, RSI, RVOL, SMA, or VWAP` |
 | Unrecognised argument (not an interval, not C-prefixed, not an integer) | `Error: unrecognised argument '<arg>'` |
 | Duplicate bar size | `Error: duplicate bar size '<arg>'` |
 | Duplicate window | `Error: duplicate window '<arg>'` |
@@ -81,38 +81,20 @@ Multiple tickers are separated by commas in the first token (e.g. `AAPL,MSFT`). 
 ### Examples
 
 ```bash
-# Single ticker with default window (50-day SMA)
-echo "AAPL SMA" | python3 main.py
+# Average True Range with default window (14-day)
+echo "AAPL ATR" | python3 main.py
 
-# Custom window (50-day EMA instead of default 20)
-echo "MSFT EMA 50" | python3 main.py
+# Average True Range with custom window and weekly bars
+echo "MSFT ATR 14 1wk" | python3 main.py
 
-# Custom bar size (weekly bars with 20-week SMA)
-echo "GOOG SMA 20 1wk" | python3 main.py
+# Average True Range with multiple values
+echo "GOOG ATR 14 C5" | python3 main.py
 
-# Custom count (last 10 RSI values)
-echo "AAPL RSI C10" | python3 main.py
+# Average Volume with default window (20-day)
+echo "AAPL AV" | python3 main.py
 
-# Multiple tickers, default values
-echo "AAPL,MSFT RSI" | python3 main.py
-
-# All optional arguments together (order does not matter)
-echo "AAPL RSI 14 1mo C5" | python3 main.py
-
-# Three tickers with custom window, count, and bar size
-echo "AAPL,GOOG,TSLA EMA 50 C3 1wk" | python3 main.py
-
-# Intradata with a short window
-echo "SPY SMA 20 5m" | python3 main.py
-
-# MACD with default parameters (12,26,9)
-echo "AAPL MACD" | python3 main.py
-
-# MACD with custom fast, slow, and signal periods
-echo "MSFT MACD 5,13,4" | python3 main.py
-
-# MACD with count and custom bar size
-echo "AAPL MACD 12,26,9 C3 1wk" | python3 main.py
+# Average Volume with custom window and weekly bars
+echo "MSFT AV 10 1wk" | python3 main.py
 
 # Bollinger Bands with default parameters (20,2.0)
 echo "AAPL BB" | python3 main.py
@@ -123,17 +105,26 @@ echo "MSFT BB 20,2.5" | python3 main.py
 # Bollinger Bands with count and weekly bars
 echo "GOOG BB 20,2.0 C5 1wk" | python3 main.py
 
-# VWAP with default window (20-day)
-echo "AAPL VWAP" | python3 main.py
+# Custom window (50-day EMA instead of default 20)
+echo "MSFT EMA 50" | python3 main.py
 
-# VWAP with custom window and weekly bars
-echo "MSFT VWAP 10 1wk" | python3 main.py
+# MACD with default parameters (12,26,9)
+echo "AAPL MACD" | python3 main.py
 
-# Average Volume with default window (20-day)
-echo "AAPL AV" | python3 main.py
+# MACD with custom fast, slow, and signal periods
+echo "MSFT MACD 5,13,4" | python3 main.py
 
-# Average Volume with custom window and weekly bars
-echo "MSFT AV 10 1wk" | python3 main.py
+# MACD with count and custom bar size
+echo "AAPL MACD 12,26,9 C3 1wk" | python3 main.py
+
+# Custom count (last 10 RSI values)
+echo "AAPL RSI C10" | python3 main.py
+
+# Multiple tickers, default values
+echo "AAPL,MSFT RSI" | python3 main.py
+
+# All optional arguments together (order does not matter)
+echo "AAPL RSI 14 1mo C5" | python3 main.py
 
 # Relative Volume with default window (10-day)
 echo "AAPL RVOL" | python3 main.py
@@ -141,14 +132,23 @@ echo "AAPL RVOL" | python3 main.py
 # Relative Volume with custom window and weekly bars
 echo "GOOG RVOL 20 1wk" | python3 main.py
 
-# Average True Range with default window (14-day)
-echo "AAPL ATR" | python3 main.py
+# Single ticker with default window (50-day SMA)
+echo "AAPL SMA" | python3 main.py
 
-# Average True Range with custom window and weekly bars
-echo "MSFT ATR 14 1wk" | python3 main.py
+# Custom bar size (weekly bars with 20-week SMA)
+echo "GOOG SMA 20 1wk" | python3 main.py
 
-# Average True Range with multiple values
-echo "GOOG ATR 14 C5" | python3 main.py
+# Intradata with a short window
+echo "SPY SMA 20 5m" | python3 main.py
+
+# Three tickers with custom window, count, and bar size
+echo "AAPL,GOOG,TSLA EMA 50 C3 1wk" | python3 main.py
+
+# VWAP with default window (20-day)
+echo "AAPL VWAP" | python3 main.py
+
+# VWAP with custom window and weekly bars
+echo "MSFT VWAP 10 1wk" | python3 main.py
 ```
 
 ## How It Works
@@ -176,14 +176,15 @@ The tool follows a five-step pipeline:
 
 4. **Indicator calculation**. For SMA, EMA, RSI, MACD, and BB the `Close` column is extracted from the DataFrame and passed to the appropriate calculation function. For VWAP, AV, and RVOL the full OHLCV DataFrame is used.  See [docs/formulas.md](docs/formulas.md) for the complete mathematical formulas.
 
-    - **SMA**: Simple rolling mean of closing prices over a configurable window.
-    - **EMA**: Exponentially weighted moving average using span-based decay (`adjust=False`), giving more weight to recent prices.
-    - **RSI**: Price changes are split into gains and losses. Each is averaged using Wilder smoothing (`alpha = 1 / window`), then normalised to a 0–100 range.
-    - **MACD**: Three time series: the MACD line (EMA(fast) − EMA(slow)), the signal line (EMA of the MACD line), and the histogram (MACD line − signal line).
-    - **BB**: Three bands: middle (SMA), upper (middle + k × σ), lower (middle − k × σ). Standard deviation uses population normalisation (`ddof=0`), matching TradingView.
-    - **VWAP**: Typical Price `(H + L + C) / 3` weighted by volume over a rolling window.
+    - **ATR**: True Range (max of high−low, |high−prev close|, |low−prev close|) averaged with Wilder smoothing (`alpha = 1 / window`), measuring market volatility.
     - **AV**: Simple rolling mean of volume, following the same pattern as SMA.
+    - **BB**: Three bands: middle (SMA), upper (middle + k × σ), lower (middle − k × σ). Standard deviation uses population normalisation (`ddof=0`), matching TradingView.
+    - **EMA**: Exponentially weighted moving average using span-based decay (`adjust=False`), giving more weight to recent prices.
+    - **MACD**: Three time series: the MACD line (EMA(fast) − EMA(slow)), the signal line (EMA of the MACD line), and the histogram (MACD line − signal line).
+    - **RSI**: Price changes are split into gains and losses. Each is averaged using Wilder smoothing (`alpha = 1 / window`), then normalised to a 0–100 range.
     - **RVOL**: Current volume divided by its rolling mean (AV). Values above 1.0 mean above-average volume; below 1.0 means below-average.
+    - **SMA**: Simple rolling mean of closing prices over a configurable window.
+    - **VWAP**: Typical Price `(H + L + C) / 3` weighted by volume over a rolling window.
 
     NaN rows from the leading edge of the rolling / EWM calculation are dropped. The last `count` values of the remaining Series (or Series triple for MACD) are returned.
 
@@ -280,37 +281,37 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
 │   │                              # patches yf.Ticker, and yields the
 │   │                              # mock for optional assertions.
 │   │
-│   ├── test_calculate_sma.py      # Tests for calculate_sma(): basic
-│   │                              # calculation, default window, count
-│   │                              # parameter, insufficient data.
-│   │
-│   ├── test_calculate_ema.py      # Tests for calculate_ema(): basic
-│   │                              # calculation, default window, count
-│   │                              # parameter, insufficient data.
-│   │
-│   ├── test_calculate_rsi.py      # Tests for calculate_rsi(): basic
-│   │                              # calculation (Wilder reference values),
-│   │                              # default window, count parameter,
-│   │                              # edge cases (all same prices).
-│   │
-│   ├── test_calculate_macd.py     # Tests for calculate_macd(): basic
-│   │                              # calculation, default params, count,
-│   │                              # fast/slow ordering, edge cases.
-│   │
-│   ├── test_calculate_bb.py       # Tests for calculate_bb(): basic
-│   │                              # calculation, default params, count,
-│   │                              # band ordering, custom num_std.
-│   ├── test_calculate_vwap.py     # Tests for calculate_vwap(): basic
+│   ├── test_calculate_atr.py      # Tests for calculate_atr(): basic
 │   │                              # calculation, default window, count,
-│   │                              # parameter, zero volume, edge cases.
+│   │                              # parameter, Wilder smoothing
+│   │                              # (added in v1.3.0).
 │   ├── test_calculate_av.py       # Tests for calculate_av(): basic
 │   │                              # calculation, default window, count,
 │   │                              # parameter, zero volume, edge cases
 │   │                              # (added in v1.2.0).
+│   ├── test_calculate_bb.py       # Tests for calculate_bb(): basic
+│   │                              # calculation, default params, count,
+│   │                              # band ordering, custom num_std.
+│   ├── test_calculate_ema.py      # Tests for calculate_ema(): basic
+│   │                              # calculation, default window, count
+│   │                              # parameter, insufficient data.
+│   ├── test_calculate_macd.py     # Tests for calculate_macd(): basic
+│   │                              # calculation, default params, count,
+│   │                              # fast/slow ordering, edge cases.
+│   ├── test_calculate_rsi.py      # Tests for calculate_rsi(): basic
+│   │                              # calculation (Wilder reference values),
+│   │                              # default window, count parameter,
+│   │                              # edge cases (all same prices).
 │   ├── test_calculate_rvol.py     # Tests for calculate_rvol(): basic
 │   │                              # calculation, default window, count,
 │   │                              # parameter, zero volume edge case
 │   │                              # (added in v1.2.0).
+│   ├── test_calculate_sma.py      # Tests for calculate_sma(): basic
+│   │                              # calculation, default window, count
+│   │                              # parameter, insufficient data.
+│   ├── test_calculate_vwap.py     # Tests for calculate_vwap(): basic
+│   │                              # calculation, default window, count,
+│   │                              # parameter, zero volume, edge cases.
 │   │
 │   ├── test_data_period.py        # Tests for _data_period(): validates
 │   │                              # every threshold in _DATA_PERIOD_MAP
@@ -334,16 +335,18 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
     │                              # spacing between real tests to avoid
     │                              # yfinance rate limits.
     │
-    ├── test_calculate_sma.py      # End-to-end SMA tests with real data.
-    ├── test_calculate_ema.py      # End-to-end EMA tests with real data.
-    ├── test_calculate_rsi.py      # End-to-end RSI tests with real data.
-    ├── test_calculate_macd.py     # End-to-end MACD tests with real data.
-    ├── test_calculate_bb.py       # End-to-end BB tests with real data.
-    ├── test_calculate_vwap.py     # End-to-end VWAP tests with real data.
+    ├── test_calculate_atr.py      # End-to-end ATR tests with real data
+    │                              # (added in v1.3.0).
     ├── test_calculate_av.py       # End-to-end AV tests with real data
     │                              # (added in v1.2.0).
+    ├── test_calculate_bb.py       # End-to-end BB tests with real data.
+    ├── test_calculate_ema.py      # End-to-end EMA tests with real data.
+    ├── test_calculate_macd.py     # End-to-end MACD tests with real data.
+    ├── test_calculate_rsi.py      # End-to-end RSI tests with real data.
     ├── test_calculate_rvol.py     # End-to-end RVOL tests with real data
     │                              # (added in v1.2.0).
+    ├── test_calculate_sma.py      # End-to-end SMA tests with real data.
+    ├── test_calculate_vwap.py     # End-to-end VWAP tests with real data.
     └── test_main.py               # End-to-end CLI tests including
                                    # multi-ticker dispatch.
 ```

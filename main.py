@@ -3,9 +3,9 @@
 
 import sys
 
-from indicators import calculate_sma, calculate_ema, calculate_rsi, \
-    calculate_macd, calculate_bb, calculate_vwap, calculate_atr, \
-    calculate_av, calculate_rvol
+from indicators import calculate_atr, calculate_av, calculate_bb, \
+    calculate_ema, calculate_macd, calculate_rsi, calculate_rvol, \
+    calculate_sma, calculate_vwap
 from indicators._data import _VALID_INTERVALS, _DEFAULT_WINDOWS
 
 
@@ -13,7 +13,7 @@ def main(argv: list[str] | None = None) -> None:
     """Parse user input and dispatch to the requested indicator.
 
     Expects at least two space-separated values: ticker(s) and
-    indicator name (SMA, RSI, EMA, MACD, BB, VWAP, ATR, AV, or RVOL).
+    indicator name (ATR, AV, BB, EMA, MACD, RSI, RVOL, SMA, or VWAP).
     Multiple tickers are separated with commas
     (e.g. ``AAPL,MSFT``).
     Optional trailing arguments can appear in any order:
@@ -28,14 +28,14 @@ def main(argv: list[str] | None = None) -> None:
         number of standard deviations (e.g. "20,2.0").
 
     Defaults are "1d" for interval, indicator-specific windows
-    (SMA=50, EMA=20, RSI=14, MACD=(12,26,9), BB=(20,2.0),
-    VWAP=20, AV=20, RVOL=10), and count=1.
+    (ATR=14, AV=20, BB=(20,2.0), EMA=20, MACD=(12,26,9),
+    RSI=14, RVOL=10, SMA=50, VWAP=20), and count=1.
     """
     if argv:
         user_input = " ".join(argv)
     else:
         user_input = input("Enter ticker(s), indicator"
-                           " (SMA/RSI/EMA/MACD/BB/VWAP/ATR/AV/RVOL)"
+                           " (ATR/AV/BB/EMA/MACD/RSI/RVOL/SMA/VWAP)"
                            " [bar_size] [window] [C<count>]: ")
     parts = user_input.strip().split()
 
@@ -63,10 +63,10 @@ def main(argv: list[str] | None = None) -> None:
         sys.exit(1)
 
     indicator = indicator.upper()
-    if indicator not in ("SMA", "RSI", "EMA", "MACD", "BB",
-                         "VWAP", "ATR", "AV", "RVOL"):
-        print("Error: indicator must be SMA, RSI, EMA, MACD,"
-              " BB, VWAP, ATR, AV, or RVOL")
+    if indicator not in ("ATR", "AV", "BB", "EMA", "MACD", "RSI",
+                         "RVOL", "SMA", "VWAP"):
+        print("Error: indicator must be ATR, AV, BB, EMA, MACD,"
+              " RSI, RVOL, SMA, or VWAP")
         sys.exit(1)
 
     interval = "1d"
@@ -182,14 +182,23 @@ def main(argv: list[str] | None = None) -> None:
     for ticker in tickers:
         try:
             match indicator:
-                case "SMA":
-                    result = calculate_sma(ticker, window,
-                                           interval=interval, count=count)
+                case "ATR":
+                    result = calculate_atr(ticker, window,
+                                           interval=interval,
+                                           count=count)
+                case "AV":
+                    result = calculate_av(ticker, window,
+                                          interval=interval,
+                                          count=count)
+                case "BB":
+                    bb_window, bb_std = bb_params
+                    u, m, l = calculate_bb(
+                        ticker, window=bb_window,
+                        num_std=bb_std,
+                        interval=interval, count=count
+                    )
                 case "EMA":
                     result = calculate_ema(ticker, window,
-                                           interval=interval, count=count)
-                case "RSI":
-                    result = calculate_rsi(ticker, window,
                                            interval=interval, count=count)
                 case "MACD":
                     fast, slow, signal = macd_params
@@ -198,27 +207,18 @@ def main(argv: list[str] | None = None) -> None:
                         signal=signal,
                         interval=interval, count=count
                     )
-                case "BB":
-                    bb_window, bb_std = bb_params
-                    u, m, l = calculate_bb(
-                        ticker, window=bb_window,
-                        num_std=bb_std,
-                        interval=interval, count=count
-                    )
-                case "VWAP":
-                    result = calculate_vwap(ticker, window,
-                                            interval=interval,
-                                            count=count)
-                case "AV":
-                    result = calculate_av(ticker, window,
-                                          interval=interval,
-                                          count=count)
-                case "ATR":
-                    result = calculate_atr(ticker, window,
-                                           interval=interval,
-                                           count=count)
+                case "RSI":
+                    result = calculate_rsi(ticker, window,
+                                           interval=interval, count=count)
                 case "RVOL":
                     result = calculate_rvol(ticker, window,
+                                            interval=interval,
+                                            count=count)
+                case "SMA":
+                    result = calculate_sma(ticker, window,
+                                           interval=interval, count=count)
+                case "VWAP":
+                    result = calculate_vwap(ticker, window,
                                             interval=interval,
                                             count=count)
         except IndexError as e:

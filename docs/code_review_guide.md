@@ -86,7 +86,7 @@ other four documentation files.
 
 ## 2. Indicators — Structural Audit
 
-All eight indicator functions are expected to follow the same internal
+All nine indicator functions are expected to follow the same internal
 pattern defined in `docs/adding_indicator.md` section 2a.
 
 ### 2a. Common Pattern
@@ -109,12 +109,12 @@ Walk every `calculate_*` function and check:
       `len(result) < count`.
 - [ ] Error message uses the canonical format:
       `f"Insufficient data for <NAME>({param}) with count={count}"`
-- [ ] All eight indicators are registered in:
+- [ ] All nine indicators are registered in:
 
-      - `_DEFAULT_WINDOWS` dict (line 29)
-      - `main()` input prompt string (line 479)
-      - `main()` validation set (line 511)
-      - `main()` match/case dispatch block (line 626)
+      - `_DEFAULT_WINDOWS` dict (`indicators/_data.py`)
+      - `main()` input prompt string
+      - `main()` validation set
+      - `main()` match/case dispatch block
 
 ### 2b. Individual Anomalies
 
@@ -140,7 +140,7 @@ Walk every `calculate_*` function and check:
 - [ ] All functions accept `ticker, window, interval, count` in the
       same order (multi-param indicators like MACD and BB are the
       exception and accept their params before `interval`).
-- [ ] Type hints match across all eight signatures.
+- [ ] Type hints match across all nine signatures.
 - [ ] Default parameter values match `_DEFAULT_WINDOWS`.
 
 ---
@@ -153,7 +153,7 @@ Against the template in `docs/adding_indicator.md` section 3a.
 
 For each indicator test file, check:
 
-| Category | Tests | Present for all 8? |
+| Category | Tests | Present for all 9? |
 |----------|-------|--------------------|
 | Reference test | Known-answer assertion with `pytest.approx` | |
 | Window = 1 | Result equals last value | |
@@ -396,9 +396,9 @@ Indicator functions and the data layer have been extracted into the
 which was item 1 in the Section 8 action plan below.  main.py now
 focuses solely on CLI concerns.
 
-- If a ninth indicator were added, a new file `indicators/<name>.py`
-  would be created — no changes needed to the dispatch logic beyond a
-  new `case` block.
+- If a tenth indicator were added (the ninth, ATR, was added in
+  v1.3.0), a new file `indicators/<name>.py` would be created — no
+  changes needed to the dispatch logic beyond a new `case` block.
 - Would extracting CLI parsing into a separate function reduce the
   cognitive load of the 170-line parser block?
 

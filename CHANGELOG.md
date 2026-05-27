@@ -10,6 +10,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 - Average True Range (ATR) — new indicator measuring market volatility
   using Wilder-smoothed True Range over a configurable window (default 14).
+- 15 mock tests and 5 real tests for ATR.
+- ATR dispatch tests in both test suites.
 
 ## [1.2.3] - 2026-05-25
 

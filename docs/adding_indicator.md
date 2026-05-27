@@ -2,7 +2,7 @@
 
 This document describes the process for adding a new technical indicator to
 quant_indicators. Follow these steps in order. Each step references the
-existing SMA, EMA, RSI, and MACD implementations as templates.
+existing indicator implementations as templates (e.g. ATR for Wilder-smoothing / OHLCV, AV or SMA for simple rolling windows).
 
 ## 0. Create a TODO Entry
 
@@ -127,14 +127,17 @@ Maintain alphabetical order in the import list.
 ### 2d. Add a default window (if applicable)
 
 If the indicator has a sensible default window, add one entry to the
-`_DEFAULT_WINDOWS` dictionary in `indicators/_data.py`:
+`_DEFAULT_WINDOWS` dictionary in `indicators/_data.py` in
+alphabetical position:
 
 ```python
 _DEFAULT_WINDOWS: dict[str, int | tuple] = {
-    "SMA": 50,
+    "ATR": 14,
+    "AV": 20,
+    "BB": (20, 2.0),
     "EMA": 20,
-    "RSI": 14,
     "<INDICATOR>": <default_window>,
+    ...
 }
 ```
 
@@ -143,21 +146,23 @@ _DEFAULT_WINDOWS: dict[str, int | tuple] = {
 Three changes inside `main()` in `main.py`:
 
 1. **Prompt** — add the new indicator name to the list shown to the user
-   in the `input()` call:
+   in the `input()` call, maintaining alphabetical order:
    ```python
-   user_input = input("Enter ticker(s), indicator (SMA/RSI/EMA/<INDICATOR>)"
+   user_input = input("Enter ticker(s), indicator"
+                      " (ATR/AV/BB/EMA/MACD/RSI/RVOL/SMA/VWAP/<INDICATOR>)"
                       " [bar_size] [window] [C<count>]: ")
    ```
 
 2. **Validation set** — add the uppercased name to the
-   `indicator.upper()` check:
+   `indicator.upper()` check, maintaining alphabetical order:
    ```python
    indicator = indicator.upper()
-   if indicator not in ("SMA", "RSI", "EMA", "<INDICATOR>"):
+   if indicator not in ("ATR", "AV", "BB", "EMA", "MACD", "RSI",
+                        "RVOL", "SMA", "VWAP", "<INDICATOR>"):
    ```
 
 3. **Dispatch match/case** — add a new case block inside the
-   `match indicator:` block:
+   `match indicator:` block, in alphabetical position:
    ```python
    case "<INDICATOR>":
        result = calculate_<indicator>(ticker, window,
@@ -382,8 +387,8 @@ def test_default_window_<indicator>(self):
 ```
 
 Use the existing `_MOCK_SERIES = pd.Series([42.0])` defined at the top of
-the file. Place the new methods after the existing dispatch tests (after
-`test_default_window_rsi`).
+the file. Place the new methods in alphabetical position among the existing
+dispatch tests.
 
 ## 4. Real Tests
 
@@ -530,11 +535,12 @@ spacing between tests. To disable this (e.g. for parallel execution), set
 
 ## 6. Update README
 
-Update `README.md` to list the new indicator in the Syntax table:
+Update `README.md` to list the new indicator in the Syntax table,
+in alphabetical position:
 
 | Token | Meaning | Allowed Values | Default |
 |-------|---------|----------------|---------|
-| `indicator` | Indicator to compute | `SMA`, `EMA`, `RSI`, `<INDICATOR>` | Required |
+| `indicator` | Indicator to compute | `ATR`, `AV`, `BB`, `EMA`, `MACD`, `RSI`, `RVOL`, `SMA`, `VWAP`, `<INDICATOR>` | Required |
 
 Add a new example command to the Examples section:
 
@@ -550,7 +556,7 @@ section.
 ### 6c. Update formulas.md
 
 Add a new section to `docs/formulas.md` for the new indicator, placed
-between the existing sections in the same order as the README.  Include:
+in alphabetical order among the existing sections.  Include:
 
 - The mathematical formula using LaTeX notation (`$$...$$`).
 - A table of variables and their meanings.
