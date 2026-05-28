@@ -15,6 +15,7 @@ _MOCK_BB = (pd.Series([44.0]), pd.Series([42.0]),
 _MOCK_SERIES_VWAP = pd.Series([105.0])
 _MOCK_SERIES_AV = pd.Series([20000.0])
 _MOCK_SERIES_RVOL = pd.Series([1.2])
+_MOCK_STOCH = (pd.Series([80.0]), pd.Series([75.0]))
 
 
 class TestMain:
@@ -77,6 +78,31 @@ class TestMain:
                 main.main()
                 mock_sma.assert_called_once_with(
                     "AAPL", 50, interval="1d", count=1)
+
+    # ---- STOCH dispatch ----
+
+    def test_valid_stoch_dispatch(self):
+        """Verify main() calls calculate_stoch for a STOCH input
+        with explicit parameters."""
+        with patch("builtins.input",
+                   return_value="AAPL STOCH 14,3,3"):
+            with patch("main.calculate_stoch",
+                       return_value=_MOCK_STOCH) as mock_fn:
+                main.main()
+                mock_fn.assert_called_once_with(
+                    "AAPL", window=14, smooth_k=3, smooth_d=3,
+                    interval="1d", count=1)
+
+    def test_default_window_stoch(self):
+        """Verify STOCH defaults to (14,3,3) when not provided."""
+        with patch("builtins.input",
+                   return_value="AAPL STOCH"):
+            with patch("main.calculate_stoch",
+                       return_value=_MOCK_STOCH) as mock_fn:
+                main.main()
+                mock_fn.assert_called_once_with(
+                    "AAPL", window=14, smooth_k=3, smooth_d=3,
+                    interval="1d", count=1)
 
     def test_default_window_ema(self):
         """Verify EMA defaults to window=20 when not provided."""

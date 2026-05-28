@@ -2,7 +2,7 @@
 
 Current version: **1.3.0** — [Changelog](CHANGELOG.md)
 
-A command-line tool that fetches stock price data via [yfinance](https://github.com/ranaroussi/yfinance) and computes one of nine technical indicators: Average True Range (ATR), Average Volume (AV), Bollinger Bands (BB), Exponential Moving Average (EMA), Moving Average Convergence Divergence (MACD), Relative Strength Index (RSI), Relative Volume (RVOL), Simple Moving Average (SMA), or Volume Weighted Average Price (VWAP). Input is provided through stdin and the result is printed to stdout. The tool is designed for quick terminal lookups — you type a ticker and an indicator, and you get back a number.
+A command-line tool that fetches stock price data via [yfinance](https://github.com/ranaroussi/yfinance) and computes one of ten technical indicators: Average True Range (ATR), Average Volume (AV), Bollinger Bands (BB), Exponential Moving Average (EMA), Moving Average Convergence Divergence (MACD), Relative Strength Index (RSI), Relative Volume (RVOL), Simple Moving Average (SMA), Stochastic Oscillator (STOCH), or Volume Weighted Average Price (VWAP). Input is provided through stdin and the result is printed to stdout. The tool is designed for quick terminal lookups — you type a ticker and an indicator, and you get back a number.
 
 yfinance provides access to Yahoo Finance market data. The tool does not require an API key or account.
 
@@ -35,9 +35,9 @@ ticker(s) indicator [bar_size] [window] [C<count>]
 | Token | Meaning | Allowed Values | Default |
 |-------|---------|----------------|---------|
 | `ticker(s)` | Stock symbol(s), comma-separated | Any symbol yfinance recognises (e.g. AAPL, MSFT, GOOG, SPY, BTC-USD, EURUSD=X) | Required |
-| `indicator` | Indicator to compute | `ATR`, `AV`, `BB`, `EMA`, `MACD`, `RSI`, `RVOL`, `SMA`, `VWAP` (case-insensitive) | Required |
+| `indicator` | Indicator to compute | `ATR`, `AV`, `BB`, `EMA`, `MACD`, `RSI`, `RVOL`, `SMA`, `STOCH`, `VWAP` (case-insensitive) | Required |
 | `bar_size` | Width of each price bar | `1m`, `2m`, `5m`, `15m`, `30m`, `90m`, `60m`, `1h`, `1d`, `5d`, `1wk`, `1mo`, `3mo` | `1d` |
-| `window` | Lookback period in bars (for MACD: comma-separated fast,slow,signal, e.g. `12,26,9`; for BB: comma-separated window,num_std, e.g. `20,2.5`) | Any positive integer, or comma-separated values for MACD/BB | ATR=14, AV=20, BB=(20,2.0), EMA=20, MACD=(12,26,9), RSI=14, RVOL=10, SMA=50, VWAP=20 |
+| `window` | Lookback period in bars (for MACD: comma-separated fast,slow,signal, e.g. `12,26,9`; for BB: comma-separated window,num_std, e.g. `20,2.5`; for STOCH: comma-separated window,smooth_k,smooth_d, e.g. `14,3,3`) | Any positive integer, or comma-separated values for MACD/BB/STOCH | ATR=14, AV=20, BB=(20,2.0), EMA=20, MACD=(12,26,9), RSI=14, RVOL=10, SMA=50, STOCH=(14,3,3), VWAP=20 |
 | `C<count>` | Number of recent values to return | `C` followed by any positive integer (e.g. `C1`, `C10`, `C100`) | `1` |
 
 ### Argument Parsing Rules
@@ -60,7 +60,7 @@ Multiple tickers are separated by commas in the first token (e.g. `AAPL,MSFT`). 
 |-----------|---------|
 | Fewer than 2 tokens | `Error: expected at least 2 values (ticker(s) indicator [bar_size] [window] [C<count>])` |
 | No valid tickers after parsing | `Error: no valid tickers provided` |
-| Indicator not recognised | `Error: indicator must be ATR, AV, BB, EMA, MACD, RSI, RVOL, SMA, or VWAP` |
+| Indicator not recognised | `Error: indicator must be ATR, AV, BB, EMA, MACD, RSI, RVOL, SMA, STOCH, or VWAP` |
 | Unrecognised argument (not an interval, not C-prefixed, not an integer) | `Error: unrecognised argument '<arg>'` |
 | Duplicate bar size | `Error: duplicate bar size '<arg>'` |
 | Duplicate window | `Error: duplicate window '<arg>'` |
@@ -77,6 +77,10 @@ Multiple tickers are separated by commas in the first token (e.g. `AAPL,MSFT`). 
 | Invalid BB params (wrong number of values, non-numeric) | `Error: invalid BB parameters '...' (use window,num_std, e.g. 20,2.5)` |
 | Duplicate BB parameters | `Error: duplicate BB parameters '...'` |
 | BB param not a positive number | `Error: BB parameters must be positive` |
+| Plain integer given for STOCH window (not comma-separated) | `Error: STOCH requires comma-separated parameters (e.g. 14,3,3)` |
+| Invalid STOCH params (wrong number of values, non-integer) | `Error: invalid STOCH parameters '...' (use window,smooth_k,smooth_d, e.g. 14,3,3)` |
+| Duplicate STOCH parameters | `Error: duplicate STOCH parameters '...'` |
+| STOCH param not a positive integer | `Error: STOCH parameters must be positive` |
 
 ### Examples
 
@@ -144,6 +148,15 @@ echo "SPY SMA 20 5m" | python3 main.py
 # Three tickers with custom window, count, and bar size
 echo "AAPL,GOOG,TSLA EMA 50 C3 1wk" | python3 main.py
 
+# Stochastic Oscillator with default parameters (14,3,3)
+echo "AAPL STOCH" | python3 main.py
+
+# Stochastic Oscillator with custom parameters
+echo "MSFT STOCH 14,5,5" | python3 main.py
+
+# Stochastic Oscillator with count and weekly bars
+echo "GOOG STOCH 14,3,3 C5 1wk" | python3 main.py
+
 # VWAP with default window (20-day)
 echo "AAPL VWAP" | python3 main.py
 
@@ -184,6 +197,7 @@ The tool follows a five-step pipeline:
     - **RSI**: Price changes are split into gains and losses. Each is averaged using Wilder smoothing (`alpha = 1 / window`), then normalised to a 0–100 range.
     - **RVOL**: Current volume divided by its rolling mean (AV). Values above 1.0 mean above-average volume; below 1.0 means below-average.
     - **SMA**: Simple rolling mean of closing prices over a configurable window.
+    - **STOCH**: Stochastic Oscillator compares close to the high-low range. Raw %K is SMA-smoothed to %K, then SMA-smoothed again to %D. Bounded 0–100.
     - **VWAP**: Typical Price `(H + L + C) / 3` weighted by volume over a rolling window.
 
     NaN rows from the leading edge of the rolling / EWM calculation are dropped. The last `count` values of the remaining Series (or Series triple for MACD) are returned.
@@ -222,6 +236,7 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
 │   ├── rsi.py                     # calculate_rsi()
 │   ├── rvol.py                    # calculate_rvol()
 │   ├── sma.py                     # calculate_sma()
+│   ├── stoch.py                   # calculate_stoch()
 │   └── vwap.py                    # calculate_vwap()
 │
 ├── CHANGELOG.md                   # Version history and release notes.
@@ -309,6 +324,10 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
 │   ├── test_calculate_sma.py      # Tests for calculate_sma(): basic
 │   │                              # calculation, default window, count
 │   │                              # parameter, insufficient data.
+│   ├── test_calculate_stoch.py    # Tests for calculate_stoch(): basic
+│   │                              # calculation, default params, count,
+│   │                              # parameter, 0-100 bounds
+│   │                              # (added in v1.3.0).
 │   ├── test_calculate_vwap.py     # Tests for calculate_vwap(): basic
 │   │                              # calculation, default window, count,
 │   │                              # parameter, zero volume, edge cases.
@@ -346,6 +365,8 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
     ├── test_calculate_rvol.py     # End-to-end RVOL tests with real data
     │                              # (added in v1.2.0).
     ├── test_calculate_sma.py      # End-to-end SMA tests with real data.
+    ├── test_calculate_stoch.py    # End-to-end STOCH tests with real data
+    │                              # (added in v1.3.0).
     ├── test_calculate_vwap.py     # End-to-end VWAP tests with real data.
     └── test_main.py               # End-to-end CLI tests including
                                    # multi-ticker dispatch.
@@ -363,7 +384,7 @@ The project has two test suites: mock tests and real tests.
 Mock tests patch `yfinance.Ticker` so no real API calls are made. The `conftest.py` fixture creates a `MagicMock` that returns a predefined pandas DataFrame of `Close` prices. This means:
 
 - **Deterministic** — tests always produce the same results regardless of market conditions or network availability.
-- **Fast** — 327 tests run in under 1 second.
+- **Fast** — 343 tests run in under 1 second.
 - **Comprehensive** — covers calculation logic, edge cases, parser dispatch, count behaviour, multi-ticker input, duplicate detection, and error conditions.
 
 ### Real Tests

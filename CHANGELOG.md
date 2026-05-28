@@ -10,8 +10,14 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 - Average True Range (ATR) — new indicator measuring market volatility
   using Wilder-smoothed True Range over a configurable window (default 14).
+- Stochastic Oscillator (STOCH) — new indicator comparing close to the
+  high-low range, with SMA-smoothed %K and %D lines (default 14,3,3).
+- Alphabetised all indicator references across README, docs, and code
+  (ATR, AV, BB, EMA, MACD, RSI, RVOL, SMA, STOCH, VWAP).
 - 15 mock tests and 5 real tests for ATR.
-- ATR dispatch tests in both test suites.
+- 14 mock tests and 5 real tests for STOCH.
+- ATR and STOCH dispatch tests in both test suites.
+- 343 mock tests, 63 real tests (was 327 mock, 58 real).
 
 ## [1.2.3] - 2026-05-25
 

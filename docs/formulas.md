@@ -274,6 +274,33 @@ prior bars to fill the window.
 
 ---
 
+## Stochastic Oscillator (STOCH)
+
+A momentum indicator that compares the closing price to the high-low
+range over `t` periods.
+
+**Raw %K** (pre-smoothing):
+
+$$
+K_{raw} = \frac{C_t - L_t}{H_t - L_t} \times 100
+$$
+
+| Variable | Meaning |
+|----------|---------|
+| $C_t$ | Closing price at bar `t` |
+| $L_t$ | Lowest low over the window |
+| $H_t$ | Highest high over the window |
+
+**%K** = SMA of raw %K over `smooth_k` periods (default 3).
+
+**%D** = SMA of %K over `smooth_d` periods (default 3).
+
+Both %K and %D are clamped to $[0, 100]$.
+
+When `count > 1`, the output is two columns: `%K` and `%D`.
+
+---
+
 ## Volume Weighted Average Price (VWAP)
 
 VWAP is the ratio of the price-volume sum to the volume sum over

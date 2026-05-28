@@ -5,7 +5,7 @@ import sys
 
 from indicators import calculate_atr, calculate_av, calculate_bb, \
     calculate_ema, calculate_macd, calculate_rsi, calculate_rvol, \
-    calculate_sma, calculate_vwap
+    calculate_sma, calculate_stoch, calculate_vwap
 from indicators._data import _VALID_INTERVALS, _DEFAULT_WINDOWS
 
 
@@ -13,7 +13,8 @@ def main(argv: list[str] | None = None) -> None:
     """Parse user input and dispatch to the requested indicator.
 
     Expects at least two space-separated values: ticker(s) and
-    indicator name (ATR, AV, BB, EMA, MACD, RSI, RVOL, SMA, or VWAP).
+    indicator name (ATR, AV, BB, EMA, MACD, RSI, RVOL, SMA, STOCH,
+    or VWAP).
     Multiple tickers are separated with commas
     (e.g. ``AAPL,MSFT``).
     Optional trailing arguments can appear in any order:
@@ -26,16 +27,19 @@ def main(argv: list[str] | None = None) -> None:
         slow, and signal periods (e.g. "12,26,9").
       * For BB, two comma-separated values set the window and
         number of standard deviations (e.g. "20,2.0").
+      * For STOCH, three comma-separated integers set the window,
+        %K smoothing, and %D smoothing (e.g. "14,3,3").
 
     Defaults are "1d" for interval, indicator-specific windows
     (ATR=14, AV=20, BB=(20,2.0), EMA=20, MACD=(12,26,9),
-    RSI=14, RVOL=10, SMA=50, VWAP=20), and count=1.
+    RSI=14, RVOL=10, SMA=50, STOCH=(14,3,3), VWAP=20), and
+    count=1.
     """
     if argv:
         user_input = " ".join(argv)
     else:
         user_input = input("Enter ticker(s), indicator"
-                           " (ATR/AV/BB/EMA/MACD/RSI/RVOL/SMA/VWAP)"
+                           " (ATR/AV/BB/EMA/MACD/RSI/RVOL/SMA/STOCH/VWAP)"
                            " [bar_size] [window] [C<count>]: ")
     parts = user_input.strip().split()
 
@@ -64,9 +68,9 @@ def main(argv: list[str] | None = None) -> None:
 
     indicator = indicator.upper()
     if indicator not in ("ATR", "AV", "BB", "EMA", "MACD", "RSI",
-                         "RVOL", "SMA", "VWAP"):
+                         "RVOL", "SMA", "STOCH", "VWAP"):
         print("Error: indicator must be ATR, AV, BB, EMA, MACD,"
-              " RSI, RVOL, SMA, or VWAP")
+              " RSI, RVOL, SMA, STOCH, or VWAP")
         sys.exit(1)
 
     interval = "1d"
@@ -76,12 +80,15 @@ def main(argv: list[str] | None = None) -> None:
     seen_count = False
     macd_params: tuple[int, int, int] | None = None
     bb_params: tuple[int, float] | None = None
+    stoch_params: tuple[int, int, int] | None = None
     default = _DEFAULT_WINDOWS[indicator]
     window: int
     if isinstance(default, tuple):
         if indicator == "BB":
             bb_w, bb_s = default
             bb_params = (bb_w, float(bb_s))
+        elif indicator == "STOCH":
+            stoch_params = default
         else:
             macd_params = default
         window = 0  # unused for multi-param indicators
@@ -164,6 +171,31 @@ def main(argv: list[str] | None = None) -> None:
             print("Error: BB requires comma-separated"
                   " parameters (e.g. 20,2.5)")
             sys.exit(1)
+        elif indicator == "STOCH" and "," in arg:
+            if seen_window:
+                print("Error: duplicate STOCH parameters"
+                      f" '{arg}'")
+                sys.exit(1)
+            try:
+                w_str, sk_str, sd_str = arg.split(",")
+                w, sk, sd = (int(w_str), int(sk_str),
+                             int(sd_str))
+            except ValueError:
+                print("Error: invalid STOCH parameters"
+                      f" '{arg}'"
+                      " (use window,smooth_k,smooth_d,"
+                      " e.g. 14,3,3)")
+                sys.exit(1)
+            if w <= 0 or sk <= 0 or sd <= 0:
+                print("Error: STOCH parameters must be"
+                      " positive")
+                sys.exit(1)
+            stoch_params = (w, sk, sd)
+            seen_window = True
+        elif indicator == "STOCH":
+            print("Error: STOCH requires comma-separated"
+                  " parameters (e.g. 14,3,3)")
+            sys.exit(1)
         else:
             try:
                 w = int(arg)
@@ -217,6 +249,13 @@ def main(argv: list[str] | None = None) -> None:
                 case "SMA":
                     result = calculate_sma(ticker, window,
                                            interval=interval, count=count)
+                case "STOCH":
+                    stoch_w, stoch_sk, stoch_sd = stoch_params
+                    k, d = calculate_stoch(
+                        ticker, window=stoch_w,
+                        smooth_k=stoch_sk, smooth_d=stoch_sd,
+                        interval=interval, count=count
+                    )
                 case "VWAP":
                     result = calculate_vwap(ticker, window,
                                             interval=interval,
@@ -254,6 +293,18 @@ def main(argv: list[str] | None = None) -> None:
                     print(f"  MACD={m_line.iloc[i]:.2f}"
                           f" Signal={s_line.iloc[i]:.2f}"
                           f" Hist={hist.iloc[i]:.2f}")
+        elif indicator == "STOCH":
+            if count == 1:
+                print(f"{ticker} STOCH({stoch_w},{stoch_sk},"
+                      f"{stoch_sd}):"
+                      f" %K={k.iloc[-1]:.2f}"
+                      f" %D={d.iloc[-1]:.2f}")
+            else:
+                print(f"{ticker} STOCH({stoch_w},{stoch_sk},"
+                      f"{stoch_sd}) (last {count}):")
+                for i in range(count):
+                    print(f"  %K={k.iloc[i]:.2f}"
+                          f" %D={d.iloc[i]:.2f}")
         elif count == 1:
             print(f"{ticker} {window}-{indicator}:"
                   f" {result.iloc[-1]:.2f}")

@@ -55,6 +55,13 @@ class TestMain:
         with patch("builtins.input", return_value="AAPL SMA 30"):
             main.main()
 
+    def test_stoch_dispatch(self):
+        """Verify main() dispatches to STOCH with default
+        interval."""
+        with patch("builtins.input",
+                   return_value="AAPL STOCH 14,3,3"):
+            main.main()
+
     def test_vwap_dispatch(self):
         """Verify main() dispatches to VWAP."""
         with patch("builtins.input",

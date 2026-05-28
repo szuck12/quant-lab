@@ -9,6 +9,7 @@ from indicators.macd import calculate_macd
 from indicators.rsi import calculate_rsi
 from indicators.rvol import calculate_rvol
 from indicators.sma import calculate_sma
+from indicators.stoch import calculate_stoch
 from indicators.vwap import calculate_vwap
 
 __all__ = [
@@ -20,5 +21,6 @@ __all__ = [
     "calculate_rsi",
     "calculate_rvol",
     "calculate_sma",
+    "calculate_stoch",
     "calculate_vwap",
 ]
