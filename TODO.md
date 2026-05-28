@@ -6,7 +6,7 @@
 ## Done
 
 - [x] 2026-05-27 — Implement Stochastic Oscillator (STOCH) indicator (#indicator)
-- [x] 2026-05-25 — Implement Average True Range (ATR) indicator (#indicator)
+- [x] 2026-05-27 — Implement Average True Range (ATR) indicator (#indicator)
 - [x] 2026-05-25 — Split indicator functions from main.py into indicators/
       subpackage (#refactor)
 - [x] Fix realtest conftest 1s delay applying to mock tests when running
