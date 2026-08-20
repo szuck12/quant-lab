@@ -43,6 +43,28 @@ class TestMain:
                 mock_atr.assert_called_once_with(
                     "AAPL", 14, interval="1d", count=1)
 
+    # ---- ROC dispatch ----
+
+    def test_valid_roc_dispatch(self):
+        """Verify main() calls calculate_roc for an ROC input."""
+        with patch("builtins.input",
+                   return_value="AAPL ROC 9"):
+            with patch("main.calculate_roc",
+                       return_value=_MOCK_SERIES) as mock_fn:
+                main.main()
+                mock_fn.assert_called_once_with(
+                    "AAPL", 9, interval="1d", count=1)
+
+    def test_default_window_roc(self):
+        """Verify ROC defaults to window=9 when not provided."""
+        with patch("builtins.input",
+                   return_value="AAPL ROC"):
+            with patch("main.calculate_roc",
+                       return_value=_MOCK_SERIES) as mock_fn:
+                main.main()
+                mock_fn.assert_called_once_with(
+                    "AAPL", 9, interval="1d", count=1)
+
     # ---- dispatch with explicit window ----
 
     def test_valid_sma_dispatch(self):

@@ -175,6 +175,33 @@ above with `adjust=False`.
 
 ---
 
+## Rate of Change (ROC)
+
+ROC measures the percentage change in the closing price over
+`n` bars, gauging the strength and direction of momentum.
+
+$$
+\text{ROC}_t = \frac{C_t - C_{t-n}}{C_{t-n}} \times 100
+$$
+
+| Variable | Meaning |
+|----------|---------|
+| $C_t$ | Closing price at bar `t` |
+| $C_{t-n}$ | Closing price `n` bars ago |
+| $n$   | Lookback window (default 9) |
+
+### Notes
+
+- Positive values indicate upward momentum; negative values
+  indicate downward momentum.
+- The first `n` bars produce `NaN` because there is no close
+  `n` bars earlier.
+- A close price of exactly zero `n` bars ago makes ROC
+  undefined; those rows are dropped like `NaN` rows and may
+  raise `IndexError` if too few valid values remain.
+
+---
+
 ## Relative Strength Index (RSI)
 
 RSI measures the magnitude of recent price changes to evaluate

@@ -39,6 +39,13 @@ class TestMain:
                    return_value="AAPL MACD 12,26,9"):
             main.main()
 
+    def test_roc_dispatch(self):
+        """Verify main() dispatches to ROC with default
+        interval."""
+        with patch("builtins.input",
+                   return_value="AAPL ROC 9"):
+            main.main()
+
     def test_rsi_dispatch(self):
         """Verify main() dispatches to RSI with default interval."""
         with patch("builtins.input", return_value="MSFT RSI 14"):

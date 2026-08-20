@@ -5,6 +5,16 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com) and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-06-16
+
+### Added
+- Rate of Change (ROC) — new momentum indicator measuring the
+  percentage change in close price over a configurable window
+  (default 9, matching TradingView).
+- 17 mock tests and 5 real tests for ROC.
+- ROC dispatch tests in both test suites.
+- 362 mock tests, 69 real tests (was 343 mock, 63 real).
+
 ## [1.3.0] - 2026-05-27
 
 ### Added
