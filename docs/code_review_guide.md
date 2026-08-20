@@ -1,6 +1,6 @@
 # Code Review Guide
 
-An occasional deep-dive architectural review of the quant_indicators
+An occasional deep-dive architectural review of the QuantLab
 codebase.  This is **not** a per-commit PR checklist — it is meant to
 be run before releases, when a design question arises, or when
 cross-cutting structural issues are suspected.

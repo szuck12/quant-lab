@@ -1,4 +1,4 @@
-# quant_indicators
+# QuantLab
 
 Current version: **1.3.0** — [Changelog](CHANGELOG.md)
 

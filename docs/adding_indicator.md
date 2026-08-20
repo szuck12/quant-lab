@@ -1,7 +1,7 @@
 # Adding a New Indicator
 
 This document describes the process for adding a new technical indicator to
-quant_indicators. Follow these steps in order. Each step references the
+QuantLab. Follow these steps in order. Each step references the
 existing indicator implementations as templates (e.g. ATR for Wilder-smoothing / OHLCV, AV or SMA for simple rolling windows).
 
 ## 0. Create a TODO Entry

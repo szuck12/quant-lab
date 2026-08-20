@@ -1,7 +1,7 @@
 # Indicator Formulas
 
 This document describes the mathematical formulas used by each
-indicator in quant_indicators.  Indicators are listed in
+indicator in QuantLab.  Indicators are listed in
 alphabetical order.
 
 All formulas assume a time series indexed by `t` where `t` advances
