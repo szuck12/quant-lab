@@ -26,6 +26,7 @@ _DATA_PERIOD_MAP = {
 _VALID_INTERVALS = frozenset(_DATA_PERIOD_MAP.keys())
 
 _DEFAULT_WINDOWS: dict[str, int | tuple] = {
+    "ADX": (14, 14),
     "ATR": 14,
     "AV": 20,
     "BB": (20, 2.0),

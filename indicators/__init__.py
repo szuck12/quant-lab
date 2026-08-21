@@ -1,6 +1,7 @@
 # indicators/__init__.py
 # Public API: re-export all calculate_* functions
 
+from indicators.adx import calculate_adx
 from indicators.atr import calculate_atr
 from indicators.av import calculate_av
 from indicators.bb import calculate_bb
@@ -15,6 +16,7 @@ from indicators.stoch import calculate_stoch
 from indicators.vwap import calculate_vwap
 
 __all__ = [
+    "calculate_adx",
     "calculate_atr",
     "calculate_av",
     "calculate_bb",

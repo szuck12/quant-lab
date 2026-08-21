@@ -9,6 +9,13 @@ import main
 class TestMain:
     """Tests for main() with real indicator calculations."""
 
+    def test_adx_dispatch(self):
+        """Verify main() dispatches to ADX with default
+        interval."""
+        with patch("builtins.input",
+                   return_value="AAPL ADX 14,14"):
+            main.main()
+
     def test_atr_dispatch(self):
         """Verify main() dispatches to ATR with default interval."""
         with patch("builtins.input",

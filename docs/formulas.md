@@ -9,6 +9,87 @@ forward in time (bar by bar).
 
 ---
 
+## Average Directional Index (ADX)
+
+ADX is part of Wilder's Directional Movement system.  Directional
+movement is extracted from consecutive highs and lows, smoothed,
+and normalised by True Range to produce the directional
+indicators +DI and −DI.  ADX itself is a smoothed measure of the
+gap between them and quantifies trend strength regardless of
+direction.
+
+**Directional movement** — for each bar, one of +DM, −DM, or
+neither is non-zero:
+
+$$
+\text{+DM}_t = \begin{cases} H_t - H_{t-1} & \text{if } H_t - H_{t-1} > L_{t-1} - L_t \text{ and } H_t > H_{t-1} \\ 0 & \text{otherwise} \end{cases}
+$$
+
+$$
+\text{−DM}_t = \begin{cases} L_{t-1} - L_t & \text{if } L_{t-1} - L_t > H_t - H_{t-1} \text{ and } L_t < L_{t-1} \\ 0 & \text{otherwise} \end{cases}
+$$
+
+**True Range** (same definition as ATR):
+
+$$
+\text{TR}_t = \max(
+    H_t - L_t,\;
+    |H_t - C_{t-1}|,\;
+    |L_t - C_{t-1}|
+)
+$$
+
+**Wilder smoothing** — TR, +DM, and −DM are smoothed with an RMA
+(`alpha = 1 / n`, `adjust=False`, identical to ATR):
+
+$$
+\text{RMA}_t(x) = (1 - \alpha) \cdot \text{RMA}_{t-1}(x) + \alpha \cdot x_t
+$$
+
+**Directional indicators and ADX:**
+
+$$
+\text{+DI}_t = 100 \cdot \frac{\text{RMA}_t(\text{+DM})}{\text{RMA}_t(\text{TR})}
+$$
+
+$$
+\text{−DI}_t = 100 \cdot \frac{\text{RMA}_t(\text{−DM})}{\text{RMA}_t(\text{TR})}
+$$
+
+$$
+\text{DX}_t = 100 \cdot \frac{|\text{+DI}_t - \text{−DI}_t|}{\text{+DI}_t + \text{−DI}_t}
+$$
+
+$$
+\text{ADX}_t = \text{RMA}_{m}(\text{DX})
+$$
+
+| Variable | Meaning |
+|----------|---------|
+| $H_t$, $L_t$, $C_t$ | High, low, and close at bar `t` |
+| $\text{+DM}_t$ / $\text{−DM}_t$ | Upward / downward directional movement |
+| $\text{TR}_t$ | True Range |
+| $n$ | DI smoothing window (default 14) |
+| $m$ | ADX smoothing window over DX (default 14) |
+| $\alpha$ | Wilder smoothing factor ($1 / n$) |
+
+### Notes
+
+- The first bar has no previous bar; its directional movement is
+  `NaN` and is dropped like other leading `NaN` rows.
+- When both movements compete within a bar (higher high AND
+  lower low), only the larger one counts.
+- `DX` is `NaN` whenever `+DI + −DI` is zero (no dominant
+  movement); those rows are dropped and may raise `IndexError`
+  if too few valid values remain.
+- A zero True Range (flat highs, lows, and closes) makes the DI
+  denominators zero and raises `IndexError`.
+- All three outputs are bounded to 0–100.  ADX measures trend
+  strength only: a strong downtrend produces the same high ADX
+  as a strong uptrend, while +DI vs −DI identifies direction.
+
+---
+
 ## Average True Range (ATR)
 
 ATR measures market volatility by computing the Wilder-smoothed

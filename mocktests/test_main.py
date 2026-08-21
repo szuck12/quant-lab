@@ -16,10 +16,36 @@ _MOCK_SERIES_VWAP = pd.Series([105.0])
 _MOCK_SERIES_AV = pd.Series([20000.0])
 _MOCK_SERIES_RVOL = pd.Series([1.2])
 _MOCK_STOCH = (pd.Series([80.0]), pd.Series([75.0]))
+_MOCK_ADX = (pd.Series([25.0]), pd.Series([15.0]),
+             pd.Series([30.0]))
 
 
 class TestMain:
     """Tests for main()."""
+
+    # ---- ADX dispatch ----
+
+    def test_valid_adx_dispatch(self):
+        """Verify main() calls calculate_adx for an ADX input."""
+        with patch("builtins.input",
+                   return_value="AAPL ADX 14,14"):
+            with patch("main.calculate_adx",
+                       return_value=_MOCK_ADX) as mock_fn:
+                main.main()
+                mock_fn.assert_called_once_with(
+                    "AAPL", window=14, adx_window=14,
+                    interval="1d", count=1)
+
+    def test_default_window_adx(self):
+        """Verify ADX defaults to (14, 14) when not provided."""
+        with patch("builtins.input",
+                   return_value="AAPL ADX"):
+            with patch("main.calculate_adx",
+                       return_value=_MOCK_ADX) as mock_fn:
+                main.main()
+                mock_fn.assert_called_once_with(
+                    "AAPL", window=14, adx_window=14,
+                    interval="1d", count=1)
 
     # ---- ATR dispatch ----
 

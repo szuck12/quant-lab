@@ -1,8 +1,8 @@
 # QuantLab
 
-Current version: **1.5.0** — [Changelog](CHANGELOG.md)
+Current version: **1.6.0** — [Changelog](CHANGELOG.md)
 
-A command-line tool that fetches stock price data via [yfinance](https://github.com/ranaroussi/yfinance) and computes one of twelve technical indicators: Average True Range (ATR), Average Volume (AV), Bollinger Bands (BB), Exponential Moving Average (EMA), Moving Average Convergence Divergence (MACD), On-Balance Volume (OBV), Rate of Change (ROC), Relative Strength Index (RSI), Relative Volume (RVOL), Simple Moving Average (SMA), Stochastic Oscillator (STOCH), or Volume Weighted Average Price (VWAP). Input is provided through stdin and the result is printed to stdout. The tool is designed for quick terminal lookups — you type a ticker and an indicator, and you get back a number.
+A command-line tool that fetches stock price data via [yfinance](https://github.com/ranaroussi/yfinance) and computes one of thirteen technical indicators: Average Directional Index (ADX), Average True Range (ATR), Average Volume (AV), Bollinger Bands (BB), Exponential Moving Average (EMA), Moving Average Convergence Divergence (MACD), On-Balance Volume (OBV), Rate of Change (ROC), Relative Strength Index (RSI), Relative Volume (RVOL), Simple Moving Average (SMA), Stochastic Oscillator (STOCH), or Volume Weighted Average Price (VWAP). Input is provided through stdin and the result is printed to stdout. The tool is designed for quick terminal lookups — you type a ticker and an indicator, and you get back a number.
 
 yfinance provides access to Yahoo Finance market data. The tool does not require an API key or account.
 
@@ -35,9 +35,9 @@ ticker(s) indicator [bar_size] [window] [C<count>]
 | Token | Meaning | Allowed Values | Default |
 |-------|---------|----------------|---------|
 | `ticker(s)` | Stock symbol(s), comma-separated | Any symbol yfinance recognises (e.g. AAPL, MSFT, GOOG, SPY, BTC-USD, EURUSD=X) | Required |
-| `indicator` | Indicator to compute | `ATR`, `AV`, `BB`, `EMA`, `MACD`, `OBV`, `ROC`, `RSI`, `RVOL`, `SMA`, `STOCH`, `VWAP` (case-insensitive) | Required |
+| `indicator` | Indicator to compute | `ADX`, `ATR`, `AV`, `BB`, `EMA`, `MACD`, `OBV`, `ROC`, `RSI`, `RVOL`, `SMA`, `STOCH`, `VWAP` (case-insensitive) | Required |
 | `bar_size` | Width of each price bar | `1m`, `2m`, `5m`, `15m`, `30m`, `90m`, `60m`, `1h`, `1d`, `5d`, `1wk`, `1mo`, `3mo` | `1d` |
-| `window` | Lookback period in bars (for MACD: comma-separated fast,slow,signal, e.g. `12,26,9`; for BB: comma-separated window,num_std, e.g. `20,2.5`; for STOCH: comma-separated window,smooth_k,smooth_d, e.g. `14,3,3`) | Any positive integer, or comma-separated values for MACD/BB/STOCH | ATR=14, AV=20, BB=(20,2.0), EMA=20, MACD=(12,26,9), OBV=30, ROC=9, RSI=14, RVOL=10, SMA=50, STOCH=(14,3,3), VWAP=20 |
+| `window` | Lookback period in bars (for MACD: comma-separated fast,slow,signal, e.g. `12,26,9`; for BB: comma-separated window,num_std, e.g. `20,2.5`; for STOCH: comma-separated window,smooth_k,smooth_d, e.g. `14,3,3`; for ADX: comma-separated window,adx_window, e.g. `14,14`) | Any positive integer, or comma-separated values for MACD/BB/STOCH/ADX | ADX=(14,14), ATR=14, AV=20, BB=(20,2.0), EMA=20, MACD=(12,26,9), OBV=30, ROC=9, RSI=14, RVOL=10, SMA=50, STOCH=(14,3,3), VWAP=20 |
 | `C<count>` | Number of recent values to return | `C` followed by any positive integer (e.g. `C1`, `C10`, `C100`) | `1` |
 
 ### Argument Parsing Rules
@@ -60,7 +60,7 @@ Multiple tickers are separated by commas in the first token (e.g. `AAPL,MSFT`). 
 |-----------|---------|
 | Fewer than 2 tokens | `Error: expected at least 2 values (ticker(s) indicator [bar_size] [window] [C<count>])` |
 | No valid tickers after parsing | `Error: no valid tickers provided` |
-| Indicator not recognised | `Error: indicator must be ATR, AV, BB, EMA, MACD, OBV, ROC, RSI, RVOL, SMA, STOCH, or VWAP` |
+| Indicator not recognised | `Error: indicator must be ADX, ATR, AV, BB, EMA, MACD, OBV, ROC, RSI, RVOL, SMA, STOCH, or VWAP` |
 | Unrecognised argument (not an interval, not C-prefixed, not an integer) | `Error: unrecognised argument '<arg>'` |
 | Duplicate bar size | `Error: duplicate bar size '<arg>'` |
 | Duplicate window | `Error: duplicate window '<arg>'` |
@@ -85,6 +85,12 @@ Multiple tickers are separated by commas in the first token (e.g. `AAPL,MSFT`). 
 ### Examples
 
 ```bash
+# Average Directional Index with default parameters (14,14)
+echo "AAPL ADX" | python3 main.py
+
+# Average Directional Index with custom DI and ADX smoothing lengths
+echo "MSFT ADX 10,20 C3 1wk" | python3 main.py
+
 # Average True Range with default window (14-day)
 echo "AAPL ATR" | python3 main.py
 
@@ -201,6 +207,7 @@ The tool follows a five-step pipeline:
 
 4. **Indicator calculation**. For SMA, EMA, RSI, MACD, ROC, and BB the `Close` column is extracted from the DataFrame and passed to the appropriate calculation function. For VWAP, AV, RVOL, and OBV the full OHLCV DataFrame is used.  See [docs/formulas.md](docs/formulas.md) for the complete mathematical formulas.
 
+    - **ADX**: Wilder's Directional Movement Index trio: +DI and −DI (smoothed directional movement normalised by True Range) and ADX (smoothed DX measuring trend strength regardless of direction). Bounded 0–100.
     - **ATR**: True Range (max of high−low, |high−prev close|, |low−prev close|) averaged with Wilder smoothing (`alpha = 1 / window`), measuring market volatility.
     - **AV**: Simple rolling mean of volume, following the same pattern as SMA.
     - **BB**: Three bands: middle (SMA), upper (middle + k × σ), lower (middle − k × σ). Standard deviation uses population normalisation (`ddof=0`), matching TradingView.
@@ -242,6 +249,7 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
 │   │                              # _data_period(), _fetch_close(),
 │   │                              # _fetch_ohlcv().
 │   │
+│   ├── adx.py                     # calculate_adx()
 │   ├── atr.py                     # calculate_atr()
 │   ├── av.py                      # calculate_av()
 │   ├── bb.py                      # calculate_bb()
@@ -312,6 +320,11 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
 │   │                              # patches yf.Ticker, and yields the
 │   │                              # mock for optional assertions.
 │   │
+│   ├── test_calculate_adx.py      # Tests for calculate_adx(): DI
+│   │                              # dominance, trend vs choppy
+│   │                              # ADX, competing movement, zero
+│   │                              # range, insufficiency (added
+│   │                              # in v1.6.0).
 │   ├── test_calculate_atr.py      # Tests for calculate_atr(): basic
 │   │                              # calculation, default window, count,
 │   │                              # parameter, Wilder smoothing
@@ -378,6 +391,8 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
     │                              # spacing between real tests to avoid
     │                              # yfinance rate limits.
     │
+    ├── test_calculate_adx.py      # End-to-end ADX tests with real
+    │                              # data (added in v1.6.0).
     ├── test_calculate_atr.py      # End-to-end ATR tests with real data
     │                              # (added in v1.3.0).
     ├── test_calculate_av.py       # End-to-end AV tests with real data
@@ -411,7 +426,7 @@ The project has two test suites: mock tests and real tests.
 Mock tests patch `yfinance.Ticker` so no real API calls are made. The `conftest.py` fixture creates a `MagicMock` that returns a predefined pandas DataFrame of `Close` prices. This means:
 
 - **Deterministic** — tests always produce the same results regardless of market conditions or network availability.
-- **Fast** — 381 tests run in under 1 second.
+- **Fast** — 402 tests run in under 1 second.
 - **Comprehensive** — covers calculation logic, edge cases, parser dispatch, count behaviour, multi-ticker input, duplicate detection, and error conditions.
 
 ### Real Tests

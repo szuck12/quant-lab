@@ -5,6 +5,19 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com) and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-07-05
+
+### Added
+- Average Directional Index (ADX) — new trend-strength indicator
+  implementing Wilder's Directional Movement system: +DI and −DI
+  (directional movement smoothed with Wilder RMA and normalised
+  by True Range) plus ADX, the RMA of DX.  Defaults (14, 14) via
+  comma-separated syntax (e.g. "14,14"), matching TradingView's
+  ta.dmi().
+- 19 mock tests and 5 real tests for ADX.
+- ADX dispatch tests in both test suites.
+- 402 mock tests, 81 real tests (was 381 mock, 75 real).
+
 ## [1.5.0] - 2026-06-19
 
 ### Added

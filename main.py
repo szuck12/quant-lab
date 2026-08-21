@@ -3,10 +3,10 @@
 
 import sys
 
-from indicators import calculate_atr, calculate_av, calculate_bb, \
-    calculate_ema, calculate_macd, calculate_obv, calculate_roc, \
-    calculate_rsi, calculate_rvol, calculate_sma, calculate_stoch, \
-    calculate_vwap
+from indicators import calculate_adx, calculate_atr, \
+    calculate_av, calculate_bb, calculate_ema, calculate_macd, \
+    calculate_obv, calculate_roc, calculate_rsi, calculate_rvol, \
+    calculate_sma, calculate_stoch, calculate_vwap
 from indicators._data import _VALID_INTERVALS, _DEFAULT_WINDOWS
 
 
@@ -14,8 +14,8 @@ def main(argv: list[str] | None = None) -> None:
     """Parse user input and dispatch to the requested indicator.
 
     Expects at least two space-separated values: ticker(s) and
-    indicator name (ATR, AV, BB, EMA, MACD, OBV, ROC, RSI, RVOL,
-    SMA, STOCH, or VWAP).
+    indicator name (ADX, ATR, AV, BB, EMA, MACD, OBV, ROC, RSI,
+    RVOL, SMA, STOCH, or VWAP).
     Multiple tickers are separated with commas
     (e.g. ``AAPL,MSFT``).
     Optional trailing arguments can appear in any order:
@@ -30,18 +30,21 @@ def main(argv: list[str] | None = None) -> None:
         number of standard deviations (e.g. "20,2.0").
       * For STOCH, three comma-separated integers set the window,
         %K smoothing, and %D smoothing (e.g. "14,3,3").
+      * For ADX, two comma-separated integers set the DI
+        smoothing length and the ADX smoothing length
+        (e.g. "14,14").
 
     Defaults are "1d" for interval, indicator-specific windows
-    (ATR=14, AV=20, BB=(20,2.0), EMA=20, MACD=(12,26,9),
-    OBV=30, ROC=9, RSI=14, RVOL=10, SMA=50, STOCH=(14,3,3),
-    VWAP=20), and count=1.
+    (ADX=(14,14), ATR=14, AV=20, BB=(20,2.0), EMA=20,
+    MACD=(12,26,9), OBV=30, ROC=9, RSI=14, RVOL=10, SMA=50,
+    STOCH=(14,3,3), VWAP=20), and count=1.
     """
     if argv:
         user_input = " ".join(argv)
     else:
         user_input = input("Enter ticker(s), indicator"
-                           " (ATR/AV/BB/EMA/MACD/OBV/ROC/RSI/"
-                           "RVOL/SMA/STOCH/VWAP)"
+                           " (ADX/ATR/AV/BB/EMA/MACD/OBV/ROC/"
+                           "RSI/RVOL/SMA/STOCH/VWAP)"
                            " [bar_size] [window] [C<count>]: ")
     parts = user_input.strip().split()
 
@@ -69,11 +72,11 @@ def main(argv: list[str] | None = None) -> None:
         sys.exit(1)
 
     indicator = indicator.upper()
-    if indicator not in ("ATR", "AV", "BB", "EMA", "MACD", "OBV",
-                         "ROC", "RSI", "RVOL", "SMA", "STOCH",
-                         "VWAP"):
-        print("Error: indicator must be ATR, AV, BB, EMA, MACD,"
-              " OBV, ROC, RSI, RVOL, SMA, STOCH, or VWAP")
+    if indicator not in ("ADX", "ATR", "AV", "BB", "EMA", "MACD",
+                         "OBV", "ROC", "RSI", "RVOL", "SMA",
+                         "STOCH", "VWAP"):
+        print("Error: indicator must be ADX, ATR, AV, BB, EMA,"
+              " MACD, OBV, ROC, RSI, RVOL, SMA, STOCH, or VWAP")
         sys.exit(1)
 
     interval = "1d"
@@ -84,10 +87,13 @@ def main(argv: list[str] | None = None) -> None:
     macd_params: tuple[int, int, int] | None = None
     bb_params: tuple[int, float] | None = None
     stoch_params: tuple[int, int, int] | None = None
+    adx_params: tuple[int, int] | None = None
     default = _DEFAULT_WINDOWS[indicator]
     window: int
     if isinstance(default, tuple):
-        if indicator == "BB":
+        if indicator == "ADX":
+            adx_params = default
+        elif indicator == "BB":
             bb_w, bb_s = default
             bb_params = (bb_w, float(bb_s))
         elif indicator == "STOCH":
@@ -120,6 +126,30 @@ def main(argv: list[str] | None = None) -> None:
                 print("Error: count must be positive")
                 sys.exit(1)
             seen_count = True
+        elif indicator == "ADX" and "," in arg:
+            if seen_window:
+                print(f"Error: duplicate ADX parameters"
+                      f" '{arg}'")
+                sys.exit(1)
+            try:
+                w_str, aw_str = arg.split(",")
+                adx_w, adx_aw = int(w_str), int(aw_str)
+            except ValueError:
+                print("Error: invalid ADX parameters"
+                      f" '{arg}'"
+                      " (use window,adx_window,"
+                      " e.g. 14,14)")
+                sys.exit(1)
+            if adx_w <= 0 or adx_aw <= 0:
+                print("Error: ADX parameters must be"
+                      " positive")
+                sys.exit(1)
+            adx_params = (adx_w, adx_aw)
+            seen_window = True
+        elif indicator == "ADX":
+            print("Error: ADX requires comma-separated"
+                  " parameters (e.g. 14,14)")
+            sys.exit(1)
         elif indicator == "MACD" and "," in arg:
             if seen_window:
                 print("Error: duplicate MACD parameters"
@@ -217,6 +247,13 @@ def main(argv: list[str] | None = None) -> None:
     for ticker in tickers:
         try:
             match indicator:
+                case "ADX":
+                    di_len, adx_len = adx_params
+                    plus_di, minus_di, adx_val = calculate_adx(
+                        ticker, window=di_len,
+                        adx_window=adx_len,
+                        interval=interval, count=count
+                    )
                 case "ATR":
                     result = calculate_atr(ticker, window,
                                            interval=interval,
@@ -278,7 +315,20 @@ def main(argv: list[str] | None = None) -> None:
             print(f"Error: {ticker} failed — {e}")
             continue
 
-        if indicator == "BB":
+        if indicator == "ADX":
+            if count == 1:
+                print(f"{ticker} ADX({di_len},{adx_len}):"
+                      f" +DI={plus_di.iloc[-1]:.2f}"
+                      f" -DI={minus_di.iloc[-1]:.2f}"
+                      f" ADX={adx_val.iloc[-1]:.2f}")
+            else:
+                print(f"{ticker} ADX({di_len},{adx_len})"
+                      f" (last {count}):")
+                for i in range(count):
+                    print(f"  +DI={plus_di.iloc[i]:.2f}"
+                          f" -DI={minus_di.iloc[i]:.2f}"
+                          f" ADX={adx_val.iloc[i]:.2f}")
+        elif indicator == "BB":
             if count == 1:
                 print(f"{ticker} BB({bb_window},{bb_std}):"
                       f" Upper={u.iloc[-1]:.2f}"
