@@ -65,6 +65,28 @@ class TestMain:
                 mock_fn.assert_called_once_with(
                     "AAPL", 9, interval="1d", count=1)
 
+    # ---- OBV dispatch ----
+
+    def test_valid_obv_dispatch(self):
+        """Verify main() calls calculate_obv for an OBV input."""
+        with patch("builtins.input",
+                   return_value="AAPL OBV 30"):
+            with patch("main.calculate_obv",
+                       return_value=_MOCK_SERIES) as mock_fn:
+                main.main()
+                mock_fn.assert_called_once_with(
+                    "AAPL", 30, interval="1d", count=1)
+
+    def test_default_window_obv(self):
+        """Verify OBV defaults to window=30 when not provided."""
+        with patch("builtins.input",
+                   return_value="AAPL OBV"):
+            with patch("main.calculate_obv",
+                       return_value=_MOCK_SERIES) as mock_fn:
+                main.main()
+                mock_fn.assert_called_once_with(
+                    "AAPL", 30, interval="1d", count=1)
+
     # ---- dispatch with explicit window ----
 
     def test_valid_sma_dispatch(self):

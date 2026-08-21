@@ -4,8 +4,9 @@
 import sys
 
 from indicators import calculate_atr, calculate_av, calculate_bb, \
-    calculate_ema, calculate_macd, calculate_roc, calculate_rsi, \
-    calculate_rvol, calculate_sma, calculate_stoch, calculate_vwap
+    calculate_ema, calculate_macd, calculate_obv, calculate_roc, \
+    calculate_rsi, calculate_rvol, calculate_sma, calculate_stoch, \
+    calculate_vwap
 from indicators._data import _VALID_INTERVALS, _DEFAULT_WINDOWS
 
 
@@ -13,8 +14,8 @@ def main(argv: list[str] | None = None) -> None:
     """Parse user input and dispatch to the requested indicator.
 
     Expects at least two space-separated values: ticker(s) and
-    indicator name (ATR, AV, BB, EMA, MACD, ROC, RSI, RVOL, SMA,
-    STOCH, or VWAP).
+    indicator name (ATR, AV, BB, EMA, MACD, OBV, ROC, RSI, RVOL,
+    SMA, STOCH, or VWAP).
     Multiple tickers are separated with commas
     (e.g. ``AAPL,MSFT``).
     Optional trailing arguments can appear in any order:
@@ -32,15 +33,15 @@ def main(argv: list[str] | None = None) -> None:
 
     Defaults are "1d" for interval, indicator-specific windows
     (ATR=14, AV=20, BB=(20,2.0), EMA=20, MACD=(12,26,9),
-    ROC=9, RSI=14, RVOL=10, SMA=50, STOCH=(14,3,3),
+    OBV=30, ROC=9, RSI=14, RVOL=10, SMA=50, STOCH=(14,3,3),
     VWAP=20), and count=1.
     """
     if argv:
         user_input = " ".join(argv)
     else:
         user_input = input("Enter ticker(s), indicator"
-                           " (ATR/AV/BB/EMA/MACD/ROC/RSI/RVOL/"
-                           "SMA/STOCH/VWAP)"
+                           " (ATR/AV/BB/EMA/MACD/OBV/ROC/RSI/"
+                           "RVOL/SMA/STOCH/VWAP)"
                            " [bar_size] [window] [C<count>]: ")
     parts = user_input.strip().split()
 
@@ -68,10 +69,11 @@ def main(argv: list[str] | None = None) -> None:
         sys.exit(1)
 
     indicator = indicator.upper()
-    if indicator not in ("ATR", "AV", "BB", "EMA", "MACD", "ROC",
-                         "RSI", "RVOL", "SMA", "STOCH", "VWAP"):
+    if indicator not in ("ATR", "AV", "BB", "EMA", "MACD", "OBV",
+                         "ROC", "RSI", "RVOL", "SMA", "STOCH",
+                         "VWAP"):
         print("Error: indicator must be ATR, AV, BB, EMA, MACD,"
-              " ROC, RSI, RVOL, SMA, STOCH, or VWAP")
+              " OBV, ROC, RSI, RVOL, SMA, STOCH, or VWAP")
         sys.exit(1)
 
     interval = "1d"
@@ -240,6 +242,10 @@ def main(argv: list[str] | None = None) -> None:
                         signal=signal,
                         interval=interval, count=count
                     )
+                case "OBV":
+                    result = calculate_obv(ticker, window,
+                                           interval=interval,
+                                           count=count)
                 case "ROC":
                     result = calculate_roc(ticker, window,
                                            interval=interval,

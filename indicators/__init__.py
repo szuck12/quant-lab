@@ -6,6 +6,7 @@ from indicators.av import calculate_av
 from indicators.bb import calculate_bb
 from indicators.ema import calculate_ema
 from indicators.macd import calculate_macd
+from indicators.obv import calculate_obv
 from indicators.roc import calculate_roc
 from indicators.rsi import calculate_rsi
 from indicators.rvol import calculate_rvol
@@ -19,6 +20,7 @@ __all__ = [
     "calculate_bb",
     "calculate_ema",
     "calculate_macd",
+    "calculate_obv",
     "calculate_roc",
     "calculate_rsi",
     "calculate_rvol",

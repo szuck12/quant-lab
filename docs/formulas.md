@@ -175,6 +175,37 @@ above with `adjust=False`.
 
 ---
 
+## On-Balance Volume (OBV)
+
+OBV is a cumulative momentum indicator that relates volume to
+price movement.  Each bar adds its volume to a running total when
+the close rises, subtracts it when the close falls, and leaves
+the total unchanged when closes are equal.
+
+$$
+\text{OBV}_t = \text{OBV}_{t-1} + \text{sign}(C_t - C_{t-1}) \cdot V_t
+$$
+
+| Variable | Meaning |
+|----------|---------|
+| $C_t$ | Closing price at bar `t` |
+| $C_{t-1}$ | Close price at bar `t-1` (previous close) |
+| $V_t$ | Volume at bar `t` |
+| $\text{sign}(x)$ | $+1$ if $x > 0$, $-1$ if $x < 0$, $0$ if $x = 0$ |
+
+### Notes
+
+- The accumulation runs from the first fetched bar, so the
+  `window` parameter controls how much history is included
+  rather than a rolling calculation length.
+- The first bar has no previous close and produces `NaN`;
+  accumulation starts from the second bar.
+- Fewer than two bars raises `IndexError`; unlike rolling
+  indicators, a window larger than the available data is not an
+  error.
+
+---
+
 ## Rate of Change (ROC)
 
 ROC measures the percentage change in the closing price over

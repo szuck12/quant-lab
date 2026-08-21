@@ -5,6 +5,18 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com) and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2026-06-19
+
+### Added
+- On-Balance Volume (OBV) — new cumulative momentum indicator that
+  adds each bar's volume to a running total on up closes and
+  subtracts it on down closes (default window 30; the window sets
+  how much history is fetched since OBV accumulates from the
+  first bar).
+- 17 mock tests and 5 real tests for OBV.
+- OBV dispatch tests in both test suites.
+- 381 mock tests, 75 real tests (was 362 mock, 69 real).
+
 ## [1.4.0] - 2026-06-16
 
 ### Added

@@ -5,6 +5,7 @@
 
 ## Done
 
+- [x] 2026-06-19 — Implement On-Balance Volume (OBV) indicator (#indicator)
 - [x] 2026-06-16 — Implement Rate of Change (ROC) indicator (#indicator)
 - [x] 2026-05-27 — Implement Stochastic Oscillator (STOCH) indicator (#indicator)
 - [x] 2026-05-27 — Implement Average True Range (ATR) indicator (#indicator)

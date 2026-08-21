@@ -31,6 +31,7 @@ _DEFAULT_WINDOWS: dict[str, int | tuple] = {
     "BB": (20, 2.0),
     "EMA": 20,
     "MACD": (12, 26, 9),
+    "OBV": 30,
     "ROC": 9,
     "RSI": 14,
     "RVOL": 10,
