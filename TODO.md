@@ -5,6 +5,7 @@
 
 ## Done
 
+- [x] 2026-08-15 — Implement Commodity Channel Index (CCI) indicator (#indicator)
 - [x] 2026-07-05 — Implement Average Directional Index (ADX) indicator (#indicator)
 - [x] 2026-06-19 — Implement On-Balance Volume (OBV) indicator (#indicator)
 - [x] 2026-06-16 — Implement Rate of Change (ROC) indicator (#indicator)

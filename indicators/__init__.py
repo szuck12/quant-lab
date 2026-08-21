@@ -5,6 +5,7 @@ from indicators.adx import calculate_adx
 from indicators.atr import calculate_atr
 from indicators.av import calculate_av
 from indicators.bb import calculate_bb
+from indicators.cci import calculate_cci
 from indicators.ema import calculate_ema
 from indicators.macd import calculate_macd
 from indicators.obv import calculate_obv
@@ -20,6 +21,7 @@ __all__ = [
     "calculate_atr",
     "calculate_av",
     "calculate_bb",
+    "calculate_cci",
     "calculate_ema",
     "calculate_macd",
     "calculate_obv",

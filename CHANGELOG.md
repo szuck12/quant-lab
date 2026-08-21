@@ -5,6 +5,19 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com) and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] - 2026-08-15
+
+### Added
+- Commodity Channel Index (CCI) — new unbounded oscillator
+  comparing the Typical Price (H + L + C) / 3 to its SMA and
+  normalising by 0.015 times the Mean Deviation (average
+  absolute distance from the window's SMA, not a standard
+  deviation).  Default window 20, matching TradingView's
+  ta.cci().
+- 18 mock tests and 5 real tests for CCI.
+- CCI dispatch tests in both test suites.
+- 422 mock tests, 87 real tests (was 402 mock, 81 real).
+
 ## [1.6.0] - 2026-07-05
 
 ### Added

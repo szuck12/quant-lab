@@ -69,6 +69,28 @@ class TestMain:
                 mock_atr.assert_called_once_with(
                     "AAPL", 14, interval="1d", count=1)
 
+    # ---- CCI dispatch ----
+
+    def test_valid_cci_dispatch(self):
+        """Verify main() calls calculate_cci for a CCI input."""
+        with patch("builtins.input",
+                   return_value="AAPL CCI 20"):
+            with patch("main.calculate_cci",
+                       return_value=_MOCK_SERIES) as mock_fn:
+                main.main()
+                mock_fn.assert_called_once_with(
+                    "AAPL", 20, interval="1d", count=1)
+
+    def test_default_window_cci(self):
+        """Verify CCI defaults to window=20 when not provided."""
+        with patch("builtins.input",
+                   return_value="AAPL CCI"):
+            with patch("main.calculate_cci",
+                       return_value=_MOCK_SERIES) as mock_fn:
+                main.main()
+                mock_fn.assert_called_once_with(
+                    "AAPL", 20, interval="1d", count=1)
+
     # ---- ROC dispatch ----
 
     def test_valid_roc_dispatch(self):

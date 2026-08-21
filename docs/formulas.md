@@ -192,6 +192,51 @@ $$
 
 ---
 
+## Commodity Channel Index (CCI)
+
+CCI measures how far the Typical Price sits from its Simple
+Moving Average, normalised by 0.015 times the Mean Deviation —
+the average absolute distance between each Typical Price in
+the window and that window's SMA.
+
+$$
+\text{TP}_t = \frac{H_t + L_t + C_t}{3}
+$$
+
+$$
+\text{SMA}_t = \frac{1}{n} \sum_{i=0}^{n-1} \text{TP}_{t-i}
+$$
+
+$$
+\text{MD}_t = \frac{1}{n} \sum_{i=0}^{n-1} \left| \text{TP}_{t-i} - \text{SMA}_t \right|
+$$
+
+$$
+\text{CCI}_t = \frac{\text{TP}_t - \text{SMA}_t}{0.015 \cdot \text{MD}_t}
+$$
+
+| Variable | Meaning |
+|----------|---------|
+| $H_t$, $L_t$, $C_t$ | High, low, and closing price at bar `t` |
+| $\text{TP}_t$ | Typical Price at bar `t` |
+| $n$   | Window for SMA and Mean Deviation (default 20) |
+| $\text{SMA}_t$ | SMA of Typical Prices over the window |
+| $\text{MD}_t$ | Mean Deviation of Typical Prices from their SMA |
+| $0.015$ | Constant scaling factor (Lambert's original constant) |
+
+### Notes
+
+- The Mean Deviation is **not** a standard deviation; it is the
+  average absolute distance from the window's SMA.
+- CCI is unbounded.  Values beyond +/-100 indicate unusually
+  strong deviation but are not hard limits.
+- A zero Mean Deviation (e.g. constant prices) divides zero by
+  zero and produces NaN; those rows are dropped like other NaN
+  rows.
+- The first `n - 1` bars produce NaN (rolling semantics).
+
+---
+
 ## Exponential Moving Average (EMA)
 
 The EMA applies exponentially decaying weights to past prices,

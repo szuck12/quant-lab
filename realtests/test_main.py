@@ -34,6 +34,13 @@ class TestMain:
                    return_value="AAPL BB 20,2.0"):
             main.main()
 
+    def test_cci_dispatch(self):
+        """Verify main() dispatches to CCI with default
+        interval."""
+        with patch("builtins.input",
+                   return_value="AAPL CCI 20"):
+            main.main()
+
     def test_ema_dispatch(self):
         """Verify main() dispatches to EMA with default interval."""
         with patch("builtins.input", return_value="TSLA EMA 15"):
