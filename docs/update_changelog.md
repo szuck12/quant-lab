@@ -35,6 +35,14 @@ entry if present, or before the most recent release otherwise):
 
 Include only the section headers that have entries. Omit empty sections.
 
+`### Security` entries follow a special rule once the repository is
+public: state only the number and general nature of what was fixed
+(e.g. "Fixed 2 known security vulnerabilities in pinned dependencies").
+Never name specific packages, versions, or CVE identifiers in committed
+changelog entries; those details belong in the maintainer's private
+security log and GitHub security advisories (see `code_review_guide.md`,
+Section 9b).
+
 ### What to include
 
 - ✅ **User-facing changes** — new CLI behaviour, indicators, error messages,

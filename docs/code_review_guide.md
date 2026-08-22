@@ -551,6 +551,13 @@ Reporting protocol:
 5. If no strong fix exists, record that explicitly in the same
    private log: state the residual risk, the compensating
    control, and why the risk is accepted.
+6. Discuss vulnerabilities only in general terms in any committed
+   or public artifact — documentation, changelog entries, commit
+   messages, issues, and PRs state at most the count and class of
+   a finding ("fixed a dependency vulnerability").  Specifics —
+   package names, versions, CVE or GHSA identifiers — live
+   exclusively in the private log above and in GitHub private
+   advisories.
 
 ### 9c. Vulnerability Class Checklists
 

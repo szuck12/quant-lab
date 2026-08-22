@@ -5,6 +5,20 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com) and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.3] - 2026-08-22
+
+### Added
+- Security policy (SECURITY.md) describing private vulnerability
+  reporting and disclosure style.
+- Automated weekly dependency-update checks.
+
+### Changed
+- Project documentation now states that security topics are
+  discussed only in general terms across all committed artifacts.
+
+### Security
+- Fixed 1 known security vulnerability in pinned dependencies.
+
 ## [1.7.2] - 2026-08-22
 
 ### Added
@@ -16,9 +30,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Changed
 - Ticker symbols are sanitised before being echoed to output
   (escape sequences and control characters stripped).
-- requirements.txt now pins exact versions
-  (yfinance 0.2.61, pandas 2.2.3, pytest 8.4.0) instead of open
-  lower bounds.
+- requirements.txt now pins exact versions of yfinance, pandas,
+  and pytest instead of open lower bounds.
 - .gitignore covers local tool caches (.mypy_cache/, .ruff_cache/).
 - Dependabot alerts enabled for the repository.
 
