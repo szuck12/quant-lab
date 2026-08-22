@@ -20,6 +20,10 @@
 
 (Important changes that should be done soon.)
 
+- [ ] 2026-08-22 — Evaluate merging open Dependabot PRs (yfinance 1.x,
+      pandas 3.x): add CI for automated test runs first, then verify
+      with full mock + real suites before merging (#deps)
+
 ## Medium Priority
 
 (Should get done, not urgent.)
