@@ -132,10 +132,11 @@ alphabetical position:
 
 ```python
 _DEFAULT_WINDOWS: dict[str, int | tuple] = {
+    "ADX": (14, 14),
     "ATR": 14,
     "AV": 20,
     "BB": (20, 2.0),
-    "EMA": 20,
+    ...
     "<INDICATOR>": <default_window>,
     ...
 }
@@ -149,7 +150,8 @@ Three changes inside `main()` in `main.py`:
    in the `input()` call, maintaining alphabetical order:
    ```python
    user_input = input("Enter ticker(s), indicator"
-                      " (ATR/AV/BB/EMA/MACD/RSI/RVOL/SMA/VWAP/<INDICATOR>)"
+                      " (ADX/ATR/AV/BB/CCI/EMA/MACD/OBV/"
+                      "ROC/RSI/RVOL/SMA/STOCH/VWAP/<INDICATOR>)"
                       " [bar_size] [window] [C<count>]: ")
    ```
 
@@ -157,8 +159,9 @@ Three changes inside `main()` in `main.py`:
    `indicator.upper()` check, maintaining alphabetical order:
    ```python
    indicator = indicator.upper()
-   if indicator not in ("ATR", "AV", "BB", "EMA", "MACD", "RSI",
-                        "RVOL", "SMA", "VWAP", "<INDICATOR>"):
+   if indicator not in ("ADX", "ATR", "AV", "BB", "CCI", "EMA",
+                        "MACD", "OBV", "ROC", "RSI", "RVOL",
+                        "SMA", "STOCH", "VWAP", "<INDICATOR>"):
    ```
 
 3. **Dispatch match/case** — add a new case block inside the
@@ -482,17 +485,53 @@ for any window > 1 (confirming price variation exists):
 assert raw.iloc[-window:].std(ddof=0) > 0
 ```
 
-**Other indicators (RSI, MACD, RVOL):**
+**Bounded oscillators (RSI, STOCH, ADX):**
 
-These indicators do not produce a result that is bounded by a single
-raw-data series, so the min/max check does not apply. Use stock-agnostic
-bounds instead:
+These indicators are confined to a fixed range by definition, so
+verify the bounds hold on real data:
 
 - **RSI**: always verify `0.0 <= result.iloc[-1] <= 100.0`
+- **STOCH**: verify `0.0 <= %K <= 100.0` and
+  `0.0 <= %D <= 100.0` (both lines)
+- **ADX**: verify `0.0 <= value <= 100.0` for all three Series
+  (+DI, −DI, ADX) and that the DI lines are non-negative
+
+**Stock-agnostic checks (MACD, RVOL):**
+
+These indicators do not produce a result that is bounded by a single
+raw-data series or a fixed range, so use stock-agnostic assertions:
+
 - **MACD**: verify `not m.isna()`, `not s.isna()`, `not h.isna()`
   (all values are finite) and histogram has both positive and
   negative values on a diversified ticker like SPY
 - **RVOL**: verify `result > 0.0` and window=1 equals exactly `1.0`
+
+**Raw-bounded volatility (ATR):**
+
+ATR is a weighted average of True Range, so it is guaranteed to fall
+within the range of its TR series. Retrieve the raw TR in a single
+API call via the `_return_raw=True` parameter:
+
+```python
+result, tr = calculate_atr("AAPL", _return_raw=True)
+assert tr.min() <= result.iloc[-1] <= tr.max()
+```
+
+With `window=1`, ATR equals the latest TR exactly.
+
+**Unbounded momentum and cumulative indicators (CCI, OBV, ROC):**
+
+These have no mathematical upper or lower bound, so verify that the
+returned value is present and finite:
+
+- **CCI**: verify `pd.notna(result.iloc[-1])` and
+  `np.isfinite(result.iloc[-1])`
+- **OBV**: verify `pd.notna(result.iloc[-1])` (cumulative total,
+  unbounded)
+- **ROC**: verify `pd.notna(result.iloc[-1])`. Optionally bound the
+  magnitude on a diversified ticker (e.g.
+  `-100 < result < 100` for daily SPY bars) — note this is a
+  heuristic sanity band, not a mathematical guarantee
 
 The raw data returned by `_return_raw=True` differs by indicator:
 
@@ -501,6 +540,7 @@ The raw data returned by `_return_raw=True` differs by indicator:
 | SMA | `close` (Series) | `_fetch_close()` |
 | EMA | `close` (Series) | `_fetch_close()` |
 | BB | `close` (Series) | `_fetch_close()` |
+| ATR | `tr` (True Range Series) | `_fetch_ohlcv()` |
 | VWAP | `typical` (Series) where TP = (H+L+C)/3 | `_fetch_ohlcv()` |
 | AV | `volume` (Series) from OHLCV | `_fetch_ohlcv()` |
 
@@ -540,7 +580,7 @@ in alphabetical position:
 
 | Token | Meaning | Allowed Values | Default |
 |-------|---------|----------------|---------|
-| `indicator` | Indicator to compute | `ATR`, `AV`, `BB`, `EMA`, `MACD`, `RSI`, `RVOL`, `SMA`, `VWAP`, `<INDICATOR>` | Required |
+| `indicator` | Indicator to compute | `ADX`, `ATR`, `AV`, `BB`, `CCI`, `EMA`, `MACD`, `OBV`, `ROC`, `RSI`, `RVOL`, `SMA`, `STOCH`, `VWAP`, `<INDICATOR>` | Required |
 
 Add a new example command to the Examples section:
 

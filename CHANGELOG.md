@@ -5,6 +5,17 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com) and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.1] - 2026-08-22
+
+### Changed
+- Documentation sync with the fourteen-indicator codebase: the code
+  review guide's reasonableness-check table (section 4b) now covers
+  ADX, ATR, CCI, OBV, ROC, and STOCH; stale indicator counts,
+  fetcher/raw-data tables, `_return_raw` list, main.py size notes,
+  and example indicator lists updated across docs.
+- README error-message table now lists all four ADX parameter-error
+  paths.
+
 ## [1.7.0] - 2026-08-15
 
 ### Added

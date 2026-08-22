@@ -461,7 +461,7 @@ prior bars to fill the window.
 ## Stochastic Oscillator (STOCH)
 
 A momentum indicator that compares the closing price to the high-low
-range over `t` periods.
+range over a lookback window (`window` bars).
 
 **Raw %K** (pre-smoothing):
 
@@ -479,7 +479,9 @@ $$
 
 **%D** = SMA of %K over `smooth_d` periods (default 3).
 
-Both %K and %D are clamped to $[0, 100]$.
+Both %K and %D are bounded to $[0, 100]$ by construction: raw %K
+lies within $[0, 100]$ whenever the high-low range is positive, and
+an SMA of values in $[0, 100]$ remains in $[0, 100]$.
 
 When `count > 1`, the output is two columns: `%K` and `%D`.
 

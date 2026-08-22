@@ -1,6 +1,6 @@
 # QuantLab
 
-Current version: **1.7.0** — [Changelog](CHANGELOG.md)
+Current version: **1.7.1** — [Changelog](CHANGELOG.md)
 
 A command-line tool that fetches stock price data via [yfinance](https://github.com/ranaroussi/yfinance) and computes one of fourteen technical indicators: Average Directional Index (ADX), Average True Range (ATR), Average Volume (AV), Bollinger Bands (BB), Commodity Channel Index (CCI), Exponential Moving Average (EMA), Moving Average Convergence Divergence (MACD), On-Balance Volume (OBV), Rate of Change (ROC), Relative Strength Index (RSI), Relative Volume (RVOL), Simple Moving Average (SMA), Stochastic Oscillator (STOCH), or Volume Weighted Average Price (VWAP). Input is provided through stdin and the result is printed to stdout. The tool is designed for quick terminal lookups — you type a ticker and an indicator, and you get back a number.
 
@@ -81,6 +81,10 @@ Multiple tickers are separated by commas in the first token (e.g. `AAPL,MSFT`). 
 | Invalid STOCH params (wrong number of values, non-integer) | `Error: invalid STOCH parameters '...' (use window,smooth_k,smooth_d, e.g. 14,3,3)` |
 | Duplicate STOCH parameters | `Error: duplicate STOCH parameters '...'` |
 | STOCH param not a positive integer | `Error: STOCH parameters must be positive` |
+| Plain integer given for ADX window (not comma-separated) | `Error: ADX requires comma-separated parameters (e.g. 14,14)` |
+| Invalid ADX params (wrong number of values, non-integer) | `Error: invalid ADX parameters '...' (use window,adx_window, e.g. 14,14)` |
+| Duplicate ADX parameters | `Error: duplicate ADX parameters '...'` |
+| ADX param not a positive integer | `Error: ADX parameters must be positive` |
 
 ### Examples
 

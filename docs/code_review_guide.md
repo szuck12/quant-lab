@@ -86,8 +86,8 @@ other four documentation files.
 
 ## 2. Indicators — Structural Audit
 
-All nine indicator functions are expected to follow the same internal
-pattern defined in `docs/adding_indicator.md` section 2a.
+All fourteen indicator functions are expected to follow the same
+internal pattern defined in `docs/adding_indicator.md` section 2a.
 
 ### 2a. Common Pattern
 
@@ -97,10 +97,13 @@ Walk every `calculate_*` function and check:
       `window` alone.
 - [ ] Fetches the correct data source:
 
-      | Indicator | Fetcher | Raw column |
-      |-----------|---------|------------|
-      | SMA, EMA, RSI, MACD, BB | `_fetch_close` | `Close` |
-      | VWAP, AV, RVOL | `_fetch_ohlcv` | `Volume` / `(H+L+C)/3` |
+      | Indicator | Fetcher | Raw columns |
+      |-----------|---------|-------------|
+      | SMA, EMA, RSI, MACD, BB, ROC | `_fetch_close` | `Close` |
+      | AV, RVOL | `_fetch_ohlcv` | `Volume` |
+      | OBV | `_fetch_ohlcv` | `Close`, `Volume` |
+      | VWAP | `_fetch_ohlcv` | `High/Low/Close` (TP), `Volume` |
+      | ATR, ADX, CCI, STOCH | `_fetch_ohlcv` | `High`, `Low`, `Close` |
 
 - [ ] NaN rows from the leading edge of rolling/EWM calculations are
       dropped via `.dropna()` before slicing.
@@ -109,7 +112,7 @@ Walk every `calculate_*` function and check:
       `len(result) < count`.
 - [ ] Error message uses the canonical format:
       `f"Insufficient data for <NAME>({param}) with count={count}"`
-- [ ] All nine indicators are registered in:
+- [ ] All fourteen indicators are registered in:
 
       - `_DEFAULT_WINDOWS` dict (`indicators/_data.py`)
       - `main()` input prompt string
@@ -140,7 +143,7 @@ Walk every `calculate_*` function and check:
 - [ ] All functions accept `ticker, window, interval, count` in the
       same order (multi-param indicators like MACD and BB are the
       exception and accept their params before `interval`).
-- [ ] Type hints match across all nine signatures.
+- [ ] Type hints match across all fourteen signatures.
 - [ ] Default parameter values match `_DEFAULT_WINDOWS`.
 
 ---
@@ -226,6 +229,12 @@ For each indicator, verify the check is correct:
 | **RSI** | `0.0 <= result <= 100.0` | ✅ Definition |
 | **MACD** | `not m.isna()`, histogram has both signs | Stock-agnostic |
 | **RVOL** | `result > 0`, window=1 = 1.0 | Stock-agnostic |
+| **ADX** | `0.0 <= +DI/-DI/ADX <= 100` (all three) | ✅ Definition |
+| **ATR** | `tr.min() <= result <= tr.max()`; w=1 = last TR | ✅ Weighted avg of TR |
+| **STOCH** | `0.0 <= %K, %D <= 100.0` (both lines) | ✅ Definition |
+| **CCI** | `pd.notna()` and finite (`isfinite`) | Unbounded oscillator |
+| **OBV** | `pd.notna(result.iloc[-1])` | Stock-agnostic (cumulative) |
+| **ROC** | `pd.notna()`; `-100 < result < 100` on SPY | ⚠️ Heuristic band |
 
 - [ ] Is every assertion mathematically sound (not a heuristic)?
 - [ ] Are there any remaining `result > 0.0` checks that have been
@@ -276,6 +285,8 @@ Cross-reference the README error message table against actual code:
 - [ ] MACD: comma-separated required, fast < slow enforced,
       positive ints required.
 - [ ] BB: comma-separated required, positive numbers required.
+- [ ] STOCH: comma-separated required, positive ints required.
+- [ ] ADX: comma-separated required, positive ints required.
 - [ ] All error messages use `sys.exit(1)` (not `raise SystemExit`
       directly, not `sys.exit(0)`).
 
@@ -315,8 +326,8 @@ Issues that span multiple files or subsystems.
 
 ### 6c. `_return_raw` Pattern
 
-- [ ] All five functions that have `_return_raw` return the correct
-      raw data (close, typical, volume).
+- [ ] All six functions that have `_return_raw` return the correct
+      raw data (close, typical, volume, True Range).
 - [ ] No function leaks `_return_raw` through the CLI dispatch
       (no way to trigger it from stdin).
 - [ ] The return type annotation is correct for both paths.
@@ -384,11 +395,11 @@ surface design drift.
 
 ### 8a. Module Boundaries and Cohesion
 
-`main.py` is ~260 lines encompassing:
+`main.py` is ~385 lines encompassing:
 
-- Imports (7 lines)
-- CLI parsing + validation (~170 lines)
-- Dispatch + output formatting (~80 lines)
+- Imports (11 lines)
+- CLI parsing + validation (~205 lines)
+- Dispatch + output formatting (~135 lines)
 - Entry point (2 lines)
 
 Indicator functions and the data layer have been extracted into the
@@ -396,11 +407,12 @@ Indicator functions and the data layer have been extracted into the
 which was item 1 in the Section 8 action plan below.  main.py now
 focuses solely on CLI concerns.
 
-- If a tenth indicator were added (the ninth, ATR, was added in
-  v1.3.0), a new file `indicators/<name>.py` would be created — no
-  changes needed to the dispatch logic beyond a new `case` block.
+- If a fifteenth indicator were added (the fourteenth, CCI, was
+  added in v1.7.0), a new file `indicators/<name>.py` would be
+  created — no changes needed to the dispatch logic beyond a new
+  `case` block.
 - Would extracting CLI parsing into a separate function reduce the
-  cognitive load of the 170-line parser block?
+  cognitive load of the ~205-line parser block?
 
 ### 8b. CLI Design
 

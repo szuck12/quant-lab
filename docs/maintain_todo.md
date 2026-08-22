@@ -83,8 +83,9 @@ When the **Done** section has **10 or more** items, prune it to at most
 **9** items by removing the oldest entries.  This keeps the section
 focused on recently completed work without accumulating historical noise.
 
-Never remove items from **In Progress**, **Backlog**, **Planned**, or
-**Ideas** sections — only the Done section is pruned.
+Never remove items from **In Progress**, **High Priority**,
+**Medium Priority**, **Low Priority**, or **Ideas** sections — only
+the Done section is pruned.
 
 Keep descriptions concise but clear enough that someone reading the TODO
 understands what the task involves without needing additional context.
