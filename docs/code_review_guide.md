@@ -497,6 +497,225 @@ Each entry must be one of two forms:
 | 4 | Ask | Should `_fetch_ohlcv`'s `print(f"Fetched {len(hist)} rows ...")` be routed through `logging.debug` instead of `print`? It appears in test output and during CLI use, which may be distracting. |
 | 5 | DONE | `sys.argv` support added alongside stdin (`python3 main.py AAPL SMA 50`). Both stdin and argv work — main() accepts optional `argv` parameter, if __name__ passes sys.argv[1:] (v1.2.3). |
 
+---
+
+## 9. Security Vulnerability Review
+
+Run this section before each release and after any dependency,
+CI, or credential change.  QuantLab is hosted on GitHub —
+currently private, but maintained so it can be made public
+without surprises — and runs on personal machines.  This review
+protects three assets: the integrity of the repository, the
+machines of everyone who installs and runs the tool, and the
+maintainer's GitHub account.  Where a check depends on
+repository visibility, both cases are noted.
+
+### 9a. Scope and Threat Model
+
+Four trust boundaries carry data onto your machine:
+
+| Boundary | Enters via | Risk if hostile |
+|----------|-----------|-----------------|
+| CLI input | stdin / sys.argv | Crafted strings reach printed output and outbound request URLs |
+| Third-party packages | `pip install -r requirements.txt` | Arbitrary code runs at install/import time |
+| yfinance responses | Yahoo Finance over HTTPS | Wrong numbers mislead users; malformed frames hit parsing |
+| Repository surface | GitHub issues, PRs, settings | Leaked secrets, tampered history, malicious workflow edits |
+
+Anything crossing a boundary unvalidated is a candidate finding;
+anything staying inside one boundary (e.g. local-only input echoed
+back to the same user) starts at Low severity by definition.
+
+### 9b. Severity Scale and Reporting Protocol
+
+Findings are graded on four levels.  Grade by *reachability*
+today, not by worst-case imagination:
+
+| Severity | Definition | Required response |
+|----------|-----------|-------------------|
+| **Very High Risk** | Live secret exposed, or an exploitable code path reachable without preconditions | Revoke/rotate the credential FIRST, then remove from repo; PATCH release same day; history rewrite only if revocation is impossible |
+| **High Risk** | Realistic exploit path needing modest preconditions | Fix within days; PATCH release; disclose after the fix ships |
+| **Medium Risk** | Weakens posture; becomes exploitable only after some future change | Fix or formally accept in the next release |
+| **Low Risk** | Hygiene / hardening; no realistic path today | Batch into TODO.md Low Priority |
+
+Reporting protocol:
+
+1. Never open a public issue containing a live secret — reference
+   its location, never its value.
+2. Prefer a GitHub private security advisory for externally
+   reported issues.
+3. Rotate/revoke leaked credentials before scrubbing history;
+   rotation makes history rewrite unnecessary in most cases.
+4. Record every finding in the Section 9d register with date,
+   severity, and disposition (`FIXED vX.Y.Z`, `ACCEPTED RISK`,
+   or open).
+5. If no strong fix exists, say so explicitly in the register:
+   state the residual risk, the compensating control, and why
+   the risk is accepted.
+
+### 9c. Vulnerability Class Checklists
+
+#### 1. Secrets and Credentials
+
+- What: tokens, API keys, passwords, private keys anywhere in
+  tracked files, docs, tests, or git history.
+- Check:
+
+  ```bash
+  git log --all -p | grep -inE '(ghp_|gho_|github_pat_|AKIA[A-Z0-9]{16}|BEGIN [A-Z ]*PRIVATE KEY)'
+  git ls-files | grep -iE '\.env|secret|token|credential|\.pem'
+  # Optional deeper scan: gitleaks detect / trufflehog
+  ```
+
+- Pass: no hits outside placeholders and documentation examples.
+- Fail severity: **Very High** if live, Medium if expired/example.
+- Fix: revoke at the provider first, then delete the file; use
+  `git filter-repo` only when the secret cannot be revoked.
+
+#### 2. Dangerous Execution Primitives
+
+- What: `eval`, `exec`, `compile`, `__import__`, `pickle.loads`,
+  unsafe `yaml.load`, `subprocess`/`os.system`/`shell=True`,
+  `marshal` — anything that turns data into code.
+- Check:
+
+  ```bash
+  grep -rnE 'eval\(|exec\(|compile\(|__import__|pickle|yaml\.load|subprocess|os\.system|shell\s*=\s*True' --include='*.py' .
+  ```
+
+- Pass: zero hits.  Current baseline: clean (dispatch uses a
+  hardcoded whitelist `match/case`; numbers parsed via
+  `int()`/`float()` inside `try/except`).
+- Fail severity: **Very High** if reachable from input, High
+  otherwise.
+- Fix: replace with explicit dispatch tables or whitelists, as
+  done in `main()`.
+
+#### 3. Input Handling and Injection Surfaces
+
+- What: how stdin/argv strings flow into sinks (terminal output,
+  outbound URLs).
+- Check:
+  - Indicator names validated against the hardcoded whitelist
+    before dispatch.
+  - Numeric parameters parsed by `int()`/`float()` only.
+  - Ticker strings are echoed to output: verify control
+    characters are stripped before printing (ANSI escape
+    injection probe below must not alter terminal state):
+
+    ```bash
+    printf 'AA\x1b[31mPL\x1b[0m SMA' | python3 main.py | cat -v
+    ```
+
+  - Ticker strings also flow into yfinance request URLs.  Host
+    and scheme are fixed by yfinance (HTTPS verified), so worst
+    case is a malformed Yahoo request — accepted residual risk
+    (register entry 7); symbol syntax (`BTC-USD`, `^GSPC`,
+    `EURUSD=X`) makes strict allowlisting impractical.
+- Fail severity: Low while input is local-only; rises to High if
+  tickers are ever sourced remotely (files, APIs, chat).
+- Fix: strip non-printable characters at display points; keep the
+  URL-flow as documented accepted risk.
+
+#### 4. Dependency and Supply Chain
+
+- What: every package installed via requirements.txt, including
+  transitive dependencies resolved by pip.
+- Check:
+  - Direct dependencies pinned exactly (`==`), not lower bounds
+    (`>=`) which auto-pull future releases.
+  - Known-vulnerability scan clean:
+
+    ```bash
+    pip install pip-audit
+    pip-audit
+    ```
+
+  - Dependabot alerts enabled and update PRs reviewed promptly
+    (Settings → Code security and analysis).
+  - No lockfile exists, so transitive deps float — documented
+    accepted risk until CI exists (no strong fix with plain pip);
+    revisit if a GitHub Actions workflow is added.
+- Fail severity: Medium for unpinned floats; **Very High** if an
+  audit flags a known-vulnerable pinned version.
+- Fix: bump floors, pin `==`, apply audit upgrades; re-pin and
+  re-run mock + real tests after every bump.
+
+#### 5. Repository Hygiene and Metadata
+
+- What: files that leak local machine info or bloat the public
+  history (.DS_Store, tool caches, logs, env files).
+- Check:
+
+  ```bash
+  git ls-files | grep -iE '\.DS_Store|cache|\.env|\.log$'
+  git status --porcelain --untracked-files=all
+  cat .gitignore
+  ```
+
+- Pass: index contains none of them AND .gitignore covers all
+  local tool dirs (`__pycache__/`, `.pytest_cache/`,
+  `.mypy_cache/`, `.ruff_cache/`, `.DS_Store`).
+- Fail severity: Low.
+- Fix: extend .gitignore; `git rm --cached <file>` if already
+  tracked.
+
+#### 6. GitHub Platform Configuration
+
+- What: account/repo settings that bound the blast radius.
+  These are settings, not files — check them in the UI or via
+  REST, and record their status here.  Availability differs by
+  visibility: secret scanning and push protection are free for
+  public repos but require GitHub Advanced Security for private
+  ones (the REST call returns 422 "not available" today).
+- Check:
+  - Dependabot alerts: ON (enabled via REST API 2026-08-22;
+    verify with
+    `GET /repos/{owner}/{repo}/vulnerability-alerts` → 204).
+  - Secret scanning + push protection: unavailable while the
+    repo is private; flip both ON the day the repo goes public
+    and record it in 9d.  Compensating control until then: run
+    the class-1 history scan before every release.
+  - Branch protection on `main`: no force pushes; require PRs
+    once there is more than one maintainer.
+  - Actions workflows: none today.  If added later, pin action
+    versions by SHA and set least-privilege `permissions:`.
+- Fail severity: Medium — secrets pushed today persist
+  unnoticed, and automated detection arrives only with secret
+  scanning.
+- Fix: Settings → Code security and analysis / Branches.
+
+#### 7. Third-Party Data Trust
+
+- What: assumptions about yfinance response shape and content.
+- Check:
+  - Missing columns / empty frames surface as caught exceptions
+    or `IndexError`, never as crashes with partial output.
+  - Remote strings are never re-interpreted as code or format
+    strings; results print through numeric formatting
+    (`:.2f`).
+  - The broad `except Exception` in `_fetch_ohlcv` trades
+    root-cause visibility for availability — accepted trade-off;
+    revisit if silent failures start masking real incidents.
+- Fail severity: informational unless parsing ever becomes
+  eval-adjacent.
+
+### 9d. Findings Register
+
+Snapshot audits here.  Append rows with dates; never delete rows
+— supersede them with new dated entries.
+
+| Date | Finding | Severity | Disposition |
+|------|---------|----------|-------------|
+| 2026-08-22 | Secrets scan of working tree and full 54-commit history | ✅ Clean | Baseline |
+| 2026-08-22 | Execution-primitive inventory across all tracked .py files | ✅ Clean | Baseline |
+| 2026-08-22 | Dependencies pinned with lower bounds only (requirements.txt) | Medium | FIXED v1.7.2 — exact `==` pins |
+| 2026-08-22 | Dependabot alerts disabled | Medium | FIXED — enabled via REST API 2026-08-22 |
+| 2026-08-22 | Secret scanning / push protection unavailable (repo is private) | Medium | ACCEPTED — requires Advanced Security while private; enable free toggles when repo goes public; compensate with the class-1 history scan each release |
+| 2026-08-22 | .gitignore missing .mypy_cache/ and .ruff_cache/ | Low | FIXED v1.7.2 |
+| 2026-08-22 | Raw ticker echo allowed ANSI terminal escape injection | Low | FIXED v1.7.2 — non-printables stripped before display |
+| 2026-08-22 | Ticker strings flow into yfinance request URLs | Low | ACCEPTED RISK — host/scheme fixed by yfinance over HTTPS; strict allowlist would break BTC-USD/^GSPC/EURUSD=X syntax |
+| 2026-08-22 | Broad except Exception in _fetch_ohlcv masks root causes | Info | ACCEPTED — empty-frame guard raises IndexError downstream |
+
 This guide follows the project's commenting conventions
 (see `docs/commenting_guidelines.md`): 80-character line limit,
 section headers, and minimal inline annotation.

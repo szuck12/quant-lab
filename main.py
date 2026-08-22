@@ -7,7 +7,8 @@ from indicators import calculate_adx, calculate_atr, \
     calculate_av, calculate_bb, calculate_cci, calculate_ema, \
     calculate_macd, calculate_obv, calculate_roc, calculate_rsi, \
     calculate_rvol, calculate_sma, calculate_stoch, calculate_vwap
-from indicators._data import _VALID_INTERVALS, _DEFAULT_WINDOWS
+from indicators._data import _VALID_INTERVALS, _DEFAULT_WINDOWS, \
+    _sanitize_display
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -66,7 +67,8 @@ def main(argv: list[str] | None = None) -> None:
             merged.append(token)
 
     raw_tickers, indicator, *rest = merged
-    tickers = [t.strip() for t in raw_tickers.split(",") if t.strip()]
+    tickers = [_sanitize_display(t.strip())
+               for t in raw_tickers.split(",") if t.strip()]
     if not tickers:
         print("Error: no valid tickers provided")
         sys.exit(1)
