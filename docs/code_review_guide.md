@@ -502,13 +502,12 @@ Each entry must be one of two forms:
 ## 9. Security Vulnerability Review
 
 Run this section before each release and after any dependency,
-CI, or credential change.  QuantLab is hosted on GitHub —
-currently private, but maintained so it can be made public
-without surprises — and runs on personal machines.  This review
-protects three assets: the integrity of the repository, the
-machines of everyone who installs and runs the tool, and the
-maintainer's GitHub account.  Where a check depends on
-repository visibility, both cases are noted.
+CI, or credential change.  QuantLab is hosted on GitHub and runs
+on personal machines.  This review protects three assets: the
+integrity of the repository, the machines of everyone who
+installs and runs the tool, and the maintainer's GitHub account.
+Where a check depends on repository visibility, both cases are
+noted.
 
 ### 9a. Scope and Threat Model
 
@@ -545,12 +544,13 @@ Reporting protocol:
    reported issues.
 3. Rotate/revoke leaked credentials before scrubbing history;
    rotation makes history rewrite unnecessary in most cases.
-4. Record every finding in the Section 9d register with date,
-   severity, and disposition (`FIXED vX.Y.Z`, `ACCEPTED RISK`,
-   or open).
-5. If no strong fix exists, say so explicitly in the register:
-   state the residual risk, the compensating control, and why
-   the risk is accepted.
+4. Record every finding — date, severity, and disposition
+   (`FIXED vX.Y.Z`, `ACCEPTED RISK`, or open) — in a log kept
+   outside the repository; committed docs must never carry a
+   history of specific findings.
+5. If no strong fix exists, record that explicitly in the same
+   private log: state the residual risk, the compensating
+   control, and why the risk is accepted.
 
 ### 9c. Vulnerability Class Checklists
 
@@ -582,9 +582,7 @@ Reporting protocol:
   grep -rnE 'eval\(|exec\(|compile\(|__import__|pickle|yaml\.load|subprocess|os\.system|shell\s*=\s*True' --include='*.py' .
   ```
 
-- Pass: zero hits.  Current baseline: clean (dispatch uses a
-  hardcoded whitelist `match/case`; numbers parsed via
-  `int()`/`float()` inside `try/except`).
+- Pass: zero hits.
 - Fail severity: **Very High** if reachable from input, High
   otherwise.
 - Fix: replace with explicit dispatch tables or whitelists, as
@@ -608,13 +606,11 @@ Reporting protocol:
 
   - Ticker strings also flow into yfinance request URLs.  Host
     and scheme are fixed by yfinance (HTTPS verified), so worst
-    case is a malformed Yahoo request — accepted residual risk
-    (register entry 7); symbol syntax (`BTC-USD`, `^GSPC`,
-    `EURUSD=X`) makes strict allowlisting impractical.
+    case is a malformed Yahoo request; symbol syntax (`BTC-USD`,
+    `^GSPC`, `EURUSD=X`) makes strict allowlisting impractical.
 - Fail severity: Low while input is local-only; rises to High if
   tickers are ever sourced remotely (files, APIs, chat).
-- Fix: strip non-printable characters at display points; keep the
-  URL-flow as documented accepted risk.
+- Fix: strip non-printable characters at display points.
 
 #### 4. Dependency and Supply Chain
 
@@ -632,8 +628,8 @@ Reporting protocol:
 
   - Dependabot alerts enabled and update PRs reviewed promptly
     (Settings → Code security and analysis).
-  - No lockfile exists, so transitive deps float — documented
-    accepted risk until CI exists (no strong fix with plain pip);
+  - If no lockfile exists, transitive deps float (no strong fix
+    with plain pip) — treat as an accepted risk until CI exists;
     revisit if a GitHub Actions workflow is added.
 - Fail severity: Medium for unpinned floats; **Very High** if an
   audit flags a known-vulnerable pinned version.
@@ -663,22 +659,20 @@ Reporting protocol:
 
 - What: account/repo settings that bound the blast radius.
   These are settings, not files — check them in the UI or via
-  REST, and record their status here.  Availability differs by
-  visibility: secret scanning and push protection are free for
-  public repos but require GitHub Advanced Security for private
-  ones (the REST call returns 422 "not available" today).
+  REST.  Availability differs by visibility: secret scanning and
+  push protection are free for public repos but require GitHub
+  Advanced Security for private ones.
 - Check:
-  - Dependabot alerts: ON (enabled via REST API 2026-08-22;
-    verify with
-    `GET /repos/{owner}/{repo}/vulnerability-alerts` → 204).
-  - Secret scanning + push protection: unavailable while the
-    repo is private; flip both ON the day the repo goes public
-    and record it in 9d.  Compensating control until then: run
-    the class-1 history scan before every release.
+  - Dependabot alerts: ON — verify with
+    `GET /repos/{owner}/{repo}/vulnerability-alerts` (204 = on).
+  - Secret scanning + push protection: enable both where
+    available (free on public repos, Advanced Security while
+    private).  While they are off, run the class-1 history scan
+    before every release instead.
   - Branch protection on `main`: no force pushes; require PRs
     once there is more than one maintainer.
-  - Actions workflows: none today.  If added later, pin action
-    versions by SHA and set least-privilege `permissions:`.
+  - If Actions workflows are added later, pin action versions
+    by SHA and set least-privilege `permissions:`.
 - Fail severity: Medium — secrets pushed today persist
   unnoticed, and automated detection arrives only with secret
   scanning.
@@ -698,23 +692,6 @@ Reporting protocol:
     revisit if silent failures start masking real incidents.
 - Fail severity: informational unless parsing ever becomes
   eval-adjacent.
-
-### 9d. Findings Register
-
-Snapshot audits here.  Append rows with dates; never delete rows
-— supersede them with new dated entries.
-
-| Date | Finding | Severity | Disposition |
-|------|---------|----------|-------------|
-| 2026-08-22 | Secrets scan of working tree and full 54-commit history | ✅ Clean | Baseline |
-| 2026-08-22 | Execution-primitive inventory across all tracked .py files | ✅ Clean | Baseline |
-| 2026-08-22 | Dependencies pinned with lower bounds only (requirements.txt) | Medium | FIXED v1.7.2 — exact `==` pins |
-| 2026-08-22 | Dependabot alerts disabled | Medium | FIXED — enabled via REST API 2026-08-22 |
-| 2026-08-22 | Secret scanning / push protection unavailable (repo is private) | Medium | ACCEPTED — requires Advanced Security while private; enable free toggles when repo goes public; compensate with the class-1 history scan each release |
-| 2026-08-22 | .gitignore missing .mypy_cache/ and .ruff_cache/ | Low | FIXED v1.7.2 |
-| 2026-08-22 | Raw ticker echo allowed ANSI terminal escape injection | Low | FIXED v1.7.2 — non-printables stripped before display |
-| 2026-08-22 | Ticker strings flow into yfinance request URLs | Low | ACCEPTED RISK — host/scheme fixed by yfinance over HTTPS; strict allowlist would break BTC-USD/^GSPC/EURUSD=X syntax |
-| 2026-08-22 | Broad except Exception in _fetch_ohlcv masks root causes | Info | ACCEPTED — empty-frame guard raises IndexError downstream |
 
 This guide follows the project's commenting conventions
 (see `docs/commenting_guidelines.md`): 80-character line limit,

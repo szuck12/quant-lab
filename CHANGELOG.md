@@ -10,13 +10,12 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 - Section 9 (Security Vulnerability Review) in the code review
   guide: threat model, four-level severity scale with reporting
-  protocol, seven vulnerability-class checklists with verification
-  commands, and a dated findings register.
+  protocol, and seven vulnerability-class checklists with
+  verification commands.
 
 ### Changed
 - Ticker symbols are sanitised before being echoed to output
-  (ANSI escape sequences and control characters stripped),
-  preventing terminal injection through crafted input.
+  (escape sequences and control characters stripped).
 - requirements.txt now pins exact versions
   (yfinance 0.2.61, pandas 2.2.3, pytest 8.4.0) instead of open
   lower bounds.
