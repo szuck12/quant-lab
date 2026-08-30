@@ -144,7 +144,7 @@ class BacktestEngine:
             The smallest interval string.
         """
         order = [
-            "1m", "2m", "5m", "15m", "30m", "90m", "60m", "1h",
+            "1m", "2m", "5m", "15m", "30m", "60m", "90m", "1h",
             "1d", "5d", "1wk", "1mo", "3mo",
         ]
         intervals = [c.interval for c in self.conditions]
@@ -233,7 +233,7 @@ class BacktestEngine:
             return value <= threshold
         elif operator == "==":
             return value == threshold
-        return False
+        raise ValueError(f"Unknown operator '{operator}'")
 
     def _simulate_ticker(
         self, ticker: str, df: pd.DataFrame
@@ -260,9 +260,13 @@ class BacktestEngine:
                 entry_date = df.index[i]
                 entry_price = df.iloc[i]["Close"]
 
-                if entry_price <= 0:
+                if pd.isna(entry_price) or entry_price <= 0:
                     i += 1
                     continue
+
+                # Skip if hold period extends past available data
+                if i + hold >= len(df):
+                    break
 
                 exit_idx = i + hold
 

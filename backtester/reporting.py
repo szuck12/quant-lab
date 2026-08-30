@@ -112,10 +112,12 @@ def format_results(result: BacktestResult) -> str:
         strat_sharpe = m.get("sharpe_ratio", 0)
         bench_sharpe = bm.get("sharpe_ratio", 0)
         lines.append("\n--- vs Benchmark ---")
-        sign = "+" if diff >= 0 else ""
-        lines.append(f"  Return delta: {sign}{diff:.1f}%")
+        ret_sign = "+" if diff >= 0 else ""
+        lines.append(f"  Return delta: {ret_sign}{diff:.1f}%")
+        sharpe_diff = strat_sharpe - bench_sharpe
+        sharpe_sign = "+" if sharpe_diff >= 0 else ""
         lines.append(
-            f"  Sharpe delta: {sign}{strat_sharpe - bench_sharpe:.2f}"
+            f"  Sharpe delta: {sharpe_sign}{sharpe_diff:.2f}"
         )
 
     lines.append("")

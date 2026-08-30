@@ -16,6 +16,25 @@ from indicators._data import _DEFAULT_WINDOWS, _VALID_INTERVALS
 # Supported comparison operators
 _OPERATORS = {">", "<", ">=", "<=", "=="}
 
+# Word-based aliases so users don't need to quote shell-special chars
+_OPERATOR_ALIASES: dict[str, str] = {
+    "below": "<",
+    "less_than": "<",
+    "under": "<",
+    "above": ">",
+    "greater_than": ">",
+    "over": ">",
+    "at_or_below": "<=",
+    "less_than_or_equal": "<=",
+    "at_most": "<=",
+    "at_or_above": ">=",
+    "greater_than_or_equal": ">=",
+    "at_least": ">=",
+    "equals": "==",
+    "equal_to": "==",
+    "eq": "==",
+}
+
 # Default config values
 _DEFAULTS = {
     "years": 2,
@@ -188,8 +207,9 @@ def _parse_single_condition(tokens: list[str]) -> Condition:
             f"Invalid value '{tokens[-2]}'. Must be a number."
         )
 
-    # Third to last is operator
-    operator = tokens[-3]
+    # Third to last is operator (supports word aliases)
+    raw_operator = tokens[-3]
+    operator = _OPERATOR_ALIASES.get(raw_operator.lower(), raw_operator)
     if operator not in _OPERATORS:
         raise ValueError(
             f"Invalid operator '{operator}'. "
@@ -269,21 +289,31 @@ def _parse_indicator_args(
             f"got {len(params_list)}."
         )
 
+    # For single-default indicators, if params are provided, must be 0 or 1
+    if len(params_list) > 1:
+        defaults = _DEFAULT_WINDOWS.get(indicator)
+        if defaults is not None and not isinstance(defaults, tuple):
+            raise ValueError(
+                f"{indicator} takes at most 1 parameter, "
+                f"got {len(params_list)}."
+            )
+
     return tuple(params_list), component
 
 
 def _expected_param_count(indicator: str) -> int | None:
     """Return expected parameter count for an indicator.
 
-    Returns None if the indicator accepts variable params or if
-    all params have defaults (making them optional).
+    Returns None if the indicator accepts variable params or has a
+    single default (params are optional).
+    Returns the tuple length for multi-param indicators (e.g. MACD).
     """
     defaults = _DEFAULT_WINDOWS.get(indicator)
     if defaults is None:
         return None
     if isinstance(defaults, tuple):
         return len(defaults)
-    # Single default value means params are optional
+    # Single default value — params are optional (0 or 1 allowed)
     return None
 
 

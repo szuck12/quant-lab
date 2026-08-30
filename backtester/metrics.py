@@ -190,7 +190,7 @@ def compute_sharpe_ratio(
     Returns:
         Sharpe ratio.
     """
-    if daily_returns.empty or daily_returns.std() == 0:
+    if daily_returns.empty or daily_returns.std() == 0 or pd.isna(daily_returns.std()):
         return 0.0
     return daily_returns.mean() / daily_returns.std() * np.sqrt(trading_days)
 
@@ -210,7 +210,7 @@ def compute_sortino_ratio(
     if daily_returns.empty:
         return 0.0
     neg = daily_returns[daily_returns < 0]
-    if neg.empty or neg.std() == 0:
+    if neg.empty or neg.std() == 0 or pd.isna(neg.std()):
         return 0.0
     return daily_returns.mean() / neg.std() * np.sqrt(trading_days)
 

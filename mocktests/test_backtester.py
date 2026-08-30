@@ -642,7 +642,7 @@ class TestMetrics:
         exit_price: float = 110.0,
         hold_bars: int = 5,
     ) -> Trade:
-        return_pct = (exit_price - entry_price) / entry_price * 100
+        return_pct = (exit_price - entry_price) / entry_price
         return Trade(
             ticker="AAPL",
             entry_date=pd.Timestamp("2025-01-01"),
@@ -656,20 +656,40 @@ class TestMetrics:
     def test_compute_total_return(self):
         trades = [self._make_trade(100.0, 110.0, 5)]
         result = compute_total_return(trades, 10_000.0)
-        assert result == pytest.approx(10.0, abs=1e-2)
+        assert result == pytest.approx(0.10, abs=1e-4)
 
     def test_compute_total_return_loss(self):
         trades = [self._make_trade(100.0, 90.0, 5)]
         result = compute_total_return(trades, 10_000.0)
-        assert result == pytest.approx(-10.0, abs=1e-2)
+        assert result == pytest.approx(-0.10, abs=1e-4)
 
     def test_compute_total_return_no_trades(self):
         result = compute_total_return([], 10_000.0)
         assert result == 0.0
 
     def test_compute_annualized_return(self):
-        result = compute_annualized_return(10.0, 1.0)
-        assert result > 0
+        # 10% total return over 1 year
+        result = compute_annualized_return(0.10, 1.0)
+        assert result == pytest.approx(0.10, abs=1e-4)
+
+    def test_compute_annualized_return_multi_year(self):
+        # 21% total return over 2 years → ~10% annualized
+        result = compute_annualized_return(0.21, 2.0)
+        assert result == pytest.approx(0.10, abs=0.01)
+
+    def test_compute_annualized_return_loss(self):
+        # -50% total return over 1 year
+        result = compute_annualized_return(-0.50, 1.0)
+        assert result == pytest.approx(-0.50, abs=1e-4)
+
+    def test_compute_annualized_return_zero_years(self):
+        result = compute_annualized_return(0.10, 0.0)
+        assert result == 0.0
+
+    def test_compute_annualized_return_total_loss(self):
+        # -100% return → 0.0 (can't recover)
+        result = compute_annualized_return(-1.0, 1.0)
+        assert result == 0.0
 
     def test_compute_max_drawdown(self):
         equity = pd.Series([100, 110, 105, 95, 100])
@@ -867,3 +887,526 @@ class TestCacheDirectory:
         cache_dir = tmp_path / "test_cache2"
         pipeline = DataPipeline(cache_dir=cache_dir)
         assert hasattr(pipeline, "cache_dir")
+
+
+# ===================================================================
+# §11  Operator Alias Tests (shell-safe syntax)
+# ===================================================================
+
+class TestOperatorAliases:
+    """Tests for word-based operator aliases that avoid shell redirection."""
+
+    def test_below_alias(self):
+        c = _parse_single_condition(["RSI", "below", "30", "1d"])
+        assert c.operator == "<"
+        assert c.value == 30.0
+
+    def test_above_alias(self):
+        c = _parse_single_condition(["SMA", "50", "above", "200", "1d"])
+        assert c.operator == ">"
+
+    def test_at_or_below_alias(self):
+        c = _parse_single_condition(["RSI", "at_or_below", "30", "1d"])
+        assert c.operator == "<="
+
+    def test_at_or_above_alias(self):
+        c = _parse_single_condition(["RSI", "at_or_above", "70", "1d"])
+        assert c.operator == ">="
+
+    def test_equals_alias(self):
+        c = _parse_single_condition(["RSI", "equals", "50", "1d"])
+        assert c.operator == "=="
+
+    def test_less_than_alias(self):
+        c = _parse_single_condition(["RSI", "less_than", "30", "1d"])
+        assert c.operator == "<"
+
+    def test_greater_than_alias(self):
+        c = _parse_single_condition(["SMA", "greater_than", "200", "1d"])
+        assert c.operator == ">"
+
+    def test_under_alias(self):
+        c = _parse_single_condition(["RSI", "under", "30", "1d"])
+        assert c.operator == "<"
+
+    def test_over_alias(self):
+        c = _parse_single_condition(["RSI", "over", "70", "1d"])
+        assert c.operator == ">"
+
+    def test_at_most_alias(self):
+        c = _parse_single_condition(["RSI", "at_most", "30", "1d"])
+        assert c.operator == "<="
+
+    def test_at_least_alias(self):
+        c = _parse_single_condition(["RSI", "at_least", "70", "1d"])
+        assert c.operator == ">="
+
+    def test_eq_alias(self):
+        c = _parse_single_condition(["RSI", "eq", "50", "1d"])
+        assert c.operator == "=="
+
+    def test_equal_to_alias(self):
+        c = _parse_single_condition(["RSI", "equal_to", "50", "1d"])
+        assert c.operator == "=="
+
+    def test_case_insensitive_alias(self):
+        c = _parse_single_condition(["RSI", "Below", "30", "1d"])
+        assert c.operator == "<"
+
+    def test_full_backtest_with_alias(self):
+        config = parse_backtest_command(
+            ["AAPL", "RSI", "below", "30", "1d"]
+        )
+        assert config["conditions"][0].operator == "<"
+
+    def test_multiple_conditions_with_aliases(self):
+        config = parse_backtest_command(
+            ["AAPL", "RSI", "below", "30", "1d",
+             "SMA", "50", "above", "200", "1d"]
+        )
+        assert len(config["conditions"]) == 2
+        assert config["conditions"][0].operator == "<"
+        assert config["conditions"][1].operator == ">"
+
+
+# ===================================================================
+# §12  CLI Edge Case Tests
+# ===================================================================
+
+class TestCLIClientCases:
+    """Additional CLI edge case coverage."""
+
+    def test_trailing_comma_ticker(self):
+        config = parse_backtest_command(["AAPL,", "RSI", "<", "30", "1d"])
+        assert config["tickers"] == ["AAPL"]
+
+    def test_spaces_around_comma(self):
+        config = parse_backtest_command(["AAPL , MSFT", "RSI", "<", "30", "1d"])
+        assert config["tickers"] == ["AAPL", "MSFT"]
+
+    def test_mixed_case_interval(self):
+        config = parse_backtest_command(["AAPL", "RSI", "<", "30", "1D"])
+        assert config["conditions"][0].interval == "1d"
+
+    def test_mixed_case_indicator(self):
+        config = parse_backtest_command(["AAPL", "rsi", "<", "30", "1d"])
+        assert config["conditions"][0].indicator == "RSI"
+
+    def test_option_missing_value(self):
+        with pytest.raises(ValueError, match="requires a value"):
+            parse_backtest_command(["AAPL", "RSI", "<", "30", "1d", "--hold"])
+
+    def test_stop_loss_option(self):
+        config = parse_backtest_command(
+            ["AAPL", "RSI", "<", "30", "1d", "--stop-loss", "5"]
+        )
+        assert config["stop_loss"] == 5.0
+
+    def test_rsi_with_custom_window(self):
+        config = parse_backtest_command(["AAPL", "RSI", "14", "<", "30", "1d"])
+        assert config["conditions"][0].params == (14.0,)
+
+    def test_rsi_too_many_params(self):
+        with pytest.raises(ValueError, match="at most 1"):
+            parse_backtest_command(
+                ["AAPL", "RSI", "14,20", "<", "30", "1d"]
+            )
+
+    def test_sma_no_params_uses_default(self):
+        config = parse_backtest_command(["AAPL", "SMA", ">", "200", "1d"])
+        assert config["conditions"][0].params == ()
+
+    def test_weekly_interval(self):
+        config = parse_backtest_command(["AAPL", "RSI", "<", "30", "1wk"])
+        assert config["conditions"][0].interval == "1wk"
+
+    def test_monthly_interval(self):
+        config = parse_backtest_command(["AAPL", "RSI", "<", "30", "1mo"])
+        assert config["conditions"][0].interval == "1mo"
+
+
+# ===================================================================
+# §13  Engine Edge Case Tests
+# ===================================================================
+
+class TestEngineEdgeCases:
+    """Tests for engine edge cases and robustness."""
+
+    def _make_config(self, **overrides):
+        config = {
+            "tickers": ["AAPL"],
+            "conditions": [Condition("RSI", (), None, "<", 50.0, "1d")],
+            "hold": 10,
+            "capital": 10_000.0,
+            "benchmark": "SPY",
+            "years": 2,
+            "stop_loss": None,
+        }
+        config.update(overrides)
+        return config
+
+    @patch("backtester.engine.DataPipeline")
+    def test_stop_loss_triggers(self, MockPipeline):
+        """Stop-loss should exit trade early when price drops."""
+        dates = pd.date_range(start="2025-01-01", periods=200, freq="B")
+        # Steep decline: 100 → 50 over 200 bars (0.25/bar)
+        # After 5 bars, price drops ~1.25 (1.25%) → triggers 1% stop-loss
+        close = np.linspace(100, 50, 200)
+        mock_df = pd.DataFrame(
+            {"Open": close, "High": close + 1, "Low": close - 1,
+             "Close": close, "Volume": np.full(200, 1_000_000.0)},
+            index=dates,
+        )
+        mock_pipeline = MockPipeline.return_value
+        mock_pipeline.fetch.return_value = {"AAPL": mock_df}
+
+        config = self._make_config(stop_loss=1.0, hold=50)
+        engine = BacktestEngine(config["conditions"], config)
+        result = engine.run()
+
+        # With steep decline and 1% stop-loss, trades should exit early
+        early_exits = [t for t in result.trades if t.hold_bars < 50]
+        assert len(early_exits) > 0
+
+    @patch("backtester.engine.DataPipeline")
+    def test_hold_period_one_bar(self, MockPipeline):
+        """Hold=1 should exit on the very next bar."""
+        mock_df = _make_df(rows=200)
+        mock_df["rsi_14"] = 30.0
+        mock_pipeline = MockPipeline.return_value
+        mock_pipeline.fetch.return_value = {"AAPL": mock_df}
+
+        config = self._make_config(hold=1)
+        engine = BacktestEngine(config["conditions"], config)
+        result = engine.run()
+
+        for trade in result.trades:
+            assert trade.hold_bars == 1
+
+    @patch("backtester.engine.DataPipeline")
+    def test_trade_near_end_of_data(self, MockPipeline):
+        """Trade starting near end should be skipped if hold extends past data."""
+        mock_df = _make_df(rows=50)
+        mock_df["rsi_14"] = 30.0
+        mock_pipeline = MockPipeline.return_value
+        mock_pipeline.fetch.return_value = {"AAPL": mock_df}
+
+        config = self._make_config(hold=60)  # hold > data length
+        engine = BacktestEngine(config["conditions"], config)
+        result = engine.run()
+
+        # No complete trades possible since hold > data
+        assert result.trades == []
+
+    @patch("backtester.engine.DataPipeline")
+    def test_nan_entry_price_skipped(self, MockPipeline):
+        """Trades with NaN entry price should be skipped."""
+        dates = pd.date_range(start="2025-01-01", periods=100, freq="B")
+        close = np.full(100, 100.0)
+        close[5] = np.nan  # NaN price at potential entry
+        mock_df = pd.DataFrame(
+            {"Open": close, "High": close + 1, "Low": close - 1,
+             "Close": close, "Volume": np.full(100, 1_000_000.0)},
+            index=dates,
+        )
+        mock_df["rsi_14"] = 30.0
+        mock_pipeline = MockPipeline.return_value
+        mock_pipeline.fetch.return_value = {"AAPL": mock_df}
+
+        config = self._make_config(hold=5)
+        engine = BacktestEngine(config["conditions"], config)
+        result = engine.run()
+
+        for trade in result.trades:
+            assert not math.isnan(trade.entry_price)
+
+    @patch("backtester.engine.DataPipeline")
+    def test_zero_entry_price_skipped(self, MockPipeline):
+        """Trades with zero entry price should be skipped."""
+        dates = pd.date_range(start="2025-01-01", periods=100, freq="B")
+        close = np.full(100, 100.0)
+        close[5] = 0.0  # Zero price at potential entry
+        mock_df = pd.DataFrame(
+            {"Open": close, "High": close + 1, "Low": close - 1,
+             "Close": close, "Volume": np.full(100, 1_000_000.0)},
+            index=dates,
+        )
+        mock_df["rsi_14"] = 30.0
+        mock_pipeline = MockPipeline.return_value
+        mock_pipeline.fetch.return_value = {"AAPL": mock_df}
+
+        config = self._make_config(hold=5)
+        engine = BacktestEngine(config["conditions"], config)
+        result = engine.run()
+
+        for trade in result.trades:
+            assert trade.entry_price > 0
+
+    def test_smallest_interval_ordering(self):
+        """60m should be considered smaller than 90m."""
+        conditions = [
+            Condition("RSI", (), None, "<", 30.0, "90m"),
+            Condition("RSI", (), None, "<", 30.0, "60m"),
+        ]
+        config = self._make_config(conditions=conditions)
+        engine = BacktestEngine(conditions, config)
+        assert engine._smallest_interval() == "60m"
+
+    def test_smallest_interval_single(self):
+        conditions = [Condition("RSI", (), None, "<", 30.0, "1wk")]
+        config = self._make_config(conditions=conditions)
+        engine = BacktestEngine(conditions, config)
+        assert engine._smallest_interval() == "1wk"
+
+    def test_check_condition_unknown_operator(self):
+        """Unknown operator should raise ValueError."""
+        with pytest.raises(ValueError, match="Unknown operator"):
+            BacktestEngine._check_condition(50.0, "!=" , 30.0)
+
+    def test_check_condition_all_operators(self):
+        assert BacktestEngine._check_condition(50.0, ">", 30.0) is True
+        assert BacktestEngine._check_condition(50.0, "<", 30.0) is False
+        assert BacktestEngine._check_condition(50.0, ">=", 50.0) is True
+        assert BacktestEngine._check_condition(50.0, "<=", 50.0) is True
+        assert BacktestEngine._check_condition(50.0, "==", 50.0) is True
+
+
+# ===================================================================
+# §14  Metrics Edge Case Tests
+# ===================================================================
+
+class TestMetricsEdgeCases:
+    """Additional metrics edge case coverage."""
+
+    def _make_trade(self, entry=100.0, exit=110.0, hold=5):
+        return_pct = (exit - entry) / entry
+        return Trade(
+            ticker="AAPL",
+            entry_date=pd.Timestamp("2025-01-01"),
+            entry_price=entry,
+            exit_date=pd.Timestamp("2025-01-01") + pd.Timedelta(days=hold),
+            exit_price=exit,
+            hold_bars=hold,
+            return_pct=return_pct,
+        )
+
+    def test_max_drawdown_all_same(self):
+        equity = pd.Series([100, 100, 100, 100])
+        assert compute_max_drawdown(equity) == 0.0
+
+    def test_max_drawdown_empty(self):
+        assert compute_max_drawdown(pd.Series(dtype=float)) == 0.0
+
+    def test_max_drawdown_single_point(self):
+        assert compute_max_drawdown(pd.Series([100])) == 0.0
+
+    def test_sharpe_empty(self):
+        assert compute_sharpe_ratio(pd.Series(dtype=float)) == 0.0
+
+    def test_sharpe_single_return(self):
+        # Single return → std with ddof=1 is NaN → returns 0.0
+        result = compute_sharpe_ratio(pd.Series([0.01]))
+        assert result == 0.0
+
+    def test_sharpe_zero_std(self):
+        assert compute_sharpe_ratio(pd.Series([0.01, 0.01, 0.01])) == 0.0
+
+    def test_sortino_empty(self):
+        assert compute_sortino_ratio(pd.Series(dtype=float)) == 0.0
+
+    def test_sortino_all_positive(self):
+        # No downside → returns 0.0
+        result = compute_sortino_ratio(pd.Series([0.01, 0.02, 0.03]))
+        assert result == 0.0
+
+    def test_total_return_compounding(self):
+        """Two 10% wins compound to 21%."""
+        trades = [
+            self._make_trade(100.0, 110.0, 5),
+            self._make_trade(110.0, 121.0, 5),
+        ]
+        result = compute_total_return(trades, 10_000.0)
+        assert result == pytest.approx(0.21, abs=1e-3)
+
+    def test_total_return_mixed(self):
+        """Win + loss should compound correctly."""
+        trades = [
+            self._make_trade(100.0, 110.0, 5),  # +10%
+            self._make_trade(110.0, 99.0, 5),    # -10%
+        ]
+        result = compute_total_return(trades, 10_000.0)
+        # 1.10 * 0.90 = 0.99 → -1%
+        assert result == pytest.approx(-0.01, abs=1e-3)
+
+    def test_benchmark_metrics_empty_data(self):
+        from backtester.metrics import compute_benchmark_metrics
+        dates = pd.date_range("2025-01-01", periods=5, freq="B")
+        df = pd.DataFrame({"Close": [100, 101, 102, 103, 104]}, index=dates)
+        # Request dates outside the data range → empty slice
+        result = compute_benchmark_metrics(
+            df, pd.Timestamp("2026-01-01"), pd.Timestamp("2026-12-31")
+        )
+        assert result["total_return"] == 0.0
+
+    def test_benchmark_metrics_single_point(self):
+        from backtester.metrics import compute_benchmark_metrics
+        dates = pd.date_range("2025-01-01", periods=1, freq="B")
+        df = pd.DataFrame({"Close": [100.0]}, index=dates)
+        result = compute_benchmark_metrics(
+            df, pd.Timestamp("2025-01-01"), pd.Timestamp("2025-01-01")
+        )
+        assert result["total_return"] == 0.0
+
+    def test_benchmark_metrics_valid(self):
+        from backtester.metrics import compute_benchmark_metrics
+        dates = pd.date_range("2025-01-01", periods=100, freq="B")
+        close = np.linspace(100, 110, 100)
+        df = pd.DataFrame({"Close": close}, index=dates)
+        result = compute_benchmark_metrics(
+            df, pd.Timestamp("2025-01-01"), pd.Timestamp("2025-05-20")
+        )
+        assert result["total_return"] > 0
+        assert result["annualized_return"] > 0
+        assert result["sharpe_ratio"] > 0
+
+
+# ===================================================================
+# §15  Reporting Edge Case Tests
+# ===================================================================
+
+class TestReportingEdgeCases:
+    """Additional reporting edge case coverage."""
+
+    def test_format_results_no_trades_per_ticker(self):
+        result = BacktestResult(
+            trades=[],
+            metrics={"total_trades": 0, "total_return": 0.0},
+            benchmark_metrics={},
+            ticker_results={"AAPL": [], "MSFT": []},
+            conditions=[],
+            config={"tickers": ["AAPL", "MSFT"], "hold": 10,
+                    "capital": 10_000.0, "benchmark": "SPY",
+                    "years": 2, "stop_loss": None},
+        )
+        output = format_results(result)
+        assert "AAPL" in output
+        assert "MSFT" in output
+        assert "No trades" in output
+
+    def test_format_results_with_benchmark(self):
+        result = BacktestResult(
+            trades=[
+                Trade("AAPL", pd.Timestamp("2025-01-01"), 100.0,
+                      pd.Timestamp("2025-01-06"), 110.0, 5, 0.10),
+            ],
+            metrics={
+                "total_trades": 1, "total_return": 0.10,
+                "annualized_return": 0.50, "sharpe_ratio": 1.5,
+                "sortino_ratio": 2.0, "max_drawdown": 0.05,
+                "win_rate": 1.0, "profit_factor": float("inf"),
+            },
+            benchmark_metrics={
+                "total_return": 0.05, "annualized_return": 0.25,
+                "sharpe_ratio": 1.0, "max_drawdown": 0.03,
+            },
+            ticker_results={"AAPL": [
+                Trade("AAPL", pd.Timestamp("2025-01-01"), 100.0,
+                      pd.Timestamp("2025-01-06"), 110.0, 5, 0.10),
+            ]},
+            conditions=[Condition("RSI", (), None, "<", 30.0, "1d")],
+            config={"tickers": ["AAPL"], "hold": 10, "capital": 10_000.0,
+                    "benchmark": "SPY", "years": 2, "stop_loss": None},
+        )
+        output = format_results(result)
+        assert "Benchmark" in output
+        assert "vs Benchmark" in output
+        assert "Return delta" in output
+        assert "Sharpe delta" in output
+
+    def test_sharpe_delta_sign_independent(self):
+        """Sharpe delta sign should not depend on return delta sign."""
+        result = BacktestResult(
+            trades=[
+                Trade("AAPL", pd.Timestamp("2025-01-01"), 100.0,
+                      pd.Timestamp("2025-01-06"), 110.0, 5, 0.10),
+            ],
+            metrics={
+                "total_trades": 1, "total_return": 0.10,
+                "annualized_return": 0.50, "sharpe_ratio": 0.5,
+                "sortino_ratio": 2.0, "max_drawdown": 0.05,
+                "win_rate": 1.0, "profit_factor": float("inf"),
+            },
+            benchmark_metrics={
+                "total_return": 0.05, "annualized_return": 0.25,
+                "sharpe_ratio": 1.5, "max_drawdown": 0.03,
+            },
+            ticker_results={"AAPL": [
+                Trade("AAPL", pd.Timestamp("2025-01-01"), 100.0,
+                      pd.Timestamp("2025-01-06"), 110.0, 5, 0.10),
+            ]},
+            conditions=[],
+            config={"tickers": ["AAPL"], "hold": 10, "capital": 10_000.0,
+                    "benchmark": "SPY", "years": 2, "stop_loss": None},
+        )
+        output = format_results(result)
+        # Return delta is positive (+5.0%) but Sharpe delta is negative (-1.00)
+        assert "Return delta: +5.0%" in output
+        assert "Sharpe delta: -1.00" in output
+
+    def test_fmt_val_integer(self):
+        from backtester.reporting import _fmt_val
+        assert _fmt_val(100.0) == "100"
+
+    def test_fmt_val_decimal(self):
+        from backtester.reporting import _fmt_val
+        assert _fmt_val(1.5) == "1.50"
+
+    def test_ticker_total_return(self):
+        from backtester.reporting import _ticker_total_return
+        trades = [
+            Trade("AAPL", pd.Timestamp("2025-01-01"), 100.0,
+                  pd.Timestamp("2025-01-06"), 110.0, 5, 0.10),
+            Trade("AAPL", pd.Timestamp("2025-01-07"), 110.0,
+                  pd.Timestamp("2025-01-12"), 121.0, 5, 0.10),
+        ]
+        result = _ticker_total_return(trades)
+        # 1.10 * 1.10 = 1.21 → 21%
+        assert result == pytest.approx(0.21, abs=1e-3)
+
+
+# ===================================================================
+# §16  Data Pipeline Edge Case Tests
+# ===================================================================
+
+class TestDataPipelineEdgeCases:
+    """Additional data pipeline edge case coverage."""
+
+    @pytest.fixture(autouse=True)
+    def temp_cache(self, tmp_path):
+        self.cache_dir = tmp_path / "cache"
+        self.cache_dir.mkdir()
+        self.pipeline = DataPipeline(cache_dir=self.cache_dir)
+
+    def test_clear_cache(self):
+        cache_path = self.pipeline._cache_path("AAPL", "1d")
+        cache_path.parent.mkdir(parents=True, exist_ok=True)
+        cache_path.touch()
+        assert cache_path.exists()
+        count = self.pipeline.clear_cache()
+        assert count == 1
+        assert not cache_path.exists()
+
+    def test_clear_cache_empty(self):
+        count = self.pipeline.clear_cache()
+        assert count == 0
+
+    def test_corrupted_cache_falls_through(self):
+        """Corrupted parquet should trigger re-download."""
+        cache_path = self.pipeline._cache_path("AAPL", "1d")
+        cache_path.parent.mkdir(parents=True, exist_ok=True)
+        cache_path.write_text("not a parquet file")
+        mock_df = _make_df(rows=50)
+        with patch.object(self.pipeline, "_download_batch",
+                          return_value={"AAPL": mock_df}):
+            result = self.pipeline.fetch(["AAPL"], "1d", 1)
+        assert "AAPL" in result
