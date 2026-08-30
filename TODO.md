@@ -22,15 +22,20 @@
 
 - [ ] 2026-08-22 — Evaluate merging open Dependabot PRs (yfinance 1.x,
       pandas 3.x): add CI for automated test runs first, then verify
-      with full mock + real suites before merging (#deps)
+      with full mock + real suites before merging
+      (#deps, @security-auditor @test-engineer @feature-implementer
+      @release-manager)
 
 ## Medium Priority
 
 (Should get done, not urgent.)
 
-- [ ] Test MACD accuracy against known reference values (#indicator, #test)
-- [ ] Test BB accuracy against known reference values (#indicator, #test)
-- [ ] Improve structure of MACD and BB indicator output (#cli)
+- [ ] Test MACD accuracy against known reference values
+      (#indicator, #test, @test-engineer @indicator-specialist)
+- [ ] Test BB accuracy against known reference values
+      (#indicator, #test, @test-engineer @indicator-specialist)
+- [ ] Improve structure of MACD and BB indicator output
+      (#cli, @feature-implementer)
 
 ## Low Priority
 
@@ -41,4 +46,4 @@
 (Interesting ideas not yet committed to implementation.)
 
 - [ ] Allow multiple indicators to be calculated in a single command-line
-      input (#cli)
+      input (#cli, @idea-generator)

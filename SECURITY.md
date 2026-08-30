@@ -1,5 +1,9 @@
 # Security Policy
 
+This policy is executed by the **Security Auditor** agent (see
+`agents/security-auditor.md`). The corresponding checklists and severity
+scale live in `docs/code_review_guide.md`, Section 9.
+
 ## Supported Versions
 
 Only the latest release receives security fixes:

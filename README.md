@@ -1,6 +1,6 @@
 # QuantLab
 
-Current version: **1.7.3** — [Changelog](CHANGELOG.md)
+Current version: **1.8.0** — [Changelog](CHANGELOG.md)
 
 A command-line tool that fetches stock price data via [yfinance](https://github.com/ranaroussi/yfinance) and computes one of fourteen technical indicators: Average Directional Index (ADX), Average True Range (ATR), Average Volume (AV), Bollinger Bands (BB), Commodity Channel Index (CCI), Exponential Moving Average (EMA), Moving Average Convergence Divergence (MACD), On-Balance Volume (OBV), Rate of Change (ROC), Relative Strength Index (RSI), Relative Volume (RVOL), Simple Moving Average (SMA), Stochastic Oscillator (STOCH), or Volume Weighted Average Price (VWAP). Input is provided through stdin and the result is printed to stdout. The tool is designed for quick terminal lookups — you type a ticker and an indicator, and you get back a number.
 
@@ -295,13 +295,44 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
 │
 ├── LICENSE                        # MIT license.
 │
+├── AGENTS.md                      # Usage guide for the agent-based
+│                                  # development workflow.
+│
 ├── TODO.md                        # Planned work, priorities, and ideas
 │                                  # (see docs/maintain_todo.md).
+│
+├── .opencode/
+│   └── opencode.json              # Registers the agent personas for
+│                                  # opencode (binds each to its file
+│                                  # in agents/).
+│
+├── agents/                        # Agent personas — one file per
+│   │                              # specialist role, indexed by
+│   │                              # README.md and AGENTS.md.
+│   │
+│   ├── README.md
+│   ├── task-orchestrator.md       # Routes and decomposes all work.
+│   ├── idea-generator.md          # Generates and triages ideas.
+│   ├── feature-implementer.md     # Writes and refactors code.
+│   ├── indicator-specialist.md    # Indicator math and formulas.
+│   ├── data-engineer.md           # yfinance data plumbing.
+│   ├── test-engineer.md           # Authors and runs the test suites.
+│   ├── code-reviewer.md           # Deep-dive architectural review.
+│   ├── consistency-guardian.md    # Conventions and structure.
+│   ├── documentation-expert.md    # README, docs, changelog wording.
+│   ├── security-auditor.md        # Security and dependency auditing.
+│   └── release-manager.md         # Versioning and release.
 │
 ├── docs/
 │   ├── adding_indicator.md        # Step-by-step process for adding
 │   │                              # a new indicator to the project
 │   │                              # (implementation, tests, docs).
+│   │
+│   ├── agent_workflows.md         # Step-by-step workflows naming the
+│   │                              # agent responsible for each step.
+│   │
+│   ├── agents_overview.md         # Agent system model, interaction
+│   │                              # graph, and assignment rules.
 │   │
 │   ├── code_review_guide.md       # Deep-dive architectural review
 │   │                              # checklist for pre-release audits.
@@ -439,6 +470,9 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
 ## Tests
 
 The project has two test suites: mock tests and real tests.
+The **Test Engineer** agent authors and runs both suites
+(see [`agents/test-engineer.md`](agents/test-engineer.md)); they are
+quality gate #1 for every change.
 
 ### Mock Tests
 
@@ -483,6 +517,37 @@ pytest mocktests/test_calculate_sma.py -v
 # A single real test file
 pytest realtests/test_calculate_macd.py -v
 ```
+
+## Agent-Based Development Workflow
+
+QuantLab is developed through a crew of specialized agents. A single task
+is rarely one agent's job — the **Task Orchestrator** assigns each task,
+and each part of a task, to the agent or group of agents best equipped
+for it. See [AGENTS.md](AGENTS.md) for the full usage guide,
+[`docs/agent_workflows.md`](docs/agent_workflows.md) for the
+step-by-step processes, and [`docs/agents_overview.md`](docs/agents_overview.md)
+for the interaction model.
+
+| Agent | Role | Assign when... |
+|-------|------|----------------|
+| Task Orchestrator | Routes and decomposes all work | Starting any multi-step task |
+| Idea Generator | Idea generation and triage | Brainstorming, new features |
+| Feature Implementer | Writes and refactors code | Implementation is needed |
+| Indicator Specialist | Indicator math and formulas | Adding/changing indicators |
+| Data Engineer | yfinance data plumbing | Data layer, periods, intervals |
+| Test Engineer | Authors and runs tests | Code needs verification |
+| Code Reviewer | Architectural review | Significant change, release |
+| Consistency Guardian | Conventions and structure | Style/ordering checks |
+| Documentation Expert | README, docs, changelog wording | Anything user-visible changes |
+| Security Auditor | Security and dependency auditing | Release, dependency change |
+| Release Manager | Versioning and release | All work is done |
+
+Example routing: adding a new indicator runs
+`Indicator Specialist → Feature Implementer → Data Engineer → Test
+Engineer → Consistency Guardian → Documentation Expert → Release
+Manager`, with Code Reviewer and Security Auditor pre-release gates.
+Ask the Task Orchestrator ("have the orchestrator add a new indicator")
+to start any task.
 
 ## License
 

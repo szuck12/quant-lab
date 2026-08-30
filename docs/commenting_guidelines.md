@@ -1,5 +1,10 @@
 # Commenting Guidelines
 
+These guidelines are the convention standard for the codebase. Every
+implementation follows them (**Feature Implementer**) and they are
+enforced by the **Consistency Guardian** (see `agents/`). The audit
+checklist lives in `docs/code_review_guide.md`, Section 1.
+
 ## 1. Module / File Headers
 
 Every `.py` file starts with a brief comment describing the module's purpose.

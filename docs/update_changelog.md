@@ -4,6 +4,24 @@ This document describes the process to follow whenever a change is made to
 the project. It governs version numbering, changelog entries, and README
 updates.
 
+## Agents Involved
+
+The **Release Manager** leads this process: it decides the semver bump,
+structures the changelog, and creates the release commit. Supporting
+agents:
+
+- **Documentation Expert** — drafts changelog entry wording and keeps
+  the README version badge synchronized (Step 3).
+- **Security Auditor** — supplies the `### Security` entry content on
+  security releases (counts/classes only, Step 2).
+- **Code Reviewer** — runs the pre-release audit that a release
+  candidate must pass before Step 4.
+- **Test Engineer** — provides the full-suite green verdict that gates
+  the release.
+
+See `agents/release-manager.md` and `docs/agent_workflows.md`
+(Workflow G) for the full release procedure.
+
 ## Step 1 — Determine the New Version
 
 Follow [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html):
@@ -41,7 +59,8 @@ public: state only the number and general nature of what was fixed
 Never name specific packages, versions, or CVE identifiers in committed
 changelog entries; those details belong in the maintainer's private
 security log and GitHub security advisories (see `code_review_guide.md`,
-Section 9b).
+Section 9b). The **Security Auditor** agent supplies this entry's
+content.
 
 ### What to include
 

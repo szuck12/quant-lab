@@ -8,6 +8,18 @@ cross-cutting structural issues are suspected.
 Cadence: before each release, or whenever the codebase undergoes
 significant change (new indicator, CLI redesign, etc.).
 
+## Agent Ownership
+
+This guide is executed by three agents working in concert:
+
+- The **Consistency Guardian** audits **Section 1** (conventions).
+- The **Code Reviewer** audits **Sections 2–8** (structure, coverage,
+  errors, cross-cutting concerns, open-ended analysis).
+- The **Security Auditor** audits **Section 9** (security).
+
+Each agent follows its persona in `agents/` and reports findings to the
+Task Orchestrator. See `docs/agents_overview.md` for the model.
+
 ---
 
 ## How to Use

@@ -47,6 +47,8 @@ section). Items can be demoted or removed at any point.
 | `CHANGELOG.md` | Records what shipped in each release. | Backward-looking. A TODO item moves here once completed. |
 | `adding_indicator.md` | Step-by-step guide for implementing a new indicator. | How-to for the *implementation*. TODO.md tracks *what* is planned; `adding_indicator.md` explains *how* to build it. |
 | `update_changelog.md` | Process for version bumps and changelog entries. | Works in tandem: when an item ships, move it in TODO.md *and* record it in CHANGELOG.md. |
+| `agents_overview.md` | The agent system's interaction model and assignment rules. | Names the actors; TODO.md `@agent` tags record their assignments per task. |
+| `agent_workflows.md` | Step-by-step processes with the responsible agent per step. | TODO.md tracks *what*, the workflows track *who/when*. |
 
 ## Entry Conventions
 
@@ -56,7 +58,22 @@ Every entry is a Markdown checkbox list item:
 - [ ] Brief action-oriented description (#tag)
 ```
 
-Tags are lowercase, single word, prefixed with `#`. Use any tag that fits;
+### Agent Owner Tags
+
+Every entry may carry `@agent` owner tags so the responsible agent(s)
+are visible at a glance. Use `@`-prefixed agent names from the roster in
+`AGENTS.md` (e.g. `@feature-implementer`, `@test-engineer`,
+`@security-auditor`, `@release-manager`, `@idea-generator`). Ideas
+section entries are always tagged `@idea-generator`; priority and
+In Progress entries carry the tags of the agents assigned to execute
+them, set by the Task Orchestrator.
+
+```
+- [ ] Implement the new interval (#indicator,
+      @indicator-specialist @feature-implementer @test-engineer)
+```
+
+Price tags are lowercase, single word, prefixed with `#`. Use any tag that fits;
 common ones:
 
 | Tag | When to Use |

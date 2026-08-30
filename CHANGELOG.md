@@ -5,7 +5,28 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com) and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.7.3] - 2026-08-22
+## [1.8.0] - 2026-08-29
+
+### Added
+- Agent-based development workflow: eleven specialized agent personas in
+  `agents/` (Task Orchestrator, Idea Generator, Feature Implementer,
+  Indicator Specialist, Data Engineer, Test Engineer, Code Reviewer,
+  Consistency Guardian, Documentation Expert, Security Auditor, Release
+  Manager), each with role, scope, operating instructions,
+  interactions, and a handoff checklist.
+- `AGENTS.md` usage guide: roster, routing table, file ownership,
+  invocation, handoff and gate rules, and per-agent usage.
+- `docs/agents_overview.md` and `docs/agent_workflows.md`: the agent
+  interaction model and step-by-step workflows naming the responsible
+  agent for each step.
+- opencode registration (`.opencode/opencode.json`) binding each agent
+  persona to its file so the agents are directly invocable.
+- Existing process documentation (`adding_indicator.md`,
+  `maintain_todo.md`, `update_changelog.md`, `code_review_guide.md`,
+  `commenting_guidelines.md`, `formulas.md`, `SECURITY.md`) now names
+  the agents responsible for each step and surface.
+- `TODO.md` entries now carry `@agent` owner tags
+  (e.g. `@security-auditor @test-engineer`).
 
 ### Added
 - Security policy (SECURITY.md) describing private vulnerability

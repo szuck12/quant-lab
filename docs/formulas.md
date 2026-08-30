@@ -4,6 +4,11 @@ This document describes the mathematical formulas used by each
 indicator in QuantLab.  Indicators are listed in
 alphabetical order.
 
+This document is owned by the **Indicator Specialist** agent (see
+`agents/indicator-specialist.md`): it is the authority on formula
+correctness here, supplies reference values to the Test Engineer, and
+updates this file whenever a formula or its rationale changes.
+
 All formulas assume a time series indexed by `t` where `t` advances
 forward in time (bar by bar).
 

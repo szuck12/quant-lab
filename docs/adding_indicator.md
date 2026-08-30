@@ -4,7 +4,23 @@ This document describes the process for adding a new technical indicator to
 QuantLab. Follow these steps in order. Each step references the
 existing indicator implementations as templates (e.g. ATR for Wilder-smoothing / OHLCV, AV or SMA for simple rolling windows).
 
+## Agent Workflow
+
+Adding an indicator is a multi-agent task routed by the Task Orchestrator and
+executed by the specialists named at each step below. The chain is:
+
+```
+indicator-specialist → feature-implementer ⇄ data-engineer → test-engineer
+  → consistency-guardian → documentation-expert → code-reviewer
+  + security-auditor → release-manager
+```
+
+See `docs/agent_workflows.md` (Workflow A) and `AGENTS.md` for the full model.
+
 ## 0. Create a TODO Entry
+
+*(Agent: Idea Generator to triage; Task Orchestrator to schedule;
+Documentation Expert to draft the entry.)*
 
 Before implementing, add a TODO item to `TODO.md` (see
 [docs/maintain_todo.md](maintain_todo.md)).  Determine the priority based on
@@ -13,6 +29,8 @@ priority.  Use an unchecked box (`[ ]`) and move the item to **In Progress**
 once you start implementation.
 
 ## 1. Information to Gather
+
+*(Agent: Indicator Specialist.)*
 
 Before writing code, clarify these points with the person requesting
 the indicator:
@@ -49,6 +67,9 @@ the indicator:
   it -- no need to ask proactively.
 
 ## 2. Implementation in `indicators/` subpackage
+
+*(Agent: Feature Implementer; the data-layer changes in 2a/2d are owned
+by the Data Engineer.)*
 
 ### 2a. Create `indicators/<name>.py`
 
@@ -179,6 +200,9 @@ Follow the [commenting guidelines](commenting_guidelines.md) for docstring
 style, type hints, inline comments, and line length.
 
 ## 3. Mock Tests
+
+*(Agent: Test Engineer; reference values supplied by the Indicator
+Specialist.)*
 
 ### 3a. Create `mocktests/test_calculate_<indicator>.py`
 
@@ -395,6 +419,9 @@ dispatch tests.
 
 ## 4. Real Tests
 
+*(Agent: Test Engineer; reasonableness guidance from the Indicator
+Specialist.)*
+
 ### 4a. Create `realtests/test_calculate_<indicator>.py`
 
 Create a new file following the pattern in the existing real test files.
@@ -546,6 +573,8 @@ The raw data returned by `_return_raw=True` differs by indicator:
 
 ## 5. Verification
 
+*(Agent: Test Engineer — quality gate #1 confirmed here.)*
+
 Run the full test suite to check for regressions, then run the new tests
 in isolation:
 
@@ -574,6 +603,9 @@ spacing between tests. To disable this (e.g. for parallel execution), set
 1-second spacing but with per-test section headers and an overall summary.
 
 ## 6. Update README
+
+*(Agent: Documentation Expert; the `6c. Update formulas.md` content
+comes from the Indicator Specialist.)*
 
 Update `README.md` to list the new indicator in the Syntax table,
 in alphabetical position:
@@ -607,6 +639,8 @@ indicators (e.g. start with a short description, then the formula,
 then the variable table, then notes).
 
 ## 7. Versioning & Changelog
+
+*(Agent: Release Manager.)*
 
 After completing the implementation, tests, and documentation, follow the
 [changelog update process](update_changelog.md) to bump the version and
