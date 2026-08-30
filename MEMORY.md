@@ -38,7 +38,13 @@ Agents read this at session start and append at session end.
 <!-- Brief snapshot of where work left off. Updated at end of session. -->
 
 - Current version: 2.0.0
-- All 521 mock tests passing (422 existing + 99 new backtester tests).
+- All 583 mock tests passing (422 existing + 161 backtester tests).
+- Operator aliases: `below`/`above`/`at_or_below`/`at_or_above`/`equals`
+  avoid shell redirection issues with `<`/`>` characters.
+- Bugs fixed: _smallest_interval order, reporting Sharpe sign,
+  _check_condition unknown ops, NaN entry price guard, hold boundary
+  guard, Sharpe/Sortino NaN std, param validation for single-default
+  indicators, return_pct decimal vs percentage.
 - All agent files have Session Instructions (MEMORY.md + verify.sh)
   and Quick Reference sections.
 - Shared conventions live in `docs/conventions_reference.md`.
