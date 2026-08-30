@@ -14,6 +14,13 @@ Agents read this at session start and append at session end.
   conventions to `docs/conventions_reference.md`, created MEMORY.md for
   persistent context, added SKILL.md patterns for complex workflows,
   created `scripts/verify.sh` for automated pre-handoff checks.
+- **2026-08-30**: v2.0.0 — backtester added. Entry/exit logic is
+  all-conditions-must-match AND fixed hold period. Data cache is
+  parquet files (one per ticker per interval). Ticker scope is
+  multi-ticker scan using `yf.download()` batching. Condition syntax
+  is `INDICATOR [params] [component] OP VALUE INTERVAL`. Known
+  limitations: survivorship bias, no transaction costs, no short
+  selling, intraday data limits (7/60 day max for minute/hour data).
 
 ## Corrections & Lessons Learned
 
@@ -37,3 +44,7 @@ Agents read this at session start and append at session end.
 - Shared conventions live in `docs/conventions_reference.md`.
 - Skill files created: `skills/add-indicator/`, `skills/release-cut/`,
   `skills/security-audit/`.
+- Backtester agent added: `agents/backtest-engineer.md`.
+- Backtester package created: `backtester/` (cli, data_pipeline,
+  batch_indicators, engine, metrics, reporting).
+- BACKTEST command integrated into `main.py` dispatch.

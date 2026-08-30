@@ -162,3 +162,21 @@ Release X.Y.Z — <brief summary>
   (e.g. `agents/feature-implementer.md`, not `agents/feature.md`).
 - Every doc that references another doc must use relative links
   (e.g. `[changelog](update_changelog.md)`).
+
+## 16. Backtester Conventions
+
+- Entry/exit logic: all conditions must match (AND), fixed hold
+  period, stop-loss checked during hold.
+- Data cache: parquet files in `backtester/cache/`, one per ticker
+  per interval.
+- Batch download: use `yf.download(tickers, ...)` for batch fetching,
+  not individual `yf.Ticker` calls.
+- Condition syntax: `INDICATOR [params] [component] OP VALUE INTERVAL`
+  — always ends with interval.
+- Multi-component indicators require component: `BB upper >150 1d`,
+  `STOCH 14,5,5 k>80 1d`, `MACD line>0 1d`.
+- Simple indicators omit component: `RSI <30 1d`, `SMA 50 >200 1d`.
+- Metrics use annualized return, Sharpe ratio, Sortino ratio, max
+  drawdown, win rate, profit factor.
+- Parquet cache format: columns are Date (index), Open, High, Low,
+  Close, Volume; ticker and interval encoded in filename.

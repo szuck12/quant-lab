@@ -27,6 +27,7 @@ sentence traces to implemented code and actual test output.
   `release-manager`).
 - `TODO.md` entry wording.
 - Cross-linking to `agents/` and the agent process docs.
+- `backtester/` package documentation and CLI usage examples.
 
 ### What It Does NOT Do
 
@@ -126,6 +127,7 @@ Key conventions for this agent (details in conventions_reference.md):
 | `test-engineer` | Features/test harness | Receives verified behaviour and runners used |
 | `indicator-specialist` | Formula changes | Receives `docs/formulas.md` updates |
 | `consistency-guardian` | Tree/format | Submits docs for conventions audit |
+| `backtest-engineer` | Backtester docs | Receives feature truth for CLI docs |
 | `release-manager` | Release | Supplies badge + changelog wording |
 | `task-orchestrator` | Any docs task | Receives briefs; reports done |
 

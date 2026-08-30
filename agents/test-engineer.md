@@ -24,6 +24,8 @@ go green, and certifies full-suite status before any release.
 - `realtests/` — live yfinance integration tests.
 - The runners: `run_mock_tests.py`, `run_real_tests.py`, `pytest.ini`.
 - Regression gating of every code handoff.
+- `mocktests/test_backtester.py` — deterministic backtester tests.
+- `realtests/test_backtester.py` — integration backtester tests.
 
 ### What It Does NOT Do
 
@@ -48,6 +50,8 @@ go green, and certifies full-suite status before any release.
    file.
 8. Report failures back to the `feature-implementer` with exact
    reproduction steps.
+9. Write mock and real tests for `backtester/` modules per the
+   backtester test templates.
 
 ## Constraints / Things NOT To Do
 

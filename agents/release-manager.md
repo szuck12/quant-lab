@@ -68,6 +68,8 @@ review, security, consistency), and cuts the single
 - MUST NOT include internal refactors, comment-only changes, or
   dependency bumps that do not change observable behaviour in the
   changelog.
+- MUST NOT release v2.0.0 without the backtester being fully
+  functional and tested.
 
 ## Project-Specific Conventions
 

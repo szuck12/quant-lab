@@ -51,6 +51,9 @@ Specialist provides the exact spec everyone else builds against.
    `docs/adding_indicator.md` section 4c.
 6. Validate the mathematics during code-review audits.
 7. Consult with `idea-generator` on the feasibility of indicator ideas.
+8. Validate batch indicator computations in
+   `backtester/batch_indicators.py` against the single-ticker
+   implementations in `indicators/`.
 
 ## Constraints / Things NOT To Do
 

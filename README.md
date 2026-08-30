@@ -1,8 +1,10 @@
 # QuantLab
 
-Current version: **1.8.1** — [Changelog](CHANGELOG.md)
+Current version: **2.0.0** — [Changelog](CHANGELOG.md)
 
 A command-line tool that fetches stock price data via [yfinance](https://github.com/ranaroussi/yfinance) and computes one of fourteen technical indicators: Average Directional Index (ADX), Average True Range (ATR), Average Volume (AV), Bollinger Bands (BB), Commodity Channel Index (CCI), Exponential Moving Average (EMA), Moving Average Convergence Divergence (MACD), On-Balance Volume (OBV), Rate of Change (ROC), Relative Strength Index (RSI), Relative Volume (RVOL), Simple Moving Average (SMA), Stochastic Oscillator (STOCH), or Volume Weighted Average Price (VWAP). Input is provided through stdin and the result is printed to stdout. The tool is designed for quick terminal lookups — you type a ticker and an indicator, and you get back a number.
+
+As of v2.0.0, QuantLab also includes a **backtester** that runs multi-condition strategies across multiple tickers with batch data download and parquet caching.
 
 yfinance provides access to Yahoo Finance market data. The tool does not require an API key or account.
 
@@ -39,6 +41,46 @@ ticker(s) indicator [bar_size] [window] [C<count>]
 | `bar_size` | Width of each price bar | `1m`, `2m`, `5m`, `15m`, `30m`, `90m`, `60m`, `1h`, `1d`, `5d`, `1wk`, `1mo`, `3mo` | `1d` |
 | `window` | Lookback period in bars (for MACD: comma-separated fast,slow,signal, e.g. `12,26,9`; for BB: comma-separated window,num_std, e.g. `20,2.5`; for STOCH: comma-separated window,smooth_k,smooth_d, e.g. `14,3,3`; for ADX: comma-separated window,adx_window, e.g. `14,14`) | Any positive integer, or comma-separated values for MACD/BB/STOCH/ADX | ADX=(14,14), ATR=14, AV=20, BB=(20,2.0), CCI=20, EMA=20, MACD=(12,26,9), OBV=30, ROC=9, RSI=14, RVOL=10, SMA=50, STOCH=(14,3,3), VWAP=20 |
 | `C<count>` | Number of recent values to return | `C` followed by any positive integer (e.g. `C1`, `C10`, `C100`) | `1` |
+
+### Backtester Syntax
+
+```
+BACKTEST ticker(s) <INDICATOR [params] [component] OP VALUE INTERVAL> [options]
+```
+
+| Token | Meaning | Example |
+|-------|---------|---------|
+| `BACKTEST` | Command keyword | `BACKTEST` |
+| `ticker(s)` | Stock symbol(s), comma-separated | `AAPL,MSFT` |
+| `<INDICATOR ...>` | One or more conditions (each must end with interval) | `RSI < 30 1d` |
+| `--hold N` | Hold period in bars (default: 10) | `--hold 5` |
+| `--capital N` | Starting capital (default: 10000) | `--capital 50000` |
+| `--benchmark TICKER` | Benchmark ticker (default: SPY) | `--benchmark QQQ` |
+| `--years N` | Years of history (default: 2) | `--years 3` |
+| `--stop-loss N` | Stop-loss percentage (default: disabled) | `--stop-loss 5` |
+
+Conditions use the format: `INDICATOR [params] [component] OP VALUE INTERVAL`
+
+- Simple: `RSI < 30 1d`, `SMA 50 > 200 1d`
+- With params: `STOCH 14,5,5 k > 80 1d`, `BB 20,2 upper > 150 1d`
+- With component: `MACD 12,26,9 signal > 0 1d`
+- Multiple conditions (AND logic): `RSI < 30 1d SMA 50 > 200 1d`
+
+### Backtester Examples
+
+```bash
+# Basic RSI oversold strategy
+python3 main.py BACKTEST AAPL RSI < 30 1d
+
+# Multi-condition strategy
+python3 main.py BACKTEST AAPL,MSFT RSI < 30 1d SMA 50 > 200 1d
+
+# Custom hold period and capital
+python3 main.py BACKTEST AAPL RSI < 30 1d --hold 5 --capital 50000
+
+# With stop-loss
+python3 main.py BACKTEST AAPL RSI < 30 1d --stop-loss 5
+```
 
 ### Argument Parsing Rules
 
@@ -275,6 +317,20 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
 │   ├── stoch.py                   # calculate_stoch()
 │   └── vwap.py                    # calculate_vwap()
 │
+├── backtester/                     # Backtesting engine: CLI parser,
+│   │                              # batch data pipeline, vectorized
+│   │                              # indicators, strategy simulation,
+│   │                              # financial metrics, reporting.
+│   │
+│   ├── __init__.py
+│   ├── cli.py                     # BACKTEST command parser.
+│   ├── data_pipeline.py           # Batch download + parquet cache.
+│   ├── batch_indicators.py        # Vectorized indicator computation.
+│   ├── engine.py                  # Core simulation loop.
+│   ├── metrics.py                 # Financial metrics (Sharpe, etc.).
+│   ├── reporting.py               # Console output formatting.
+│   └── cache/                     # Parquet cache directory.
+│
 ├── CHANGELOG.md                   # Version history and release notes.
 │
 ├── run_mock_tests.py              # Runs all mock tests via pytest with a
@@ -478,8 +534,11 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
 │   ├── release-cut/
 │   │   └── SKILL.md               # Release gate sequence.
 │   │
-│   └── security-audit/
-│       └── SKILL.md               # Security scan commands.
+│   ├── security-audit/
+│   │   └── SKILL.md               # Security scan commands.
+│   │
+│   └── backtester/
+│       └── SKILL.md               # Backtester workflow checklist.
 │
 ├── scripts/
 │   └── verify.sh                  # Pre-handoff verification: lint,
@@ -504,7 +563,7 @@ quality gate #1 for every change.
 Mock tests patch `yfinance.Ticker` so no real API calls are made. The `conftest.py` fixture creates a `MagicMock` that returns a predefined pandas DataFrame of `Close` prices. This means:
 
 - **Deterministic** — tests always produce the same results regardless of market conditions or network availability.
-- **Fast** — 422 tests run in under 1 second.
+- **Fast** — 521 tests run in under 1 second.
 - **Comprehensive** — covers calculation logic, edge cases, parser dispatch, count behaviour, multi-ticker input, duplicate detection, and error conditions.
 
 ### Real Tests
@@ -566,6 +625,7 @@ for the interaction model.
 | Documentation Expert | README, docs, changelog wording | Anything user-visible changes | Doc accuracy |
 | Security Auditor | Security and dependency auditing | Release, dependency change | Security gate |
 | Release Manager | Versioning and release | All work is done | Final release gate |
+| Backtest Engineer | Backtesting engine and strategy simulation | Backtester features/fixes | Backtester correctness |
 
 Example routing: adding a new indicator runs
 `Indicator Specialist → Feature Implementer → Data Engineer → Test

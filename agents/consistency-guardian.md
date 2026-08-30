@@ -30,6 +30,7 @@ make the codebase predictable to read and hard to break by accident.
 - Cross-reference integrity between docs (review guide §7b).
 - The conventions-compliance audit: `docs/code_review_guide.md` §1.
 - Machine checks (`ruff`, `mypy`) when configured.
+- `backtester/` package conventions and code style.
 
 ### What It Does NOT Do
 

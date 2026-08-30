@@ -139,6 +139,7 @@ Enforced below.
 | `documentation-expert` | Docs/TODO entries change | Requests doc updates |
 | `security-auditor` | Release or dependency change | Requests security gate |
 | `release-manager` | All work is done | Approves release cut |
+| `backtest-engineer` | Backtester features or fixes | Sends task briefs |
 | User | Any task start or ambiguity | Receives briefs and status |
 
 ## Standards Enforced

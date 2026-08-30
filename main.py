@@ -66,6 +66,17 @@ def main(argv: list[str] | None = None) -> None:
         else:
             merged.append(token)
 
+    # Route BACKTEST commands to the backtester engine
+    if merged and merged[0].upper() == "BACKTEST":
+        from backtester.cli import parse_backtest_command, run_backtest
+        try:
+            config = parse_backtest_command(merged[1:])
+            run_backtest(config)
+        except ValueError as exc:
+            print(f"Error: {exc}")
+            sys.exit(1)
+        return
+
     raw_tickers, indicator, *rest = merged
     tickers = [_sanitize_display(t.strip())
                for t in raw_tickers.split(",") if t.strip()]

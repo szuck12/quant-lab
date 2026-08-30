@@ -36,6 +36,7 @@ assigns each task to the most specialized agent for it.
 | Documentation Expert | README, docs, changelog wording | Anything user-visible changes | Doc accuracy |
 | Security Auditor | Security and dependency auditing | Release, dependency change | Security gate |
 | Release Manager | Versioning and release | All work is done | Final release gate |
+| Backtest Engineer | Backtesting engine and strategy simulation | Backtester features/fixes | Backtester correctness |
 
 ## 4. Routing
 
@@ -51,12 +52,14 @@ assigns each task to the most specialized agent for it.
 | Audit security | Security Auditor (§9) |
 | Release | Release Manager (+ Code Reviewer, Security Auditor gates) |
 | Check conventions | Consistency Guardian (§1) |
+| Run a backtest | Backtest Engineer (+ Indicator Specialist + Data Engineer) |
 
 ## 5. File Ownership
 
 | Files | Owning agent |
 |-------|--------------|
 | `main.py`, `indicators/**`, `requirements.txt`, `pytest.ini` | Feature Implementer |
+| `backtester/**` | Backtest Engineer |
 | `indicators/_data.py`, `mocktests/conftest.py` | Data Engineer |
 | `mocktests/**`, `realtests/**`, `run_*_tests.py` | Test Engineer |
 | `README.md`, `docs/**` | Documentation Expert |
@@ -77,6 +80,7 @@ to detail files.
 | `skills/add-indicator/` | Adding a new indicator | Orchestrator, Implementer, Test Engineer |
 | `skills/release-cut/` | Cutting a release | Release Manager |
 | `skills/security-audit/` | Running security scans | Security Auditor |
+| `skills/backtester/` | Backtester workflow | Backtest Engineer |
 
 ## 7. Handoff & Gate Rules
 

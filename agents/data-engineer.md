@@ -25,6 +25,7 @@ surfaces as a clean, canonical error instead of a crash.
   `_sanitize_display`.
 - Test-data fixtures in `mocktests/conftest.py`.
 - Data-behavior coverage in `mocktests/test_data_period.py`.
+- `backtester/data_pipeline.py` — parquet caching and batch download.
 
 ### What It Does NOT Do
 
@@ -48,6 +49,9 @@ surfaces as a clean, canonical error instead of a crash.
 6. Respect the `_return_raw` contract and its return types.
 7. Review the `_fetch_ohlcv` print side-effect policy before changing
    any logging behaviour.
+8. Maintain the parquet caching strategy for the backtester
+   (`backtester/cache/`, `backtester/data_pipeline.py`).
+9. Validate batch download behavior against single-ticker downloads.
 
 ## Constraints / Things NOT To Do
 

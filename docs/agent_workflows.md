@@ -130,6 +130,29 @@ The Release Manager only cuts after every gate is green.
 
 ---
 
+## Workflow H — Run or Modify the Backtester
+
+| Step | Owner | Output |
+|------|-------|--------|
+| 1 | Backtest Engineer | Understands the requested backtester change or bug fix |
+| 2 | Backtest Engineer | Implements changes to `backtester/` package |
+| 3 | Backtest Engineer | Runs `ruff check backtester/` and `python3 run_mock_tests.py` |
+| 4 | Test Engineer | Verifies with mock suite (521+ tests) |
+| 5 | Indicator Specialist | Validates batch indicator formulas if changed |
+| 6 | Consistency Guardian | Checks conventions and code style |
+| 7 | Documentation Expert | Updates CLI docs and examples if user-facing |
+| 8 | Release Manager | Releases as MINOR or MAJOR bump depending on scope |
+
+### Backtester-Specific Notes
+
+- Entry/exit logic: all conditions must match (AND), fixed hold period.
+- Data cache: parquet files in `backtester/cache/`.
+- Batch download: `yf.download()` for multi-ticker fetching.
+- Condition syntax: `INDICATOR [params] [component] OP VALUE INTERVAL`.
+- Metrics: Sharpe, Sortino, max drawdown, win rate, profit factor.
+
+---
+
 ## Interaction Graph
 
 ```

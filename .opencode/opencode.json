@@ -122,6 +122,17 @@
           "TODO.md": "allow"
         }
       }
+    },
+    "backtest-engineer": {
+      "mode": "subagent",
+      "description": "Designs and maintains QuantLab backtester engine, batch data pipeline, and strategy simulation; use for backtester features and fixes.",
+      "prompt": "You are QuantLab's Backtest Engineer. Read MEMORY.md at session start for historical context. Read and obey agents/backtest-engineer.md. Maintain the backtester/ package (cli.py, data_pipeline.py, batch_indicators.py, engine.py, metrics.py, reporting.py). Validate batch indicator computations against single-ticker implementations. Handle parquet caching in backtester/cache/. Ensure all error cases produce helpful messages. Run ruff check backtester/ and python3 run_mock_tests.py before handoff. Append significant decisions to MEMORY.md at session end.",
+      "permission": {
+        "edit": {
+          "*": "ask",
+          "backtester/**": "allow"
+        }
+      }
     }
   }
 }

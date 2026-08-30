@@ -24,6 +24,8 @@ turns specs and formulas into working code.
   `requirements.txt`, `pytest.ini`.
 - Indicator registration and dispatch wiring.
 - Refactoring without behavior change when briefed.
+- `backtester/` package code changes when briefed by the
+  Backtest Engineer.
 
 ### What It Does NOT Do
 
@@ -126,6 +128,7 @@ Key conventions for this agent (details in conventions_reference.md):
 | `data-engineer` | Data helpers or period maps | Coordinates `_data.py` changes |
 | `test-engineer` | Code is ready | Hands code for verification; receives rework |
 | `consistency-guardian` | Before and after implementation | Receives style rubric; submits to audit |
+| `backtest-engineer` | Backtester code | Coordinates implementation |
 | `documentation-expert` | Feature is done | Reports feature truth for README/docs |
 
 ## Standards Enforced

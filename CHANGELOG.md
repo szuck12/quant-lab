@@ -5,6 +5,49 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com) and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-08-30
+
+### Added
+- `backtester/` package: complete backtesting engine with CLI parser,
+  batch data pipeline, vectorized indicator computation, strategy
+  simulation, and financial metrics.
+- `backtester/cli.py`: BACKTEST command parser with condition syntax,
+  multi-ticker support, and CLI options (hold, capital, benchmark,
+  years, stop-loss).
+- `backtester/data_pipeline.py`: batch data download via `yf.download()`
+  with parquet caching.
+- `backtester/batch_indicators.py`: vectorized indicator computation
+  on DataFrames for all 14 indicators.
+- `backtester/engine.py`: core simulation loop with AND-logic condition
+  evaluation, fixed hold period, and stop-loss handling.
+- `backtester/metrics.py`: financial metrics (total return, annualized
+  return, Sharpe ratio, Sortino ratio, max drawdown, win rate,
+  profit factor).
+- `backtester/reporting.py`: console output formatting with per-ticker
+  breakdown and portfolio summary.
+- `agents/backtest-engineer.md`: new agent persona for backtester work.
+- `skills/backtester/SKILL.md`: backtester workflow checklist.
+- `mocktests/test_backtester.py`: 99 comprehensive mock tests covering
+  CLI parsing, batch indicators, data pipeline, engine simulation,
+  metrics, and reporting.
+
+### Changed
+- `main.py`: integrated BACKTEST command into the match/case dispatch.
+- `AGENTS.md`: added backtest-engineer to roster, routing, file
+  ownership, and skills index.
+- `.opencode/opencode.json`: registered backtest-engineer agent.
+- `docs/conventions_reference.md`: added §16 (backtester conventions).
+- 8 existing agent files: added backtester responsibilities.
+- Version bump from 1.8.1 to 2.0.0.
+
+### Known Limitations
+- Survivorship bias: only currently listed tickers are tested.
+- No transaction costs or slippage modeled.
+- No short selling support.
+- Intraday data limited to 7 days (minute) / 60 days (hour) by
+  yfinance.
+- Condition syntax requires operator and value as separate tokens.
+
 ## [1.8.1] - 2026-08-29
 
 ### Added
