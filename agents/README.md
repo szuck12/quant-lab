@@ -23,16 +23,19 @@ Every agent file uses the same template:
 | Role | One-paragraph mission statement |
 | Scope | What the agent does — and does NOT do |
 | Responsibilities | Numbered duty list |
-| Owned files & processes | Files/dirs the agent has authority over |
-| Operating Instructions | Imperative rules for the embodied AI agent |
+| Constraints / Things NOT To Do | Imperative MUST NOT rules |
+| Session Instructions | MEMORY.md read/append and verify.sh rules |
+| Project-Specific Conventions | Agent-specific conventions (references `docs/conventions_reference.md`) |
+| Tools / Commands | Commands the agent runs |
+| Examples | Step-by-step workflow examples |
 | Inputs / Outputs | What it receives, what it produces |
 | Interactions | Table of with-whom / when / exchange |
-| Workflow | Numbered execution steps |
-| Standards enforced | Links to the docs it enforces |
+| Standards Enforced | Links to the docs it enforces |
+| Quick Reference | One-liner use-case and top rules |
 | Handoff Checklist | Self-audit before handing work onward |
 
-The **Operating Instructions** sections are written as directives to the
-AI embodiment ("You MUST…"). Follow them exactly.
+The **Session Instructions** and **Constraints** sections are written
+as directives to the AI embodiment ("You MUST…"). Follow them exactly.
 
 ## The Roster
 

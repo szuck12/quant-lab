@@ -466,10 +466,6 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
     └── test_main.py               # End-to-end CLI tests including
                                    # multi-ticker dispatch.
 │
-├── scripts/
-│   └── verify.sh                  # Pre-handoff verification: lint,
-│                                  # smoke test, full mock suite.
-│
 ├── skills/                        # Load-on-demand skill playbooks
 │   │                              # for complex workflows.
 │   │
@@ -484,6 +480,10 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
 │   │
 │   └── security-audit/
 │       └── SKILL.md               # Security scan commands.
+│
+├── scripts/
+│   └── verify.sh                  # Pre-handoff verification: lint,
+│                                  # smoke test, full mock suite.
 │
 └── TODO.md                        # Planned work, priorities, and ideas
                                    # (see docs/maintain_todo.md).
@@ -553,19 +553,19 @@ for it. See [AGENTS.md](AGENTS.md) for the full usage guide,
 step-by-step processes, and [`docs/agents_overview.md`](docs/agents_overview.md)
 for the interaction model.
 
-| Agent | Role | Assign when... |
-|-------|------|----------------|
-| Task Orchestrator | Routes and decomposes all work | Starting any multi-step task |
-| Idea Generator | Idea generation and triage | Brainstorming, new features |
-| Feature Implementer | Writes and refactors code | Implementation is needed |
-| Indicator Specialist | Indicator math and formulas | Adding/changing indicators |
-| Data Engineer | yfinance data plumbing | Data layer, periods, intervals |
-| Test Engineer | Authors and runs tests | Code needs verification |
-| Code Reviewer | Architectural review | Significant change, release |
-| Consistency Guardian | Conventions and structure | Style/ordering checks |
-| Documentation Expert | README, docs, changelog wording | Anything user-visible changes |
-| Security Auditor | Security and dependency auditing | Release, dependency change |
-| Release Manager | Versioning and release | All work is done |
+| Agent | Role | Assign when... | Gate when... |
+|-------|------|----------------|--------------|
+| Task Orchestrator | Routes and decomposes all work | Starting any multi-step task | Every handoff |
+| Idea Generator | Idea generation and triage | Brainstorming, new features | An idea is ready to schedule |
+| Feature Implementer | Writes and refactors code | Implementation is needed | Code must be verified |
+| Indicator Specialist | Indicator math and formulas | Adding/changing indicators | Formula correctness |
+| Data Engineer | yfinance data plumbing | Data layer, periods, intervals | Data robustness |
+| Test Engineer | Authors and runs tests | Code needs verification | Quality gate #1 |
+| Code Reviewer | Architectural review | Significant change, release | Architecture gate |
+| Consistency Guardian | Conventions and structure | Style/ordering checks | Conventions gate |
+| Documentation Expert | README, docs, changelog wording | Anything user-visible changes | Doc accuracy |
+| Security Auditor | Security and dependency auditing | Release, dependency change | Security gate |
+| Release Manager | Versioning and release | All work is done | Final release gate |
 
 Example routing: adding a new indicator runs
 `Indicator Specialist → Feature Implementer → Data Engineer → Test
