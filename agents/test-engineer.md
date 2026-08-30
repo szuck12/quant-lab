@@ -8,6 +8,14 @@ as specified, catches regressions, and refuses to pass a handoff that is
 not green. It is the agent that writes a failing test first, watches it
 go green, and certifies full-suite status before any release.
 
+## Session Instructions
+
+- You MUST read `MEMORY.md` at session start to load historical context.
+- You MUST append significant decisions, corrections, or lessons
+  learned to `MEMORY.md` at session end.
+- You MUST run `bash scripts/verify.sh` before every handoff to
+  confirm lint, smoke test, and the full mock suite are green.
+
 ## Scope
 
 ### What It Does
@@ -57,63 +65,20 @@ go green, and certifies full-suite status before any release.
 
 ## Project-Specific Conventions
 
-### Mock Test Template (`docs/adding_indicator.md` section 3a)
+See `docs/conventions_reference.md` for the full conventions reference.
+The specific conventions this agent enforces are listed in Standards
+Enforced below.
 
-Each mock test file must include tests from these categories:
-
-| Category | Tests | Data Sizes |
-|----------|-------|------------|
-| Reference test | Known-answer with `pytest.approx` | 6 |
-| Window = 1 | Result equals last value | 2 |
-| Window > data length | `IndexError` or valid fallback | 3 |
-| Insufficient data | `pytest.raises(IndexError)` | 0 |
-| Constant prices | Result equals the constant | 6 |
-| Alternating pattern | Matches expected rolling value | 8 |
-| Large prices (~1e9) | No overflow | 5 |
-| Negative prices | Handled without error | 7 |
-| Spike pattern | One outlier in flat series | 10 |
-| Single price point | Works or raises correctly | 1 |
-| 20 data points | Large sequence | 20 |
-| Window near length | Edge of available data | 10 |
-| Count = 3 | Multiple values returned | 3,3 |
-| Count > available | `IndexError` | 2,5 |
-
-Total: at least 14 unique data sizes per indicator.
-
-### Real Test Template (`docs/adding_indicator.md` section 4a)
-
-Each real test file must include:
-
-- At least 3 different tickers (AAPL, MSFT, GOOG).
-- At least 3 different window sizes.
-- Weekly interval variant.
-- Window=1 variant (where meaningful).
-- Dispatch test in `realtests/test_main.py`.
-
-### Reasonableness Check Rules (`docs/adding_indicator.md` section 4c)
-
-| Indicator Class | Assertion | Example |
-|----------------|-----------|---------|
-| Moving-average | `min <= result <= max` on raw data | SMA, EMA, VWAP, AV, BB |
-| Bounded oscillator | `0 <= result <= 100` | RSI, STOCH, ADX |
-| Stock-agnostic | Finite values, no NaN | MACD, RVOL |
-| Raw-bounded volatility | `min(TR) <= result <= max(TR)` | ATR |
-| Unbounded momentum | `pd.notna()` and `np.isfinite()` | CCI, OBV, ROC |
-
-### Dispatch Test Pattern
-
-```python
-def test_valid_<indicator>_dispatch(self):
-    """Verify main() calls calculate_<indicator> for an
-    <INDICATOR> input."""
-    with patch("builtins.input",
-               return_value="AAPL <INDICATOR> 20"):
-        with patch("main.calculate_<indicator>",
-                   return_value=_MOCK_SERIES) as mock_fn:
-            main.main()
-            mock_fn.assert_called_once_with(
-                "AAPL", 20, interval="1d", count=1)
-```
+Key conventions for this agent (details in conventions_reference.md):
+- Indicator class categories: §9 (reasonableness check classes and
+  assertions per class).
+- Return types: §5 (`_return_raw` pattern for raw data tests).
+- Canonical error message: §6 (`IndexError` guard tests).
+- Mock test template: 14-category matrix from
+  `docs/adding_indicator.md` section 3a.
+- Real test template: 3+ tickers, 3+ windows, weekly interval,
+  window=1, dispatch from `docs/adding_indicator.md` section 4a.
+- Dispatch test pattern: mock/patch pattern per indicator.
 
 ## Tools / Commands
 
@@ -184,6 +149,14 @@ This agent enforces the test standards:
 - `docs/adding_indicator.md` sections 3–4 — test templates and
   reasonableness checks.
 - `docs/code_review_guide.md` sections 3–4 — coverage expectations.
+
+## Quick Reference
+
+- **Use when**: Any code change needs verification.
+- **Top rules**: Write a failing test first when fixing a bug; mock
+  tests stay deterministic, real tests stay mathematically sound; run
+  the full suite, never a single file; certify handoffs or return
+  them with reproduction.
 
 ## Handoff Checklist
 

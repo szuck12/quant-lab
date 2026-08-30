@@ -8,6 +8,14 @@ fetching, period maps, interval validation, and data-shape robustness —
 so every indicator receives the data it needs and every data failure
 surfaces as a clean, canonical error instead of a crash.
 
+## Session Instructions
+
+- You MUST read `MEMORY.md` at session start to load historical context.
+- You MUST append significant decisions, corrections, or lessons
+  learned to `MEMORY.md` at session end.
+- You MUST run `bash scripts/verify.sh` before every handoff to
+  confirm lint, smoke test, and the full mock suite are green.
+
 ## Scope
 
 ### What It Does
@@ -55,56 +63,17 @@ surfaces as a clean, canonical error instead of a crash.
 
 ## Project-Specific Conventions
 
-### `_DATA_PERIOD_MAP` Structure
+See `docs/conventions_reference.md` for the full conventions reference.
+The specific conventions this agent enforces are listed in Standards
+Enforced below.
 
-The period map is a nested dict: `{interval: {threshold: period}}`.
-Thresholds are conservative (the map has been stable since v1.0.0).
-Each interval has a `None` key as the fallback for very large windows.
-
-Current intervals and their thresholds:
-
-```python
-_DATA_PERIOD_MAP = {
-    "1m":  {200: "1d", 1000: "5d", None: "max"},
-    "5m":  {40: "1d", 200: "5d", 800: "1mo", None: "max"},
-    "15m": {13: "1d", 65: "5d", 260: "1mo", None: "max"},
-    "1d":  {30: "3mo", 60: "6mo", 120: "1y", 240: "2y",
-            600: "5y", None: "10y"},
-    "1wk": {12: "6mo", 26: "1y", 52: "2y", 130: "5y",
-            None: "10y"},
-    # ... (see indicators/_data.py for full map)
-}
-```
-
-### `_DEFAULT_WINDOWS` Convention
-
-`_DEFAULT_WINDOWS` maps indicator names to their default window values.
-All entries must be in alphabetical order. Multi-param indicators
-return tuples (e.g. `"MACD": (12, 26, 9)`), single-param indicators
-return integers (e.g. `"SMA": 50`).
-
-### `_return_raw` Pattern
-
-Functions with `_return_raw=True` return `(indicator_result, raw_data)`
-as a tuple. The raw data is the same series the indicator averages:
-
-| Indicator | Raw data returned | Source |
-|-----------|-------------------|--------|
-| SMA, EMA, BB | `close` (Series) | `_fetch_close()` |
-| VWAP | `typical` (Series) | `_fetch_ohlcv()` |
-| AV | `volume` (Series) | `_fetch_ohlcv()` |
-| ATR | `tr` (True Range) | `_fetch_ohlcv()` |
-
-### Canonical Error Message
-
-All data failures must surface as `IndexError` with this format:
-
-```python
-raise IndexError(
-    f"Insufficient data for <INDICATOR>({window})"
-    f" with count={count}"
-)
-```
+Key conventions for this agent (details in conventions_reference.md):
+- `_DEFAULT_WINDOWS` convention: §2 (alphabetical order, tuples for
+  multi-param, integers for single-param).
+- `_return_raw` pattern: §5 (tuple return, raw data per type).
+- Canonical error message: §6 (`IndexError` format).
+- `_DATA_PERIOD_MAP` structure: nested dict `{interval:
+  {threshold: period}}` with `None` fallback.
 
 ## Tools / Commands
 
@@ -167,6 +136,13 @@ This agent enforces the data standards:
 - `docs/formulas.md` — data-requirement notes for each indicator.
 - `docs/adding_indicator.md` sections 2a–2d — data helper usage.
 - `docs/code_review_guide.md` section 6b — interval handling.
+
+## Quick Reference
+
+- **Use when**: Data layer, period maps, intervals, fixtures.
+- **Top rules**: Verify thresholds against yfinance availability;
+  surface failures as `IndexError`; keep `test_data_period.py` in
+  sync; preserve `_data` helper names and signatures.
 
 ## Handoff Checklist
 

@@ -8,6 +8,14 @@ exactly, in full compliance with the project's commenting conventions,
 type-hint policy, and alphabetical-ordering rules. It is the agent that
 turns specs and formulas into working code.
 
+## Session Instructions
+
+- You MUST read `MEMORY.md` at session start to load historical context.
+- You MUST append significant decisions, corrections, or lessons
+  learned to `MEMORY.md` at session end.
+- You MUST run `bash scripts/verify.sh` before every handoff to
+  confirm lint, smoke test, and the full mock suite are green.
+
 ## Scope
 
 ### What It Does
@@ -59,68 +67,17 @@ turns specs and formulas into working code.
 
 ## Project-Specific Conventions
 
-### Code Structure
+See `docs/conventions_reference.md` for the full conventions reference.
+The specific conventions this agent enforces are listed in Standards
+Enforced below.
 
-- Every `.py` file starts with a brief comment describing the module's
-  purpose (e.g. `# indicators/sma.py`).
-- Two blank lines between all top-level functions and classes (PEP 8).
-- One blank line between import groups (stdlib, third-party, local).
-- 80-character line limit enforced in both code and docstrings.
-
-### Indicator Pattern (per `docs/adding_indicator.md` section 2a)
-
-```python
-def calculate_<indicator>(ticker: str, window: int,
-                          interval: str = "1d",
-                          count: int = 1
-                          ) -> pd.Series:
-    """Compute the latest <full name> values for a ticker.
-
-    <One-paragraph description>.
-
-    Args:
-        ticker: Stock symbol (e.g. "AAPL").
-        window: Lookback period in bars.
-        interval: Bar size ("1d", "1wk", "1mo").
-        count: Number of most recent values to return.
-
-    Returns:
-        A Series of the last `count` <indicator> values.
-
-    Raises:
-        IndexError: If insufficient data exists for the given
-                    window.
-    """
-    period = _data_period(window + count, interval)
-    close = _fetch_close(ticker, period=period, interval=interval)
-    # ... calculation ...
-    result = <series>.dropna().iloc[-count:]
-    if result.empty or len(result) < count:
-        raise IndexError(
-            f"Insufficient data for <INDICATOR>({window})"
-            f" with count={count}"
-        )
-    return result
-```
-
-### Registration Checklist (4 locations)
-
-When adding a new indicator, ALL of these must be updated in
-alphabetical position:
-
-1. `indicators/<name>.py` — the implementation file.
-2. `indicators/__init__.py` — the import re-export.
-3. `main.py` — the import line, input prompt list, validation set,
-   and `match/case` dispatch block.
-4. `indicators/_data.py` — `_DEFAULT_WINDOWS` entry (if applicable).
-
-### Return Types
-
-- Single-value indicators return `pd.Series`.
-- Multi-value indicators (MACD, BB, STOCH, ADX) return tuples of
-  `pd.Series`.
-- The `_return_raw` parameter returns an additional raw data Series
-  as a second tuple element.
+Key conventions for this agent (details in conventions_reference.md):
+- Code style: §1 (80-char, PEP 8, docstrings, type hints).
+- Alphabetical ordering: §2 (all lists, dicts, imports, dispatch).
+- Indicator function signature: §3 (parameter order, fetch pattern).
+- Registration checklist: §4 (4 locations).
+- Return types: §5 (Series, tuples, `_return_raw`).
+- Canonical error message: §6 (`IndexError` format).
 
 ## Tools / Commands
 
@@ -179,6 +136,13 @@ This agent enforces the code quality standards:
   80-char lines, vertical spacing.
 - `docs/adding_indicator.md` — the indicator implementation pattern.
 - `docs/agents_overview.md` — the interaction model it participates in.
+
+## Quick Reference
+
+- **Use when**: Any Python change is needed.
+- **Top rules**: Implement only the brief; keep signatures and every
+  alphabetical order intact; run `ruff check` and a `python3 main.py`
+  smoke test before handoff; never fix tests yourself.
 
 ## Handoff Checklist
 

@@ -10,6 +10,14 @@ section 9 and follows the reporting protocol in `SECURITY.md`, grading
 findings by reachability and keeping specific details out of committed
 artifacts.
 
+## Session Instructions
+
+- You MUST read `MEMORY.md` at session start to load historical context.
+- You MUST append significant decisions, corrections, or lessons
+  learned to `MEMORY.md` at session end.
+- You MUST run `bash scripts/verify.sh` before every handoff to
+  confirm lint, smoke test, and the full mock suite are green.
+
 ## Scope
 
 ### What It Does
@@ -62,52 +70,23 @@ artifacts.
 
 ## Project-Specific Conventions
 
-### Severity Scale
+See `docs/conventions_reference.md` for the full conventions reference.
+The specific conventions this agent enforces are listed in Standards
+Enforced below.
 
-| Severity | Definition | Required Response |
-|----------|-----------|-------------------|
-| Very High | Live secret or exploitable path reachable without preconditions | Revoke/rotate FIRST, then remove from repo; PATCH release same day |
-| High | Realistic exploit path needing modest preconditions | Fix within days; PATCH release |
-| Medium | Weakens posture; becomes exploitable after future change | Fix or accept in next release |
-| Low | Hygiene/hardening; no realistic path today | Batch into TODO.md Low Priority |
-
-### Reporting Protocol
-
-1. Never open a public issue containing a live secret.
-2. Prefer a GitHub private security advisory for external reports.
-3. Rotate/revoke leaked credentials before scrubbing history.
-4. Record every finding in a log kept outside the repository.
-5. Committed docs state at most counts and classes — never specifics.
-
-### §9c Scan Commands
-
-```bash
-# 1. Secrets scan
-git log --all -p | grep -inE '(ghp_|gho_|github_pat_|AKIA[A-Z0-9]{16}|BEGIN [A-Z ]*PRIVATE KEY)'
-git ls-files | grep -iE '\.env|secret|token|credential|\.pem'
-
-# 2. Dangerous primitives
-grep -rnE 'eval\(|exec\(|compile\(|__import__|pickle|yaml\.load|subprocess|os\.system|shell\s*=\s*True' --include='*.py' .
-
-# 3. Input handling — ANSI injection probe
-printf 'AA\x1b[31mPL\x1b[0m SMA' | python3 main.py | cat -v
-
-# 4. Dependency audit
-pip install pip-audit
-pip-audit
-
-# 5. Repository hygiene
-git ls-files | grep -iE '\.DS_Store|cache|\.env|\.log$'
-git status --porcelain --untracked-files=all
-cat .gitignore
-```
-
-### Fix Workflow
-
-1. Hand finding to `feature-implementer` via the Task Orchestrator.
-2. After the fix, re-run the relevant §9c scan command.
-3. Verify the finding is resolved.
-4. Sign off for the release gate.
+Key conventions for this agent (details in conventions_reference.md):
+- Release gate sequence: §11 (security runs before consistency and
+  commit).
+- Release commit format: §12 (`Release X.Y.Z — <summary>`).
+- Severity scale: Very High / High / Medium / Low graded by
+  reachability, not imagination.
+- Reporting protocol: never public-issue with live secret; private
+  advisory; rotate-before-scrub; counts/classes only in committed
+  artifacts.
+- §9c scan commands: secrets, dangerous primitives, ANSI injection,
+  dependency audit, repository hygiene (see
+  `docs/code_review_guide.md` section 9).
+- Fix workflow: hand to implementer → re-run scan → verify → sign off.
 
 ## Tools / Commands
 
@@ -165,6 +144,13 @@ This agent enforces the security standards:
 
 - `SECURITY.md` — supported versions, reporting, disclosure style.
 - `docs/code_review_guide.md` section 9 — the checklists and protocol.
+
+## Quick Reference
+
+- **Use when**: Before releases and on dependency changes.
+- **Top rules**: Run the §9 scans; grade by reachability; escalate
+  High/Very High immediately; keep specific vulnerability details out
+  of committed artifacts; re-verify fixes.
 
 ## Handoff Checklist
 

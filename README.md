@@ -1,6 +1,6 @@
 # QuantLab
 
-Current version: **1.8.0** — [Changelog](CHANGELOG.md)
+Current version: **1.8.1** — [Changelog](CHANGELOG.md)
 
 A command-line tool that fetches stock price data via [yfinance](https://github.com/ranaroussi/yfinance) and computes one of fourteen technical indicators: Average Directional Index (ADX), Average True Range (ATR), Average Volume (AV), Bollinger Bands (BB), Commodity Channel Index (CCI), Exponential Moving Average (EMA), Moving Average Convergence Divergence (MACD), On-Balance Volume (OBV), Rate of Change (ROC), Relative Strength Index (RSI), Relative Volume (RVOL), Simple Moving Average (SMA), Stochastic Oscillator (STOCH), or Volume Weighted Average Price (VWAP). Input is provided through stdin and the result is printed to stdout. The tool is designed for quick terminal lookups — you type a ticker and an indicator, and you get back a number.
 
@@ -295,6 +295,9 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
 │
 ├── LICENSE                        # MIT license.
 │
+├── MEMORY.md                      # Persistent decision and learning
+│                                  # log for agent sessions.
+│
 ├── AGENTS.md                      # Usage guide for the agent-based
 │                                  # development workflow.
 │
@@ -462,6 +465,28 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
     ├── test_calculate_vwap.py     # End-to-end VWAP tests with real data.
     └── test_main.py               # End-to-end CLI tests including
                                    # multi-ticker dispatch.
+│
+├── scripts/
+│   └── verify.sh                  # Pre-handoff verification: lint,
+│                                  # smoke test, full mock suite.
+│
+├── skills/                        # Load-on-demand skill playbooks
+│   │                              # for complex workflows.
+│   │
+│   ├── add-indicator/
+│   │   ├── SKILL.md               # Orchestrator workflow checklist.
+│   │   ├── implement.md           # Code patterns for implementer.
+│   │   ├── test-mock.md           # Mock test template.
+│   │   └── test-real.md           # Real test template.
+│   │
+│   ├── release-cut/
+│   │   └── SKILL.md               # Release gate sequence.
+│   │
+│   └── security-audit/
+│       └── SKILL.md               # Security scan commands.
+│
+└── TODO.md                        # Planned work, priorities, and ideas
+                                   # (see docs/maintain_todo.md).
 ```
 
 `TODO.md` tracks planned work and ideas — see

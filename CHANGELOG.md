@@ -5,6 +5,28 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com) and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.1] - 2026-08-29
+
+### Added
+- `MEMORY.md`: persistent decision and learning log for agent sessions.
+- `docs/conventions_reference.md`: single source of truth for all shared
+  conventions (code style, alphabetical ordering, indicator patterns,
+  TODO/CHANGELOG formatting, gate sequence, semver rules).
+- `skills/` directory with SKILL.md playbooks for complex workflows:
+  `add-indicator` (orchestrator checklist + implementer/tester templates),
+  `release-cut` (gate sequence + checklist), `security-audit` (scan
+  commands + severity scale).
+- `scripts/verify.sh`: pre-handoff verification script (lint, smoke test,
+  full mock suite).
+
+### Changed
+- All 11 agent files: added Session Instructions (MEMORY.md + verify.sh)
+  and Quick Reference sections; conventions extracted to shared reference.
+- `AGENTS.md`: trimmed from 187 to 121 lines, added Skills Index and
+  MEMORY.md ownership, per-agent usage moved to agent Quick References.
+- `.opencode/opencode.json`: all agent prompts updated with MEMORY.md,
+  verify.sh, and skill references.
+
 ## [1.8.0] - 2026-08-29
 
 ### Added

@@ -9,6 +9,14 @@ It is the gatekeeper of formula correctness and the owner of
 `docs/formulas.md`. When an indicator is added or changed, the Indicator
 Specialist provides the exact spec everyone else builds against.
 
+## Session Instructions
+
+- You MUST read `MEMORY.md` at session start to load historical context.
+- You MUST append significant decisions, corrections, or lessons
+  learned to `MEMORY.md` at session end.
+- You MUST run `bash scripts/verify.sh` before every handoff to
+  confirm lint, smoke test, and the full mock suite are green.
+
 ## Scope
 
 ### What It Does
@@ -58,44 +66,16 @@ Specialist provides the exact spec everyone else builds against.
 
 ## Project-Specific Conventions
 
-### Formula Documentation (`docs/formulas.md`)
+See `docs/conventions_reference.md` for the full conventions reference.
+The specific conventions this agent enforces are listed in Standards
+Enforced below.
 
-- Each indicator section contains: short description, LaTeX formula
-  (`$$...$$`), variable table, edge-case notes.
-- Sections are in alphabetical order within the file.
-- 80-character line limit applies to doc content.
-
-### Reference Value Format
-
-Reference values must be executable assertions the test-engineer can
-use directly:
-
-```python
-# Correct — executable
-assert result.iloc[-1] == pytest.approx(50.0, abs=0.0001)
-
-# Wrong — prose
-# The result should be approximately 50.0
-```
-
-### Indicator Class Categories
-
-For reasonableness checks, indicators fall into these classes:
-
-| Class | Indicators | Check Type |
-|-------|-----------|------------|
-| Moving-average | SMA, EMA, VWAP, AV, BB middle | `min <= result <= max` on raw data |
-| Bounded oscillator | RSI, STOCH, ADX | `0 <= result <= 100` (or similar bound) |
-| Stock-agnostic | MACD, RVOL | Finite values, no NaN |
-| Raw-bounded volatility | ATR | `min(TR) <= result <= max(TR)` |
-| Unbounded momentum | CCI, OBV, ROC | `pd.notna()` and `np.isfinite()` |
-
-### Smoothing Variant Rules
-
-- Wilder RSI: `ewm(alpha=1/window, adjust=False)` — NOT SMA-based.
-- EMA: `ewm(span=window, adjust=False)`.
-- BB standard deviation: `ddof=0` (population) to match TradingView.
-- ADX DI smoothing and ADX smoothing are separate parameters.
+Key conventions for this agent (details in conventions_reference.md):
+- Formula documentation: §14 (README structure for formulas).
+- Indicator class categories: §9 (reasonableness check classes).
+- Smoothing variant rules: §10 (Wilder, EMA, BB ddof=0, ADX).
+- Reference values must be executable `pytest.approx` assertions,
+  never prose.
 
 ## Tools / Commands
 
@@ -148,6 +128,14 @@ This agent enforces the mathematical standards:
 
 - `docs/formulas.md` — the authoritative formula reference.
 - `docs/adding_indicator.md` — spec and reasonableness-check guidance.
+
+## Quick Reference
+
+- **Use when**: Any indicator formula is needed.
+- **Top rules**: Ground formulas in authoritative references; state
+  the smoothing variant; provide reference values as executable
+  assertions; keep `docs/formulas.md` current; flag divergent
+  conventions to the user.
 
 ## Handoff Checklist
 

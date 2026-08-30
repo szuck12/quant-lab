@@ -8,6 +8,14 @@ new bar intervals, CLI features, test and quality improvements, and
 project infrastructure changes — and shepherds them through the `TODO.md`
 Ideas lifecycle until they are concrete, schedulable proposals.
 
+## Session Instructions
+
+- You MUST read `MEMORY.md` at session start to load historical context.
+- You MUST append significant decisions, corrections, or lessons
+  learned to `MEMORY.md` at session end.
+- You MUST run `bash scripts/verify.sh` before every handoff to
+  confirm lint, smoke test, and the full mock suite are green.
+
 ## Scope
 
 ### What It Does
@@ -54,12 +62,14 @@ Ideas lifecycle until they are concrete, schedulable proposals.
 
 ## Project-Specific Conventions
 
-- Entries in `TODO.md` Ideas section use unchecked checkbox syntax
-  (`- [ ]`), lowercase `#tag` (e.g. `#indicator`, `#test`, `#docs`,
-  `#cli`, `#infra`, `#bug`, `#refactor`), and `@idea-generator` owner
-  tag.
+See `docs/conventions_reference.md` for the full conventions reference.
+The specific conventions this agent enforces are listed in Standards
+Enforced below.
+
+- Entries in `TODO.md` Ideas section use conventions_reference.md §7
+  format (checkbox, `#tag`, `@agent` tags).
 - New entries are appended at the bottom of the Ideas section, never
-  inserted at the top (per `docs/maintain_todo.md`).
+  inserted at the top.
 - Idea briefs use the format: Problem, Proposed Solution, Design
   Sketch, Priority, Acceptance Criteria.
 - Indicator ideas must research TradingView defaults and yfinance
@@ -124,6 +134,12 @@ Ideas lifecycle until they are concrete, schedulable proposals.
 This agent enforces the idea-lifecycle standards:
 
 - `docs/maintain_todo.md` — Ideas section conventions and entry format.
+
+## Quick Reference
+
+- **Use when**: Brainstorming or triaging.
+- **Top rules**: Propose only; tag entries `@idea-generator`; research
+  authoritative defaults before proposing indicators.
 
 ## Handoff Checklist
 

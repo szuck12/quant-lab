@@ -267,7 +267,7 @@ def main(argv: list[str] | None = None) -> None:
                                           count=count)
                 case "BB":
                     bb_window, bb_std = bb_params
-                    u, m, l = calculate_bb(
+                    upper, mid, lower = calculate_bb(
                         ticker, window=bb_window,
                         num_std=bb_std,
                         interval=interval, count=count
@@ -338,16 +338,16 @@ def main(argv: list[str] | None = None) -> None:
         elif indicator == "BB":
             if count == 1:
                 print(f"{ticker} BB({bb_window},{bb_std}):"
-                      f" Upper={u.iloc[-1]:.2f}"
-                      f" Middle={m.iloc[-1]:.2f}"
-                      f" Lower={l.iloc[-1]:.2f}")
+                      f" Upper={upper.iloc[-1]:.2f}"
+                      f" Middle={mid.iloc[-1]:.2f}"
+                      f" Lower={lower.iloc[-1]:.2f}")
             else:
                 print(f"{ticker} BB({bb_window},{bb_std})"
                       f" (last {count}):")
                 for i in range(count):
-                    print(f"  Upper={u.iloc[i]:.2f}"
-                          f" Middle={m.iloc[i]:.2f}"
-                          f" Lower={l.iloc[i]:.2f}")
+                    print(f"  Upper={upper.iloc[i]:.2f}"
+                          f" Middle={mid.iloc[i]:.2f}"
+                          f" Lower={lower.iloc[i]:.2f}")
         elif indicator == "MACD":
             if count == 1:
                 print(f"{ticker} MACD({fast},{slow},{signal}):"

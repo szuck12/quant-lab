@@ -8,6 +8,14 @@ wording, and the framing of `TODO.md` entries. It makes every change
 explainable and discoverable, and it never invents behaviour — every
 sentence traces to implemented code and actual test output.
 
+## Session Instructions
+
+- You MUST read `MEMORY.md` at session start to load historical context.
+- You MUST append significant decisions, corrections, or lessons
+  learned to `MEMORY.md` at session end.
+- You MUST run `bash scripts/verify.sh` before every handoff to
+  confirm lint, smoke test, and the full mock suite are green.
+
 ## Scope
 
 ### What It Does
@@ -54,52 +62,19 @@ sentence traces to implemented code and actual test output.
 
 ## Project-Specific Conventions
 
-### README Structure
+See `docs/conventions_reference.md` for the full conventions reference.
+The specific conventions this agent enforces are listed in Standards
+Enforced below.
 
-The README follows this structure (each section in this order):
-
-1. Title and description
-2. Version badge
-3. Features list
-4. Syntax table (alphabetical by indicator name)
-5. Error message table
-6. Examples (alphabetical by indicator)
-7. How It Works
-8. Default Windows
-9. Project Structure (alphabetical tree)
-10. Tests
-11. Agent-Based Development Workflow
-12. License
-
-### Version Badge Convention
-
-The badge must always match the latest CHANGELOG entry:
-
-```markdown
-Current version: **1.8.0** — [Changelog](CHANGELOG.md)
-```
-
-### Changelog Entry Rules (`docs/update_changelog.md`)
-
-- Write from the user's perspective, one concise line each.
-- Omit internal refactors, comment-only changes, and dependency bumps
-  that do not change observable behaviour.
-- Group changes under the correct section headers (`### Added`,
-  `### Changed`, `### Fixed`, `### Security`).
-- Only include section headers that have entries (omit empty ones).
-
-### Project Tree Rules (`docs/commenting_guidelines.md` §12)
-
-- Every `.py` file in `mocktests/` and `realtests/` must be listed.
-- New entries go in alphabetical position, not at the end.
-- Match the indentation style of neighbouring entries.
-
-### Cross-Reference Rules
-
-- Every doc that references agents must use the correct agent filename
-  (e.g. `agents/feature-implementer.md`, not `agents/feature.md`).
-- Every doc that references another doc must use relative links
-  (e.g. `[changelog](update_changelog.md)`).
+Key conventions for this agent (details in conventions_reference.md):
+- README structure: §14 (12-section order, alphabetical).
+- Version badge: must match latest CHANGELOG entry.
+- CHANGELOG entry rules: §8 (user-perspective, single line, correct
+  section headers).
+- Project tree rules: every `.py` file listed, alphabetical position.
+- Cross-reference rules: §15 (correct agent filenames, relative
+  links).
+- TODO formatting: §7 (checkbox, `#tag`, `@agent` tags).
 
 ## Tools / Commands
 
@@ -161,6 +136,13 @@ This agent enforces the documentation standards:
 - `docs/commenting_guidelines.md` §12 — project tree rules.
 - `docs/update_changelog.md` §3 — README update process.
 - `docs/adding_indicator.md` §6 — indicator doc updates.
+
+## Quick Reference
+
+- **Use when**: Any user-visible change or documentation task.
+- **Top rules**: Never invent behaviour; keep the badge equal to the
+  latest changelog entry; insert tree and doc entries in alphabetical
+  position; spot-check example commands.
 
 ## Handoff Checklist
 

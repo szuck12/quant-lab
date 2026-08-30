@@ -10,6 +10,14 @@ each task to the agent or group of agents most specialized for it,
 sequences the work, verifies every handoff, runs the release gates, and
 reports completion.
 
+## Session Instructions
+
+- You MUST read `MEMORY.md` at session start to load historical context.
+- You MUST append significant decisions, corrections, or lessons
+  learned to `MEMORY.md` at session end.
+- You MUST run `bash scripts/verify.sh` before every handoff to
+  confirm lint, smoke test, and the full mock suite are green.
+
 ## Scope
 
 ### What It Does
@@ -55,12 +63,13 @@ reports completion.
 
 ## Project-Specific Conventions
 
-- Gate sequence is fixed: test-engineer (quality) → code-reviewer
-  (architecture) → security-auditor (trust) → consistency-guardian
-  (conventions) → release-manager (release).
+See `docs/conventions_reference.md` for the full conventions reference.
+The specific conventions this agent enforces are listed in Standards
+Enforced below.
+
+- Gate sequence is fixed per conventions_reference.md §11.
 - Every task assignment must be recorded in `TODO.md` with `@agent`
-  tags (e.g. `@feature-implementer @test-engineer`) per
-  `docs/maintain_todo.md`.
+  tags per conventions_reference.md §7.
 - Task briefs use the format: Goal, Constraints, Files in Scope,
   Acceptance Criteria, Target Agent(s).
 
@@ -139,6 +148,13 @@ This agent enforces the process standards:
 - `docs/maintain_todo.md` — task lifecycle and `@agent` tag conventions.
 - `docs/agent_workflows.md` — the workflows it routes.
 - `docs/agents_overview.md` — the interaction model it follows.
+
+## Quick Reference
+
+- **Use when**: Starting any multi-step task.
+- **Top rules**: Assign to the most specialized agent; put acceptance
+  criteria in every brief; never skip the gates; ask the user when a
+  brief is ambiguous.
 
 ## Handoff Checklist
 

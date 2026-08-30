@@ -9,6 +9,14 @@ Ask (needs a decision). It runs the deep-dive architectural review in
 `docs/code_review_guide.md` sections 2–8 and is triggered before
 releases, after significant change, or whenever a design question arises.
 
+## Session Instructions
+
+- You MUST read `MEMORY.md` at session start to load historical context.
+- You MUST append significant decisions, corrections, or lessons
+  learned to `MEMORY.md` at session end.
+- You MUST run `bash scripts/verify.sh` before every handoff to
+  confirm lint, smoke test, and the full mock suite are green.
+
 ## Scope
 
 ### What It Does
@@ -61,39 +69,18 @@ releases, after significant change, or whenever a design question arises.
 
 ## Project-Specific Conventions
 
-### Review Scope Rules
+See `docs/conventions_reference.md` for the full conventions reference.
+The specific conventions this agent enforces are listed in Standards
+Enforced below.
 
-- For a targeted change: re-verify only the sections affected by that
-  change, plus a full audit before release.
-- Read referenced docs first to establish the spec, then check the
-  codebase against it.
-- Walk sections 2–7 in order, stopping at any blocker.
-
-### Take/Ask Table Format
-
-The §8h synthesis produces a table of top 3–5 actions:
-
-| # | Type | Action |
-|---|------|--------|
-| 1 | Take | Concrete, clearly worthwhile action |
-| 2 | Ask | Question needing a decision before work proceeds |
-
-- **Take** — can be added directly to `TODO.md`.
-- **Ask** — must be raised to the project owner or team.
-
-### Section Ownership
-
-| Section | Owner | Reviewer checks |
-|---------|-------|-----------------|
-| §1 Conventions | consistency-guardian | Duplicating this is forbidden |
-| §2 Indicators | code-reviewer | Structural patterns |
-| §3 Mock tests | code-reviewer | Coverage matrix |
-| §4 Real tests | code-reviewer | Reasonableness |
-| §5 Error handling | code-reviewer | Failure modes |
-| §6 Cross-cutting | code-reviewer | Dispatch, intervals, raw |
-| §7 Documentation | code-reviewer | Accuracy |
-| §8 Open-ended | code-reviewer | Design analysis |
-| §9 Security | security-auditor | Duplicating this is forbidden |
+Key conventions for this agent (details in conventions_reference.md):
+- Release gate sequence: §11 (test → review → security → consistency
+  → commit).
+- Indicator function pattern: §3 (verify code against this pattern).
+- Indicator registration: §4 (verify all 4 locations updated).
+- Take/Ask table format: §8h synthesis produces `# | Type | Action`.
+- Section ownership: §1 = consistency-guardian, §9 =
+  security-auditor, §2–§8 = code-reviewer.
 
 ## Tools / Commands
 
@@ -156,6 +143,14 @@ This agent enforces the architectural standards:
 
 - `docs/code_review_guide.md` sections 2–8.
 - `docs/adding_indicator.md` — the pattern to review against.
+
+## Quick Reference
+
+- **Use when**: Architectural depth is needed (significant changes,
+  releases, design questions).
+- **Top rules**: Audit, never fix; findings cite `file:line`; do not
+  duplicate the Consistency Guardian (§1) or Security Auditor (§9);
+  deliver the Take/Ask action table.
 
 ## Handoff Checklist
 

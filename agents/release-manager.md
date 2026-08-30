@@ -9,6 +9,14 @@ release gate. It decides the semver bump from the rules in
 review, security, consistency), and cuts the single
 `Release X.Y.Z — <summary>` commit that moves the project forward.
 
+## Session Instructions
+
+- You MUST read `MEMORY.md` at session start to load historical context.
+- You MUST append significant decisions, corrections, or lessons
+  learned to `MEMORY.md` at session end.
+- You MUST run `bash scripts/verify.sh` before every handoff to
+  confirm lint, smoke test, and the full mock suite are green.
+
 ## Scope
 
 ### What It Does
@@ -63,44 +71,19 @@ review, security, consistency), and cuts the single
 
 ## Project-Specific Conventions
 
-### Semver Table
+See `docs/conventions_reference.md` for the full conventions reference.
+The specific conventions this agent enforces are listed in Standards
+Enforced below.
 
-| Change Type | Bump | Example |
-|-------------|------|---------|
-| New indicator, new interval | MINOR | 1.7.0 → 1.8.0 |
-| Test additions, refactoring | PATCH | 1.8.0 → 1.8.1 |
-| Breaking CLI change | MAJOR | 1.x.x → 2.0.0 |
-| Bug fix, doc improvement | PATCH | 1.8.0 → 1.8.1 |
-
-### CHANGELOG Entry Rules (`docs/update_changelog.md`)
-
-- Single concise line from the user's perspective.
-- Only user-facing and test-infrastructure changes.
-- Group under the correct section headers.
-- Only include section headers that have entries.
-- `### Security` entries state counts/classes only.
-
-### Release Commit Format
-
-```
-Release X.Y.Z — <brief summary>
-```
-
-Examples:
-- `Release 1.8.0 — Add agent-based development workflow`
-- `Release 1.8.1 — Fix MACD histogram calculation`
-- `Release 2.0.0 — Redesign CLI with argument parser`
-
-### Gate Sequence
-
-```
-test-engineer (quality) → code-reviewer (architecture) →
-security-auditor (trust) → consistency-guardian (conventions) →
-release-manager (commit)
-```
-
-All gates must be green before the commit. The release manager
-verifies each gate has run.
+Key conventions for this agent (details in conventions_reference.md):
+- Semver table: §13 (MINOR for features, PATCH for fixes/tests,
+  MAJOR for breaking).
+- CHANGELOG entry rules: §8 (user-perspective, single line, correct
+  section headers, counts/classes only for Security).
+- Release commit format: §12 (`Release X.Y.Z — <summary>`).
+- Release gate sequence: §11 (test → review → security → consistency
+  → commit).
+- README badge: must be synchronized with latest CHANGELOG entry.
 
 ## Tools / Commands
 
@@ -162,6 +145,14 @@ This agent enforces the release standards:
 - `docs/update_changelog.md` — versioning and changelog process.
 - `docs/maintain_todo.md` — Done-section lifecycle at release time.
 - `docs/code_review_guide.md` §1d — changelog/version compliance.
+
+## Quick Reference
+
+- **Use when**: All work is done and ready to ship.
+- **Top rules**: Never cut while a gate is red or unrun (tests →
+  review → security → consistency → commit); pick the bump from the
+  semver table; write `### Security` entries as counts/classes only;
+  commit with `Release X.Y.Z — <summary>`.
 
 ## Handoff Checklist
 

@@ -8,6 +8,14 @@ Reviewer asks "does the design hold?", the Consistency Guardian asks
 ordering, naming, and cross-document integrity — the conventions that
 make the codebase predictable to read and hard to break by accident.
 
+## Session Instructions
+
+- You MUST read `MEMORY.md` at session start to load historical context.
+- You MUST append significant decisions, corrections, or lessons
+  learned to `MEMORY.md` at session end.
+- You MUST run `bash scripts/verify.sh` before every handoff to
+  confirm lint, smoke test, and the full mock suite are green.
+
 ## Scope
 
 ### What It Does
@@ -57,39 +65,17 @@ make the codebase predictable to read and hard to break by accident.
 
 ## Project-Specific Conventions
 
-### Alphabetical Ordering Rules
+See `docs/conventions_reference.md` for the full conventions reference.
+The specific conventions this agent enforces are listed in Standards
+Enforced below.
 
-These lists/dicts must be in strict alphabetical order:
-
-1. `indicators/__init__.py` imports — `from indicators.adx import
-   calculate_adx` comes before `from indicators.atr import ...`.
-2. `main.py` imports — same order as `__init__.py`.
-3. `main.py` input prompt — indicator names listed alphabetically.
-4. `main.py` validation set — `("ADX", "ATR", ...)` in order.
-5. `main.py` `match/case` dispatch — cases in alphabetical order.
-6. `indicators/_data.py` `_DEFAULT_WINDOWS` — entries in order.
-7. `docs/formulas.md` sections — alphabetical by indicator name.
-8. README project structure tree — files in alphabetical position.
-9. Test files in `mocktests/` and `realtests/` — alphabetical.
-
-### Commenting Guidelines Rules (§1)
-
-- Every public function has a Google-style docstring with `Args:`,
-  `Returns:`, and `Raises:` sections.
-- No inline comments that restate the obvious (e.g. `# calculate mean`).
-- 80-character line limit in both code and docstrings.
-- Two blank lines between top-level functions and classes.
-- One blank line between import groups.
-- Type hints on every function signature.
-
-### TODO/CHANGELOG Formatting
-
-- TODO entries: `- [ ]` for pending, `- [x]` for done.
-- Tags: lowercase, single word, prefixed with `#` (e.g. `#indicator`).
-- Owner tags: `@agent-name` format (e.g. `@feature-implementer`).
-- New entries appended at the bottom of their section, never inserted
-  at the top.
-- CHANGELOG entries: single concise line from the user's perspective.
+Key conventions for this agent (details in conventions_reference.md):
+- Alphabetical ordering: §2 (10 specific lists/dicts).
+- Code style: §1 (docstrings, type hints, comments, 80-char).
+- TODO formatting: §7 (checkbox, `#tag`, `@agent`, append-at-bottom).
+- CHANGELOG formatting: §8 (user-perspective, section headers).
+- README structure: §14 (12-section order).
+- Cross-reference rules: §15 (correct filenames, relative links).
 
 ## Tools / Commands
 
@@ -154,6 +140,13 @@ This agent enforces ALL convention standards:
 - `docs/code_review_guide.md` section 1.
 - `docs/maintain_todo.md` formatting rules.
 - `docs/update_changelog.md` formatting rules.
+
+## Quick Reference
+
+- **Use when**: Style, ordering, or structure checks.
+- **Top rules**: Prefer machine checks; report violations with
+  `file:line`, blocking vs suggestion; never edit files; verify the
+  README project tree is alphabetical and complete.
 
 ## Handoff Checklist
 
