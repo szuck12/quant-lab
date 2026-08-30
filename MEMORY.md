@@ -37,14 +37,16 @@ Agents read this at session start and append at session end.
 
 <!-- Brief snapshot of where work left off. Updated at end of session. -->
 
-- Current version: 1.8.1
-- All 422 mock tests passing.
+- Current version: 2.0.0
+- All 521 mock tests passing (422 existing + 99 new backtester tests).
 - All agent files have Session Instructions (MEMORY.md + verify.sh)
   and Quick Reference sections.
 - Shared conventions live in `docs/conventions_reference.md`.
 - Skill files created: `skills/add-indicator/`, `skills/release-cut/`,
-  `skills/security-audit/`.
+  `skills/security-audit/`, `skills/backtester/`.
 - Backtester agent added: `agents/backtest-engineer.md`.
 - Backtester package created: `backtester/` (cli, data_pipeline,
   batch_indicators, engine, metrics, reporting).
 - BACKTEST command integrated into `main.py` dispatch.
+- 12 agents total (11 original + backtest-engineer).
+- v2.0.0 released and pushed to GitHub.
