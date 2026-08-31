@@ -38,7 +38,7 @@ Agents read this at session start and append at session end.
 <!-- Brief snapshot of where work left off. Updated at end of session. -->
 
 - Current version: 2.0.1
-- All 599 mock tests passing (422 existing + 177 backtester tests).
+- All 606 mock tests passing (422 existing + 184 backtester tests).
 - Operator aliases: `below`/`above`/`at_or_below`/`at_or_above`/`equals`
   avoid shell redirection issues with `<`/`>` characters.
 - `yf.download()` returns MultiIndex columns even for single ticker —
@@ -46,6 +46,10 @@ Agents read this at session start and append at session end.
 - Ticker validation: 1-10 alphanumeric chars, must contain letter.
 - yfinance logger suppressed (set to ERROR during download).
 - Failed tickers tracked separately, error messages list specific tickers.
+- Equity curve includes daily business-day values (forward-filled from
+  trade exits) — Sharpe/Sortino now use actual daily returns.
+- Parquet caching silently skips when pyarrow is not installed.
+- Sharpe/Sortino use tolerance (std < 1e-12) not exact == 0 for float.
 - Bugs fixed: _smallest_interval order, reporting Sharpe sign,
   _check_condition unknown ops, NaN entry price guard, hold boundary
   guard, Sharpe/Sortino NaN std, param validation for single-default
