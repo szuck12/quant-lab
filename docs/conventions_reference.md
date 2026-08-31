@@ -180,3 +180,22 @@ Release X.Y.Z — <brief summary>
   drawdown, win rate, profit factor.
 - Parquet cache format: columns are Date (index), Open, High, Low,
   Close, Volume; ticker and interval encoded in filename.
+
+## 17. Bug Fix Protocol
+
+Every bug fix must follow this process to strengthen the repository:
+
+1. **Reproduce**: write a minimal test that triggers the bug (should
+   fail before the fix).
+2. **Root cause**: identify the exact line and why it failed.
+3. **Fix**: apply the narrowest change that resolves the root cause.
+4. **Verify**: the new test passes, full suite still passes.
+5. **Harden**: add related edge-case tests that would have caught the
+   bug class earlier (e.g. float-vs-int, empty input, NaN handling).
+6. **Document**: update the relevant agent file with a new constraint
+   ("MUST NOT ...") so the bug class is explicitly prevented.
+7. **Lessons**: append to `MEMORY.md` with the bug, fix, and the
+   rule that prevents recurrence.
+
+The goal is that each bug makes the test suite and process stronger,
+so the same class of bug cannot recur silently.

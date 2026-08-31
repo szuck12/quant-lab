@@ -313,7 +313,9 @@ def _parse_indicator_args(
                 f"got {len(params_list)}."
             )
 
-    return tuple(params_list), component
+    return tuple(
+        int(p) if p == int(p) else p for p in params_list
+    ), component
 
 
 def _expected_param_count(indicator: str) -> int | None:

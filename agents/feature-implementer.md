@@ -66,6 +66,10 @@ turns specs and formulas into working code.
   reproduction steps to the test-engineer.
 - MUST NOT add comments that duplicate what type hints already express.
 - MUST NOT touch test files, docs files, or security configuration.
+- MUST follow the Bug Fix Protocol in `docs/conventions_reference.md`
+  section 17: reproduce → root cause → fix → verify → harden →
+  document → lessons. Every bug fix must add tests that prevent the
+  bug class from recurring.
 
 ## Project-Specific Conventions
 

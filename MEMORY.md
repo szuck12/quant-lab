@@ -38,7 +38,7 @@ Agents read this at session start and append at session end.
 <!-- Brief snapshot of where work left off. Updated at end of session. -->
 
 - Current version: 2.0.1
-- All 606 mock tests passing (422 existing + 184 backtester tests).
+- All 609 mock tests passing (422 existing + 187 backtester tests).
 - Operator aliases: `below`/`above`/`at_or_below`/`at_or_above`/`equals`
   avoid shell redirection issues with `<`/`>` characters.
 - `yf.download()` returns MultiIndex columns even for single ticker —
@@ -50,10 +50,15 @@ Agents read this at session start and append at session end.
   trade exits) — Sharpe/Sortino now use actual daily returns.
 - Parquet caching silently skips when pyarrow is not installed.
 - Sharpe/Sortino use tolerance (std < 1e-12) not exact == 0 for float.
+- **CLI params are stored as float, converted to int in both
+  `_parse_indicator_args` and `compute_indicator`** — prevents
+  "window must be an integer" errors from pandas rolling().
+- Bug Fix Protocol added to conventions_reference.md §17: every bug
+  fix must add tests, update agent constraints, and log lessons.
 - Bugs fixed: _smallest_interval order, reporting Sharpe sign,
   _check_condition unknown ops, NaN entry price guard, hold boundary
   guard, Sharpe/Sortino NaN std, param validation for single-default
-  indicators, return_pct decimal vs percentage.
+  indicators, return_pct decimal vs percentage, float param conversion.
 - All agent files have Session Instructions (MEMORY.md + verify.sh)
   and Quick Reference sections.
 - Shared conventions live in `docs/conventions_reference.md`.

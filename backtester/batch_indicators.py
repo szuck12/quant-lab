@@ -356,8 +356,17 @@ def compute_indicator(
     if component and component not in valid_components:
         raise ValueError(
             f"Indicator {ind} has no component '{component}'. "
-            f"Valid: {valid_components}"
+            f"Valid: {', '.join(sorted(valid_components))}"
         )
+
+    # Convert whole-number float params to int (e.g. 50.0 → 50).
+    # CLI parser stores all params as float; pandas rolling() and
+    # other APIs require int windows. Defense in depth: the CLI
+    # parser also converts, but this catches any direct caller.
+    params = tuple(
+        int(p) if isinstance(p, float) and p == int(p) else p
+        for p in params
+    )
 
     if ind == "SMA":
         result = compute_sma(df, *params)

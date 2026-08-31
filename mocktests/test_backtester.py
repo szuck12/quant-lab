@@ -300,6 +300,28 @@ class TestBatchIndicators:
         expected = df["Close"].rolling(5).mean()
         pd.testing.assert_series_equal(result, expected, check_names=False)
 
+    def test_sma_float_window_converted_to_int(self, df):
+        """Float window (50.0) must be converted to int for rolling()."""
+        from backtester.batch_indicators import compute_indicator
+        result = compute_indicator(df, "SMA", (50.0,))
+        assert isinstance(result, pd.Series)
+        assert not result.isna().all()
+
+    def test_compute_indicator_float_params(self, df):
+        """compute_indicator passes int-converted params to functions."""
+        from backtester.batch_indicators import compute_indicator
+        result = compute_indicator(df, "RSI", (14.0,))
+        assert isinstance(result, pd.Series)
+        assert not result.isna().all()
+
+    def test_compute_indicator_bb_float_params(self, df):
+        """BB keeps num_std as float but converts window to int."""
+        from backtester.batch_indicators import compute_bb
+        upper, middle, lower = compute_bb(df, 20, 2.0)
+        assert isinstance(upper, pd.Series)
+        assert isinstance(middle, pd.Series)
+        assert isinstance(lower, pd.Series)
+
     # --- EMA ---
     def test_ema_returns_series(self, df):
         result = compute_ema(df, window=20)
