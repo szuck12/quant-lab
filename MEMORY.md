@@ -38,11 +38,14 @@ Agents read this at session start and append at session end.
 <!-- Brief snapshot of where work left off. Updated at end of session. -->
 
 - Current version: 2.0.1
-- All 583 mock tests passing (422 existing + 161 backtester tests).
+- All 599 mock tests passing (422 existing + 177 backtester tests).
 - Operator aliases: `below`/`above`/`at_or_below`/`at_or_above`/`equals`
   avoid shell redirection issues with `<`/`>` characters.
 - `yf.download()` returns MultiIndex columns even for single ticker —
   `_download_batch` now flattens the ticker level.
+- Ticker validation: 1-10 alphanumeric chars, must contain letter.
+- yfinance logger suppressed (set to ERROR during download).
+- Failed tickers tracked separately, error messages list specific tickers.
 - Bugs fixed: _smallest_interval order, reporting Sharpe sign,
   _check_condition unknown ops, NaN entry price guard, hold boundary
   guard, Sharpe/Sortino NaN std, param validation for single-default
