@@ -60,6 +60,17 @@ evaluation.
   missing columns, and network failures gracefully.
 - MUST NOT hardcode ticker lists or intervals — all configuration
   comes from the CLI parser.
+- MUST NOT use sparse equity curves for Sharpe/Sortino — the equity
+  curve MUST include values for every business day (forward-filled
+  from trade exits) so `pct_change()` produces actual daily returns,
+  not per-trade returns. A sparse curve inflates the Sharpe ratio by
+  a factor of ~√hold_period.
+- MUST NOT print pyarrow/fastparquet installation warnings — parquet
+  caching is optional; if the engine is missing, `_save_cache` should
+  silently skip (catch and pass). Users see no warning.
+- MUST use tolerance checks (e.g. `std < 1e-12`) not exact equality
+  (`== 0`) when comparing floating-point standard deviations in
+  Sharpe/Sortino — `np.full(200, 0.0005).std()` is ~1e-19, not 0.0.
 
 ## Session Instructions
 
@@ -137,7 +148,9 @@ Key conventions for this agent:
 - [ ] `python3 run_mock_tests.py` passes (full suite).
 - [ ] BACKTEST command parses correctly for all example inputs.
 - [ ] Error messages are clear and helpful for all error cases.
-- [ ] Parquet caching works (read/write cycle).
+- [ ] Parquet caching fails silently when pyarrow is not installed.
 - [ ] Batch indicators produce correct values.
 - [ ] Metrics match expected financial formulas.
+- [ ] Equity curve includes daily values (not just trade exits).
+- [ ] Sharpe/Sortino ratios use tolerance checks for std == 0.
 - [ ] Progress messages display correctly.

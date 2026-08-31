@@ -71,7 +71,7 @@ def compute_metrics(
     annualized = compute_annualized_return(total_return, years)
 
     equity = compute_equity_curve(trades, capital)
-    daily_returns = equity.pct_change().dropna()
+    daily_returns = equity.pct_change(fill_method=None).dropna()
 
     sharpe = compute_sharpe_ratio(daily_returns, trading_days)
     sortino = compute_sortino_ratio(daily_returns, trading_days)
@@ -137,29 +137,43 @@ def compute_equity_curve(
     """Build equity curve from trades.
 
     Creates a Series indexed by date showing portfolio value
-    after each trade closes.
+    after each trade closes. Days between trades are filled
+    with the last known equity value so pct_change() produces
+    accurate daily returns for Sharpe/Sortino computation.
 
     Args:
         trades: List of completed trades.
         capital: Starting capital.
 
     Returns:
-        Equity curve Series.
+        Equity curve Series with one value per calendar day.
     """
-    sorted_trades = sorted(trades, key=lambda t: t.exit_date)
-    dates = [sorted_trades[0].entry_date] if sorted_trades else []
-    values = [capital]
+    if not trades:
+        return pd.Series(dtype=float)
 
+    sorted_trades = sorted(trades, key=lambda t: t.entry_date)
+
+    # Build equity at each trade exit
+    exit_equity: dict[pd.Timestamp, float] = {}
     equity = capital
     for trade in sorted_trades:
         equity *= 1.0 + trade.return_pct
-        dates.append(trade.exit_date)
-        values.append(equity)
+        exit_equity[trade.exit_date] = equity
 
-    if not dates:
-        return pd.Series(dtype=float)
+    # Create a daily date range covering the full period
+    start = sorted_trades[0].entry_date
+    end = sorted_trades[-1].exit_date
+    daily_idx = pd.date_range(start=start, end=end, freq="B")
 
-    return pd.Series(values, index=dates)
+    # Map exit dates to equity values, forward-fill the rest
+    series = pd.Series(index=daily_idx, dtype=float)
+    for ts, val in exit_equity.items():
+        if ts in series.index:
+            series.loc[ts] = val
+    series = series.ffill()
+    series.iloc[0] = capital
+
+    return series
 
 
 def compute_max_drawdown(equity_curve: pd.Series) -> float:
@@ -190,9 +204,10 @@ def compute_sharpe_ratio(
     Returns:
         Sharpe ratio.
     """
-    if daily_returns.empty or daily_returns.std() == 0 or pd.isna(daily_returns.std()):
+    std = daily_returns.std()
+    if daily_returns.empty or std < 1e-12 or pd.isna(std):
         return 0.0
-    return daily_returns.mean() / daily_returns.std() * np.sqrt(trading_days)
+    return daily_returns.mean() / std * np.sqrt(trading_days)
 
 
 def compute_sortino_ratio(
@@ -210,9 +225,10 @@ def compute_sortino_ratio(
     if daily_returns.empty:
         return 0.0
     neg = daily_returns[daily_returns < 0]
-    if neg.empty or neg.std() == 0 or pd.isna(neg.std()):
+    neg_std = neg.std()
+    if neg.empty or neg_std < 1e-12 or pd.isna(neg_std):
         return 0.0
-    return daily_returns.mean() / neg.std() * np.sqrt(trading_days)
+    return daily_returns.mean() / neg_std * np.sqrt(trading_days)
 
 
 def compute_benchmark_metrics(

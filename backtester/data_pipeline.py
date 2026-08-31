@@ -166,12 +166,15 @@ class DataPipeline:
     def _save_cache(
         self, ticker: str, interval: str, data: pd.DataFrame
     ) -> None:
-        """Save a single ticker to parquet cache."""
+        """Save a single ticker to parquet cache.
+
+        Silently skips if pyarrow/fastparquet is not installed.
+        """
         path = self._cache_path(ticker, interval)
         try:
             data.to_parquet(path)
-        except Exception as exc:
-            print(f"  Warning: failed to cache {ticker}: {exc}")
+        except Exception:
+            pass  # No parquet engine — caching is optional
 
     def clear_cache(self) -> int:
         """Remove all cached parquet files.

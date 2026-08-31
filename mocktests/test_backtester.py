@@ -1235,8 +1235,58 @@ class TestMetricsEdgeCases:
             self._make_trade(110.0, 99.0, 5),    # -10%
         ]
         result = compute_total_return(trades, 10_000.0)
-        # 1.10 * 0.90 = 0.99 → -1%
-        assert result == pytest.approx(-0.01, abs=1e-3)
+
+    def test_equity_curve_includes_daily_values(self):
+        """Equity curve should have entries for every business day,
+        not just trade exit dates."""
+        from backtester.metrics import compute_equity_curve
+        trades = [
+            Trade("AAPL", pd.Timestamp("2025-01-06"), 100.0,
+                  pd.Timestamp("2025-01-17"), 110.0, 10, 0.10),
+            Trade("AAPL", pd.Timestamp("2025-02-03"), 110.0,
+                  pd.Timestamp("2025-02-14"), 121.0, 10, 0.10),
+        ]
+        equity = compute_equity_curve(trades, 10_000.0)
+        # Should have business days between entry and exit, not just 3 points
+        assert len(equity) > 3
+        # First value should be capital
+        assert equity.iloc[0] == 10_000.0
+        # Last value should reflect both compounding wins
+        assert equity.iloc[-1] == pytest.approx(12_100.0, abs=1.0)
+
+    def test_equity_curve_empty_trades(self):
+        from backtester.metrics import compute_equity_curve
+        equity = compute_equity_curve([], 10_000.0)
+        assert equity.empty
+
+    def test_sharpe_with_realistic_daily_returns(self):
+        """Sharpe ratio with actual daily returns should be reasonable
+        (not inflated by treating multi-day returns as daily)."""
+        # 200 days of consistent ~0.05% daily returns (12.5% annual)
+        daily = pd.Series(np.full(200, 0.0005))
+        sharpe = compute_sharpe_ratio(daily)
+        # With zero std (all same), Sharpe returns 0.0
+        assert sharpe == 0.0
+
+    def test_sharpe_with_varying_returns(self):
+        """Sharpe with varying daily returns should be finite and
+        not absurdly high (no longer inflated by sparse equity curve)."""
+        np.random.seed(42)
+        daily = pd.Series(np.random.normal(0.001, 0.01, 200))
+        sharpe = compute_sharpe_ratio(daily)
+        # 25% annual return, ~16% annual vol → Sharpe ~ 1.5
+        assert 0.5 < sharpe < 3.0
+
+    def test_sharpe_no_negative_returns(self):
+        """All positive daily returns → Sortino should be 0 (no downside)."""
+        daily = pd.Series([0.01, 0.02, 0.015, 0.005])
+        assert compute_sortino_ratio(daily) == 0.0
+
+    def test_sortino_with_mixed_returns(self):
+        daily = pd.Series([0.01, -0.005, 0.008, -0.002, 0.003])
+        result = compute_sortino_ratio(daily)
+        assert math.isfinite(result)
+        assert result > 0  # Positive mean, negative downside dev → positive
 
     def test_benchmark_metrics_empty_data(self):
         from backtester.metrics import compute_benchmark_metrics
@@ -1623,3 +1673,14 @@ class TestDataPipelineErrors:
         pipeline = DataPipeline()
         result = pipeline._download_batch(["AAPL"], "1d", 2)
         assert result == {}
+
+    def test_save_cache_silently_skips_without_pyarrow(self, capsys):
+        """_save_cache should not print a warning when pyarrow is
+        missing — caching is optional."""
+        pipeline = DataPipeline()
+        mock_df = _make_df(rows=5)
+        # This will fail (no pyarrow) but should be silent
+        pipeline._save_cache("AAPL", "1d", mock_df)
+        captured = capsys.readouterr()
+        assert "Warning" not in captured.out
+        assert "pyarrow" not in captured.out

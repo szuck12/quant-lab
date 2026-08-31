@@ -37,6 +37,8 @@ Primary: **Backtest Engineer** (`agents/backtest-engineer.md`).
 - [ ] Test complete download failure (all tickers fail, network error)
 - [ ] Test empty trades (no signals found) → metrics section handles gracefully
 - [ ] Test edge cases: single return, zero std, NaN values in metrics
+- [ ] Verify equity curve includes daily values (not just trade exits)
+- [ ] Verify pyarrow warning is suppressed when engine is missing
 
 ### Handoff
 - [ ] Report to Test Engineer for independent verification
@@ -88,13 +90,17 @@ When working on the backtester, always ensure:
 1. **CLI layer** (`cli.py`): validates ticker format (1-10 alphanumeric
    chars, must contain at least one letter) before sending to engine.
 2. **Data pipeline** (`data_pipeline.py`): suppresses yfinance logging,
-   tracks failed tickers, prints which tickers failed and why.
+   tracks failed tickers, prints which tickers failed and why. Parquet
+   caching silently skips if pyarrow/fastparquet is not installed.
 3. **Engine** (`engine.py`): when all tickers fail, prints specific
    error with the failed ticker names and possible causes, returns
    empty BacktestResult without crashing.
 4. **Metrics** (`metrics.py`): handles edge cases — empty trades list
    (returns all-zero metrics), single return (Sharpe returns 0.0),
-   NaN std (returns 0.0 instead of NaN).
+   NaN/zero std (returns 0.0, using tolerance `std < 1e-12` not
+   `== 0`). Equity curve includes daily business-day values
+   (forward-filled from trade exits) so Sharpe/Sortino use actual
+   daily returns, not per-trade returns.
 
 Common user errors to handle gracefully:
 - Typo in ticker symbol (e.g. APPL instead of AAPL)
@@ -102,3 +108,4 @@ Common user errors to handle gracefully:
 - Intraday data beyond yfinance limits
 - No entry signals found (strategy too restrictive)
 - Zero trades (market conditions didn't match strategy)
+- Missing pyarrow (caching silently skipped)
