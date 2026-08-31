@@ -19,6 +19,7 @@ from backtester.universe import (
     _detect_ticker_column,
     _is_cache_fresh,
     _read_cache,
+    _scrape_sp500,
     _write_cache,
     get_sp500_tickers,
     load_csv_tickers,
@@ -233,3 +234,92 @@ class TestCacheRoundTrip:
         cache.write_text("")
         result = _read_cache(cache)
         assert result == []
+
+
+# ---------------------------------------------------------------------------
+# _scrape_sp500 fallback
+# ---------------------------------------------------------------------------
+
+
+class TestScrapeFallback:
+    """Tests for fallback when Wikipedia scraping fails."""
+
+    @patch("backtester.universe.urllib.request.urlopen")
+    def test_403_error_uses_fallback(self, mock_urlopen):
+        """HTTP 403 from Wikipedia → fallback list."""
+        from urllib.error import HTTPError
+
+        mock_urlopen.side_effect = HTTPError(
+            url="https://en.wikipedia.org/wiki/...",
+            code=403,
+            msg="Forbidden",
+            hdrs={},
+            fp=None,
+        )
+        tickers = _scrape_sp500()
+        # Fallback should return ~500 tickers
+        assert len(tickers) > 400
+        assert "AAPL" in tickers
+        assert "MSFT" in tickers
+        # Dots converted to dashes
+        assert "BRK-B" in tickers
+
+    @patch("backtester.universe.urllib.request.urlopen")
+    def test_network_error_uses_fallback(self, mock_urlopen):
+        """Network timeout → fallback list."""
+        mock_urlopen.side_effect = TimeoutError("timed out")
+        tickers = _scrape_sp500()
+        assert len(tickers) > 400
+        assert "AAPL" in tickers
+
+    @patch("backtester.universe.pd.read_html")
+    @patch("backtester.universe.urllib.request.urlopen")
+    def test_user_agent_header_sent(
+        self, mock_urlopen, mock_read_html
+    ):
+        """Request includes a browser-like User-Agent header."""
+        mock_resp = MagicMock()
+        mock_resp.read.return_value = b"<html></html>"
+        mock_resp.__enter__ = MagicMock(return_value=mock_resp)
+        mock_resp.__exit__ = MagicMock(return_value=False)
+        mock_urlopen.return_value = mock_resp
+
+        # Make pd.read_html raise so fallback is used
+        mock_read_html.side_effect = Exception("parse error")
+
+        _scrape_sp500()
+
+        # Verify the request had a User-Agent header
+        call_args = mock_urlopen.call_args
+        req = call_args[0][0]
+        # urllib normalizes header name to "User-agent"
+        assert "User-agent" in req.headers
+        assert "Mozilla" in req.headers["User-agent"]
+
+    @patch("backtester.universe.urllib.request.urlopen")
+    def test_dot_to_dash_conversion(self, mock_urlopen):
+        """BRK.B from Wikipedia becomes BRK-B."""
+        import io
+
+        html = """
+        <table><tr><th>Symbol</th></tr>
+        <tr><td>BRK.B</td></tr>
+        <tr><td>BGNE</td></tr>
+        </table>
+        """
+        mock_resp = MagicMock()
+        mock_resp.read.return_value = html.encode()
+        mock_resp.__enter__ = MagicMock(return_value=mock_resp)
+        mock_resp.__exit__ = MagicMock(return_value=False)
+        mock_urlopen.return_value = mock_resp
+
+        tickers = _scrape_sp500()
+        assert "BRK-B" in tickers
+        assert "BGNE" in tickers
+
+    def test_fallback_list_contains_common_tickers(self):
+        """Fallback list includes major S&P 500 tickers."""
+        from backtester.universe import _FALLBACK_SP500
+
+        for ticker in ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA"]:
+            assert ticker in _FALLBACK_SP500

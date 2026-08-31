@@ -72,7 +72,9 @@ evaluation.
   (`== 0`) when comparing floating-point standard deviations in
   Sharpe/Sortino — `np.full(200, 0.0005).std()` is ~1e-19, not 0.0.
 - MUST NOT hardcode S&P 500 constituents — fetch from Wikipedia with
-  a 24-hour cache TTL. Never write a static ticker list.
+  a 24-hour cache TTL. Use a browser-like User-Agent header to avoid
+  403 errors. Fall back to a hardcoded snapshot (~503 tickers) if
+  scraping fails for any reason (network, 403, parse error).
 - MUST NOT skip chunked download for large universes — always split
   `yf.download()` calls into chunks of ≤50 tickers to avoid
   rate-limiting and memory issues.

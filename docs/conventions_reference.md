@@ -203,7 +203,10 @@ so the same class of bug cannot recur silently.
 ## 18. Universe / Scanner Conventions
 
 - `--universe sp500` fetches S&P 500 tickers from Wikipedia; cache
-  expires after 24 hours. Never hardcode a static ticker list.
+  expires after 24 hours. Uses a browser-like User-Agent header to
+  avoid 403 errors. Falls back to a hardcoded snapshot (~503 tickers)
+  if scraping fails (network error, 403, parse error). Never hardcode
+  a static ticker list for the primary path.
 - `--universe path/to.csv` loads tickers from a CSV file. Auto-detects
   the ticker column by looking for names containing "ticker", "symbol",
   "stock", or "code" (case-insensitive). Falls back to first column.

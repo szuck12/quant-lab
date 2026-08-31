@@ -88,6 +88,9 @@ Agents read this at session start and append at session end.
   - Summary reporting mode for 20+ tickers (top/bottom 5, median, mean).
   - Wikipedia cache TTL is 24 hours.
   - CSV auto-detects ticker column by name patterns.
-  - 639 total mock tests (187 backtester + 20 universe + 12 integration).
+  - 644 total mock tests (192 backtester + 25 universe + 12 integration).
+  - **403 fix**: Wikipedia scraping uses browser-like User-Agent
+    header to avoid 403 Forbidden. Falls back to hardcoded S&P 500
+    snapshot (~503 tickers) if scraping fails for any reason.
 - All agent files updated with universe/scanner constraints.
 - conventions_reference.md §18 added for universe conventions.

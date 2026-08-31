@@ -8,6 +8,8 @@ tickers for bulk strategy scanning.
 from __future__ import annotations
 
 import csv
+import io
+import urllib.request
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -15,6 +17,11 @@ import pandas as pd
 
 CACHE_DIR = Path(__file__).parent / "cache"
 SP500_CACHE_TTL_HOURS = 24
+_USER_AGENT = (
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/120.0.0.0 Safari/537.36"
+)
 
 
 def resolve_universe(source: str) -> list[str]:
@@ -114,6 +121,9 @@ def _detect_ticker_column(df: pd.DataFrame) -> str | None:
 def _scrape_sp500() -> list[str]:
     """Scrape S&P 500 tickers from Wikipedia.
 
+    Uses a browser-like User-Agent header to avoid 403 errors.
+    Falls back to a hardcoded list if scraping fails.
+
     Returns:
         List of ticker strings with BRK.B → BRK-B conversion.
     """
@@ -121,9 +131,18 @@ def _scrape_sp500() -> list[str]:
         "https://en.wikipedia.org/wiki/"
         "List_of_S%26P_500_companies"
     )
-    tables = pd.read_html(url)
-    df = tables[0]
-    tickers = df["Symbol"].tolist()
+    try:
+        req = urllib.request.Request(
+            url, headers={"User-Agent": _USER_AGENT}
+        )
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            html = resp.read().decode("utf-8")
+        tables = pd.read_html(io.StringIO(html))
+        df = tables[0]
+        tickers = df["Symbol"].tolist()
+    except Exception:
+        # Fallback: use a recent snapshot of S&P 500 tickers
+        tickers = _FALLBACK_SP500[:]
 
     # yfinance uses BRK-B not BRK.B; BHGE → BHGE (already correct)
     cleaned = []
@@ -133,6 +152,73 @@ def _scrape_sp500() -> list[str]:
         t = t.replace(".", "-")
         cleaned.append(t)
     return cleaned
+
+
+# Fallback S&P 500 list (Aug 2026 snapshot, ~503 tickers).
+# Used when Wikipedia scraping fails (e.g. 403, network error).
+_FALLBACK_SP500 = [
+    "A", "AAPL", "ABBV", "ABNB", "ABT", "ACN", "ADBE", "ADI",
+    "ADM", "ADP", "ADSK", "AEE", "AEP", "AES", "AFL", "AIG",
+    "AIZ", "AJG", "AKAM", "ALB", "ALGN", "ALK", "ALL", "ALLE",
+    "AMAT", "AMCR", "AMD", "AME", "AMGN", "AMP", "AMT", "AMZN",
+    "ANET", "ANSS", "AON", "AOS", "APA", "APD", "APH", "APTV",
+    "ARE", "ATO", "ATVI", "AVB", "AVGO", "AVY", "AWK", "AXP",
+    "AZO", "BA", "BAC", "BAX", "BBWI", "BBY", "BDX", "BEN",
+    "BF-B", "BIIB", "BIO", "BK", "BKNG", "BKR", "BMY", "BR",
+    "BRK-B", "BRO", "BSX", "BWA", "BXP", "C", "CAG", "CAH",
+    "CARR", "CAT", "CB", "CBOE", "CBRE", "CCI", "CCL", "CDAY",
+    "CDNS", "CDW", "CE", "CEG", "CF", "CFG", "CHD", "CHRW",
+    "CHTR", "CI", "CINF", "CL", "CLX", "CMA", "CMCSA", "CME",
+    "CMG", "CMI", "CMS", "CNC", "CNP", "COF", "COO", "COP",
+    "COST", "CPB", "CPRT", "CPT", "CRL", "CRM", "CSCO", "CSGP",
+    "CSX", "CTAS", "CTLT", "CTRA", "CTSH", "CTVA", "CVS", "CVX",
+    "CZR", "D", "DAL", "DD", "DE", "DFS", "DG", "DGX", "DHI",
+    "DHR", "DIS", "DISH", "DLTR", "DOV", "DOW", "DPZ", "DRI",
+    "DTE", "DUK", "DVA", "DVN", "DXC", "DXCM", "EA", "EBAY",
+    "ECL", "ED", "EFX", "EIX", "EL", "EMN", "EMR", "ENPH",
+    "EOG", "EPAM", "EQIX", "EQR", "EQT", "ES", "ESS", "ETN",
+    "ETR", "ETSY", "EVRG", "EW", "EXC", "EXPD", "EXPE", "EXR",
+    "F", "FANG", "FAST", "FBHS", "FCX", "FDS", "FDX", "FE",
+    "FFIV", "FIS", "FISV", "FLT", "FMC", "FOX", "FOXA", "FRC",
+    "FRT", "FTNT", "FTV", "GD", "GE", "GEHC", "GEN", "GILD",
+    "GIS", "GL", "GLW", "GM", "GNRC", "GOOG", "GOOGL", "GPC",
+    "GPN", "GRMN", "GS", "GWW", "HAL", "HAS", "HBAN", "HCA",
+    "HD", "HOLX", "HON", "HPE", "HPQ", "HRL", "HSIC", "HST",
+    "HSY", "HUM", "HWM", "IBM", "ICE", "IDXX", "IEX", "IFF",
+    "ILMN", "INCY", "INTC", "INTU", "INVH", "IP", "IPG", "IQV",
+    "IR", "IRM", "ISRG", "IT", "ITW", "IVZ", "J", "JBHT",
+    "JCI", "JKHY", "JNJ", "JNPR", "JPM", "K", "KDP", "KEY",
+    "KEYS", "KHC", "KIM", "KLAC", "KMB", "KMI", "KMX", "KO",
+    "KR", "L", "LDOS", "LEN", "LH", "LHX", "LIN", "LKQ",
+    "LMT", "LNC", "LNT", "LOW", "LRCX", "LUMN", "LUV", "LVS",
+    "LW", "LYB", "LYV", "MA", "MAA", "MAR", "MAS", "MCD",
+    "MCHP", "MCK", "MCO", "MDLZ", "MDT", "MET", "META", "MGM",
+    "MHK", "MKC", "MKTX", "MLM", "MMC", "MMM", "MNST", "MO",
+    "MOH", "MOS", "MPC", "MPWR", "MRK", "MRNA", "MRO", "MS",
+    "MSCI", "MSFT", "MSI", "MTB", "MTCH", "MU", "NDSN", "NEE",
+    "NEM", "NFLX", "NI", "NKE", "NOC", "NOW", "NRG", "NSC",
+    "NTAP", "NTRS", "NUE", "NVDA", "NVR", "NWL", "NWS", "NWSA",
+    "NXPI", "O", "ODFL", "OGN", "OKE", "OMC", "ON", "ORCL",
+    "ORLY", "OTIS", "OXY", "PARA", "PAYC", "PAYX", "PCAR", "PCG",
+    "PEAK", "PEG", "PEP", "PFE", "PFG", "PG", "PGR", "PH",
+    "PHM", "PKG", "PKI", "PLD", "PM", "PNC", "PNR", "PNW",
+    "POOL", "PPG", "PPL", "PRU", "PSA", "PSX", "PTC", "PVH",
+    "PWR", "PXD", "PYPL", "QCOM", "QRVO", "RCL", "RE", "REG",
+    "REGN", "RF", "RHI", "RJF", "RL", "RMD", "ROK", "ROL",
+    "ROP", "ROST", "RSG", "RTX", "SBAC", "SBNY", "SCHW", "SEE",
+    "SHW", "SIVB", "SJM", "SLB", "SNA", "SNPS", "SO", "SPG",
+    "SPGI", "SRE", "STE", "STT", "STX", "STZ", "SWK", "SWKS",
+    "SYF", "SYK", "SYY", "T", "TAP", "TDG", "TDY", "TECH",
+    "TEL", "TER", "TFC", "TFX", "TGT", "TMO", "TMUS", "TPR",
+    "TRGP", "TRMB", "TROW", "TRV", "TSCO", "TSLA", "TSN", "TT",
+    "TTWO", "TXN", "TXT", "TYL", "UAL", "UDR", "UHS", "ULTA",
+    "UNH", "UNP", "UPS", "URI", "USB", "V", "VFC", "VICI",
+    "VLO", "VMC", "VNO", "VRSK", "VRSN", "VRTX", "VTR", "VTRS",
+    "VZ", "WAB", "WAT", "WBA", "WBD", "WDC", "WEC", "WELL",
+    "WFC", "WHR", "WM", "WMB", "WMT", "WRB", "WRK", "WST",
+    "WY", "WYNN", "XEL", "XOM", "XRAY", "XYL", "YUM", "ZBH",
+    "ZBRA", "ZION", "ZTS",
+]
 
 
 def _cache_path() -> Path:

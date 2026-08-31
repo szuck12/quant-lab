@@ -100,7 +100,9 @@ When working on the backtester, always ensure:
    error with the failed ticker names and possible causes, returns
    empty BacktestResult without crashing. Universe resolution happens
    before download — `--universe sp500` resolves via Wikipedia with
-   a 24h cache; `--universe path/to.csv` loads tickers from CSV.
+   a 24h cache and browser-like User-Agent header; falls back to a
+   hardcoded S&P 500 snapshot (~503 tickers) if scraping fails.
+   `--universe path/to.csv` loads tickers from CSV.
 4. **Metrics** (`metrics.py`): handles edge cases — empty trades list
    (returns all-zero metrics), single return (Sharpe returns 0.0),
    NaN/zero std (returns 0.0, using tolerance `std < 1e-12` not
