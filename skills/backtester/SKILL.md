@@ -55,8 +55,10 @@ Primary: **Backtest Engineer** (`agents/backtest-engineer.md`).
 | `backtester/engine.py` | Core simulation loop |
 | `backtester/metrics.py` | Financial metrics |
 | `backtester/reporting.py` | Console output formatting |
+| `backtester/universe.py` | Universe resolution (S&P 500, CSV) |
 | `backtester/cache/` | Parquet cache directory |
-| `mocktests/test_backtester.py` | Mock test suite |
+| `mocktests/test_backtester.py` | Mock test suite (197 tests) |
+| `mocktests/test_universe.py` | Universe module tests (20 tests) |
 
 ## Condition Syntax
 
@@ -92,15 +94,21 @@ When working on the backtester, always ensure:
 2. **Data pipeline** (`data_pipeline.py`): suppresses yfinance logging,
    tracks failed tickers, prints which tickers failed and why. Parquet
    caching silently skips if pyarrow/fastparquet is not installed.
+   Large ticker lists are downloaded in chunks of ≤50 to avoid
+   rate-limiting.
 3. **Engine** (`engine.py`): when all tickers fail, prints specific
    error with the failed ticker names and possible causes, returns
-   empty BacktestResult without crashing.
+   empty BacktestResult without crashing. Universe resolution happens
+   before download — `--universe sp500` resolves via Wikipedia with
+   a 24h cache; `--universe path/to.csv` loads tickers from CSV.
 4. **Metrics** (`metrics.py`): handles edge cases — empty trades list
    (returns all-zero metrics), single return (Sharpe returns 0.0),
    NaN/zero std (returns 0.0, using tolerance `std < 1e-12` not
    `== 0`). Equity curve includes daily business-day values
    (forward-filled from trade exits) so Sharpe/Sortino use actual
    daily returns, not per-trade returns.
+5. **Reporting** (`reporting.py`): switches to compact summary mode
+   (top/bottom 5, median, mean) when ≥20 tickers have trades.
 
 Common user errors to handle gracefully:
 - Typo in ticker symbol (e.g. APPL instead of AAPL)
@@ -109,3 +117,5 @@ Common user errors to handle gracefully:
 - No entry signals found (strategy too restrictive)
 - Zero trades (market conditions didn't match strategy)
 - Missing pyarrow (caching silently skipped)
+- Invalid CSV file (no ticker column found)
+- Empty CSV file

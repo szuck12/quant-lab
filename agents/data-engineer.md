@@ -58,6 +58,9 @@ surfaces as a clean, canonical error instead of a crash.
     ones. Print clear messages: which tickers failed, possible causes
     (misspelled, delisted, insufficient history). Never let yfinance
     exceptions propagate as raw tracebacks.
+11. **Chunked download**: always split `yf.download()` calls into
+    chunks of ≤50 tickers (`CHUNK_SIZE = 50`) to avoid rate-limiting
+    and memory issues with large universes.
 
 ## Constraints / Things NOT To Do
 

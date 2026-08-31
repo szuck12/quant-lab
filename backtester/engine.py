@@ -75,6 +75,17 @@ class BacktestEngine:
         capital = self.config["capital"]
         benchmark = self.config["benchmark"]
 
+        # Resolve universe if specified
+        universe = self.config.get("universe")
+        if universe:
+            from backtester.universe import resolve_universe
+            tickers = resolve_universe(universe)
+            max_tickers = self.config.get("max_tickers")
+            if max_tickers:
+                tickers = tickers[:max_tickers]
+            print(f"\n  Universe: {universe} "
+                  f"({len(tickers)} tickers)")
+
         interval = self._smallest_interval()
         print("\nStep 1/5: Downloading data...")
         all_data = self.pipeline.fetch(tickers, interval, years)

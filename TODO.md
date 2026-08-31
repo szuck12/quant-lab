@@ -5,6 +5,9 @@
 
 ## Done
 
+- [x] 2026-08-31 — Universe/scanner feature: `--universe sp500` or
+      CSV, `--max-tickers N`, chunked download, summary reporting
+      (#feature, @backtest-engineer @data-engineer @test-engineer)
 - [x] 2026-08-15 — Implement Commodity Channel Index (CCI) indicator (#indicator)
 - [x] 2026-07-05 — Implement Average Directional Index (ADX) indicator (#indicator)
 - [x] 2026-06-19 — Implement On-Balance Volume (OBV) indicator (#indicator)

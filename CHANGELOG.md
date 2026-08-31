@@ -5,6 +5,35 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com) and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-08-31
+
+### Added
+- **Universe / Scanner** — run a strategy across all S&P 500 stocks
+  or a custom CSV ticker list: `--universe sp500` or
+  `--universe path/to.csv`.
+- **`--max-tickers N`** — limit the universe to N tickers for quick
+  testing.
+- **S&P 500 cache** — Wikipedia ticker list cached 24 hours
+  (`backtester/universe.py`).
+- **CSV ticker loader** — auto-detects ticker column by name
+  (`Ticker`, `Symbol`, `Stock`, `Code`), falls back to first column.
+- **Chunked download** — large ticker lists split into chunks of 50
+  to avoid yfinance rate-limiting.
+- **Summary reporting** — compact output (top/bottom 5, median, mean)
+  when ≥20 tickers have trades.
+- **Ticker validation** — rejects invalid tickers (1–10 chars, must
+  contain a letter) before calling yfinance.
+- **Universe tests** — 20 new tests in `mocktests/test_universe.py`,
+  12 integration tests in `mocktests/test_backtester.py` §20.
+
+### Changed
+- `backtester/data_pipeline.py` — `_download_batch` now splits into
+  `CHUNK_SIZE=50` chunks; extracts `_download_chunk` helper.
+- `backtester/reporting.py` — `format_results` dispatches to
+  `_format_summary` when ≥20 tickers have trades.
+- `backtester/engine.py` — `run()` calls `resolve_universe()` before
+  download; supports `universe` and `max_tickers` config keys.
+
 ## [2.0.1] - 2026-08-30
 
 ### Fixed

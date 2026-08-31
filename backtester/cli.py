@@ -42,6 +42,8 @@ _DEFAULTS = {
     "capital": 10000,
     "benchmark": "SPY",
     "stop_loss": None,
+    "universe": None,
+    "max_tickers": None,
 }
 
 
@@ -71,8 +73,11 @@ def parse_backtest_command(tokens: list[str]) -> dict:
     while i < len(tokens):
         if tokens[i].startswith("--"):
             key = tokens[i][2:]
+            # Normalize option names
             if key == "stop-loss":
                 key = "stop_loss"
+            if key == "max-tickers":
+                key = "max_tickers"
             if i + 1 < len(tokens):
                 options[key] = tokens[i + 1]
                 i += 2
@@ -85,19 +90,34 @@ def parse_backtest_command(tokens: list[str]) -> dict:
             i += 1
 
     if not positional:
-        raise ValueError(
-            "No tickers or conditions specified. "
-            "Usage: BACKTEST <tickers> <conditions>"
-        )
+        # --universe allows omitting tickers
+        if "universe" in options:
+            positional = ["_universe_"]  # placeholder
+        else:
+            raise ValueError(
+                "No tickers or conditions specified. "
+                "Usage: BACKTEST <tickers> <conditions>"
+            )
 
-    # First token is tickers (comma-separated)
-    tickers_raw = positional[0]
-    tickers = [t.strip().upper() for t in tickers_raw.split(",")]
-    tickers = [t for t in tickers if t]
-    if not tickers:
-        raise ValueError("No valid tickers specified")
+    # First token is tickers (comma-separated) — unless using --universe
+    universe = options.get("universe")
+    if universe:
+        # Universe mode: tickers resolved later in engine
+        tickers: list[str] = []
+        cond_tokens = positional
+    else:
+        # Explicit tickers mode
+        tickers_raw = positional[0]
+        tickers = [
+            t.strip().upper()
+            for t in tickers_raw.split(",")
+        ]
+        tickers = [t for t in tickers if t]
+        if not tickers:
+            raise ValueError("No valid tickers specified")
+        cond_tokens = positional[1:]
 
-    # Validate ticker format
+    # Validate ticker format (only for explicit tickers)
     import re
     for ticker in tickers:
         if not re.match(r"^[A-Z0-9.\-]{1,10}$", ticker):
@@ -113,7 +133,6 @@ def parse_backtest_command(tokens: list[str]) -> dict:
             )
 
     # Remaining positional tokens are conditions
-    cond_tokens = positional[1:]
     if not cond_tokens:
         raise ValueError(
             "No conditions specified. "
@@ -131,12 +150,18 @@ def parse_backtest_command(tokens: list[str]) -> dict:
     }
     for key, default in _DEFAULTS.items():
         val = options.get(key, default)
-        if val is not None and key in ("years", "hold", "capital"):
+        if val is not None and key in (
+            "years", "hold", "capital", "max_tickers"
+        ):
             try:
                 val = int(val)
             except (ValueError, TypeError):
                 raise ValueError(
                     f"Option '{key}' must be an integer, got '{val}'"
+                )
+            if key == "max_tickers" and val < 1:
+                raise ValueError(
+                    "Option 'max-tickers' must be at least 1"
                 )
         elif val is not None and key == "stop_loss":
             try:
@@ -361,7 +386,15 @@ def run_backtest(config: dict) -> None:
         parts.append(c.interval)
         cond_strs.append(" ".join(parts))
     print(f"\nStrategy: {' AND '.join(cond_strs)}")
-    print(f"Tickers: {', '.join(tickers)}")
+    universe = config.get("universe")
+    if universe:
+        max_t = config.get("max_tickers")
+        label = f"Universe: {universe}"
+        if max_t:
+            label += f" (max {max_t})"
+        print(label)
+    else:
+        print(f"Tickers: {', '.join(tickers)}")
     print(f"Period: {config['years']} years")
     print(
         f"Hold: {config['hold']} bars | "

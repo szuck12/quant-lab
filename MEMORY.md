@@ -21,6 +21,16 @@ Agents read this at session start and append at session end.
   is `INDICATOR [params] [component] OP VALUE INTERVAL`. Known
   limitations: survivorship bias, no transaction costs, no short
   selling, intraday data limits (7/60 day max for minute/hour data).
+- **2026-08-30**: v2.0.1 — bug fixes: KeyError 'Close' from
+  MultiIndex columns, shell operator aliases (below/above/etc.),
+  Sharpe/Sortino NaN std, parameter validation for single-default
+  indicators, pyarrow warning suppression, float param crash,
+  equity curve inflation fix.
+- **2026-08-31**: v2.1.0 — universe/scanner feature. `--universe
+  sp500` or `--universe path/to.csv` runs a strategy across all
+  S&P 500 stocks or a custom list. `--max-tickers N` limits scope.
+  Chunked download (CHUNK_SIZE=50) for large universes. Summary
+  reporting mode for 20+ tickers. Wikipedia cache with 24h TTL.
 
 ## Corrections & Lessons Learned
 
@@ -70,3 +80,14 @@ Agents read this at session start and append at session end.
 - BACKTEST command integrated into `main.py` dispatch.
 - 12 agents total (11 original + backtest-engineer).
 - v2.0.0 released and pushed to GitHub.
+- v2.1.0 — universe/scanner feature added:
+  - `backtester/universe.py` handles S&P 500 Wikipedia scraping,
+    CSV loading, and ticker validation.
+  - `--universe sp500` or `--universe path/to.csv` with `--max-tickers N`.
+  - Chunked download (CHUNK_SIZE=50) prevents rate-limiting.
+  - Summary reporting mode for 20+ tickers (top/bottom 5, median, mean).
+  - Wikipedia cache TTL is 24 hours.
+  - CSV auto-detects ticker column by name patterns.
+  - 639 total mock tests (187 backtester + 20 universe + 12 integration).
+- All agent files updated with universe/scanner constraints.
+- conventions_reference.md §18 added for universe conventions.

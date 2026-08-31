@@ -199,3 +199,21 @@ Every bug fix must follow this process to strengthen the repository:
 
 The goal is that each bug makes the test suite and process stronger,
 so the same class of bug cannot recur silently.
+
+## 18. Universe / Scanner Conventions
+
+- `--universe sp500` fetches S&P 500 tickers from Wikipedia; cache
+  expires after 24 hours. Never hardcode a static ticker list.
+- `--universe path/to.csv` loads tickers from a CSV file. Auto-detects
+  the ticker column by looking for names containing "ticker", "symbol",
+  "stock", or "code" (case-insensitive). Falls back to first column.
+- `--max-tickers N` truncates the resolved universe to N tickers.
+- Ticker validation: 1–10 alphanumeric characters, dots, or hyphens;
+  must contain at least one letter. Rejects invalid tickers before
+  calling yfinance.
+- `yf.download()` returns MultiIndex columns even for single tickers;
+  `_download_batch` must flatten the ticker level.
+- Large ticker lists (>50) are downloaded in chunks of `CHUNK_SIZE=50`
+  to avoid rate-limiting and memory issues.
+- Reporting switches to compact summary mode (top/bottom 5, median,
+  mean) when ≥20 tickers have trades.

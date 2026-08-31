@@ -71,6 +71,16 @@ evaluation.
 - MUST use tolerance checks (e.g. `std < 1e-12`) not exact equality
   (`== 0`) when comparing floating-point standard deviations in
   Sharpe/Sortino — `np.full(200, 0.0005).std()` is ~1e-19, not 0.0.
+- MUST NOT hardcode S&P 500 constituents — fetch from Wikipedia with
+  a 24-hour cache TTL. Never write a static ticker list.
+- MUST NOT skip chunked download for large universes — always split
+  `yf.download()` calls into chunks of ≤50 tickers to avoid
+  rate-limiting and memory issues.
+- MUST NOT print summary tables for 20+ tickers — switch to compact
+  summary mode (top/bottom 5, median, mean) to keep output readable.
+- MUST validate ticker format (1–10 chars, letters/dots/hyphens,
+  at least one letter) before calling yfinance — reject invalid
+  tickers early with a clear error message.
 
 ## Session Instructions
 

@@ -85,6 +85,8 @@ Instead of symbol operators, use these word-based aliases (case-insensitive):
 | `--benchmark TICKER` | Benchmark ticker (default: SPY) | `--benchmark QQQ` |
 | `--years N` | Years of history (default: 2) | `--years 3` |
 | `--stop-loss N` | Stop-loss percentage (default: disabled) | `--stop-loss 5` |
+| `--universe SOURCE` | Run strategy across a ticker universe (`sp500` or CSV path) | `--universe sp500` |
+| `--max-tickers N` | Limit universe to N tickers (default: all) | `--max-tickers 50` |
 
 #### Condition Format
 
@@ -123,6 +125,15 @@ python3 main.py BACKTEST AAPL MACD 12,26,9 signal above 0 1d
 
 # Stochastic overbought
 python3 main.py BACKTEST AAPL STOCH 14,5,5 k above 80 1d
+
+# Universe scan: run RSI oversold strategy across all S&P 500 stocks
+python3 main.py BACKTEST --universe sp500 RSI below 30 1d
+
+# Universe with ticker limit
+python3 main.py BACKTEST --universe sp500 --max-tickers 50 RSI below 30 1d
+
+# Universe from CSV file
+python3 main.py BACKTEST --universe my_tickers.csv RSI below 30 1d
 
 # Weekly timeframe
 python3 main.py BACKTEST AAPL RSI below 30 1wk

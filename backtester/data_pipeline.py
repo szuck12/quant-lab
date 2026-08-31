@@ -8,12 +8,14 @@ available.
 
 from __future__ import annotations
 
+from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
 import yfinance as yf
 
 CACHE_DIR = Path(__file__).parent / "cache"
+CHUNK_SIZE = 50  # yf.download works best in batches of ~50
 
 
 class DataPipeline:
@@ -68,6 +70,9 @@ class DataPipeline:
     ) -> dict[str, pd.DataFrame]:
         """Use yf.download() for batch download.
 
+        For large ticker lists (>CHUNK_SIZE), downloads in chunks
+        to avoid API timeouts and memory issues.
+
         Args:
             tickers: List of stock symbols.
             interval: Bar size.
@@ -76,11 +81,47 @@ class DataPipeline:
         Returns:
             Dict mapping ticker -> OHLCV DataFrame.
         """
-        from datetime import datetime, timedelta
+        from datetime import timedelta
 
         end = datetime.now()
         start = end - timedelta(days=years * 365)
 
+        if len(tickers) <= CHUNK_SIZE:
+            return self._download_chunk(
+                tickers, start, end, interval
+            )
+
+        # Chunked download with progress
+        result: dict[str, pd.DataFrame] = {}
+        total = len(tickers)
+        for i in range(0, total, CHUNK_SIZE):
+            chunk = tickers[i : i + CHUNK_SIZE]
+            n = min(i + CHUNK_SIZE, total)
+            print(f"  Downloading {i + 1}-{n} of {total}...")
+            chunk_result = self._download_chunk(
+                chunk, start, end, interval
+            )
+            result.update(chunk_result)
+        return result
+
+    def _download_chunk(
+        self,
+        tickers: list[str],
+        start: "datetime",
+        end: "datetime",
+        interval: str,
+    ) -> dict[str, pd.DataFrame]:
+        """Download a single chunk of tickers.
+
+        Args:
+            tickers: List of stock symbols (small batch).
+            start: Start date.
+            end: End date.
+            interval: Bar size.
+
+        Returns:
+            Dict mapping ticker -> OHLCV DataFrame.
+        """
         import logging as _log
 
         # Suppress noisy yfinance warnings (e.g. "1 Failed download")
@@ -107,10 +148,10 @@ class DataPipeline:
             _yf_logger.setLevel(_prev_level)
 
         if raw.empty:
-            failed = ", ".join(tickers)
-            print(f"  Error: no data returned for {failed}")
-            print("  Hint: check that the ticker symbols are correct "
-                  "and currently active.")
+            failed = ", ".join(tickers[:5])
+            if len(tickers) > 5:
+                failed += f" ... ({len(tickers)} total)"
+            print(f"  Warning: no data returned for {failed}")
             return {}
 
         result: dict[str, pd.DataFrame] = {}

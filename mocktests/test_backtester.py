@@ -1706,3 +1706,186 @@ class TestDataPipelineErrors:
         captured = capsys.readouterr()
         assert "Warning" not in captured.out
         assert "pyarrow" not in captured.out
+
+
+# ==========================================================================
+# §20 — Universe / Scanner integration tests
+# ==========================================================================
+
+
+class TestUniverseCLI:
+    """Tests for --universe and --max-tickers CLI parsing."""
+
+    def test_universe_option(self):
+        cfg = parse_backtest_command(
+            ["--universe", "sp500", "RSI", "below", "30", "1d"]
+        )
+        assert cfg["universe"] == "sp500"
+        assert cfg["tickers"] == []
+
+    def test_max_tickers_option(self):
+        cfg = parse_backtest_command(
+            ["--universe", "sp500", "--max-tickers", "50",
+             "RSI", "below", "30", "1d"]
+        )
+        assert cfg["universe"] == "sp500"
+        assert cfg["max_tickers"] == 50
+
+    def test_universe_with_conditions_only(self):
+        """--universe allows omitting explicit tickers."""
+        cfg = parse_backtest_command(
+            ["--universe", "sp500", "SMA", "50", "above",
+             "200", "1d"]
+        )
+        assert cfg["universe"] == "sp500"
+        assert cfg["tickers"] == []
+        assert len(cfg["conditions"]) == 1
+
+    def test_max_tickers_must_be_positive(self):
+        with pytest.raises(ValueError, match="at least 1"):
+            parse_backtest_command(
+                ["--universe", "sp500", "--max-tickers", "0",
+                 "RSI", "below", "30", "1d"]
+            )
+
+    def test_max_tickers_without_universe_still_parses(self):
+        """max-tickers is stored but only used when --universe is set."""
+        cfg = parse_backtest_command(
+            ["AAPL", "RSI", "below", "30", "1d",
+             "--max-tickers", "50"]
+        )
+        assert cfg["max_tickers"] == 50
+        assert cfg["tickers"] == ["AAPL"]
+
+
+class TestUniverseEngine:
+    """Tests for universe resolution in the engine."""
+
+    def _make_config(self, **overrides):
+        from backtester.cli import Condition
+        cond = Condition("RSI", (), None, "<", 30.0, "1d")
+        cfg = {
+            "conditions": [cond],
+            "tickers": [],
+            "years": 2,
+            "hold": 10,
+            "capital": 10000,
+            "benchmark": "SPY",
+            "stop_loss": None,
+            "universe": None,
+            "max_tickers": None,
+        }
+        cfg.update(overrides)
+        return cfg
+
+    @patch("backtester.engine.DataPipeline")
+    @patch("backtester.universe.get_sp500_tickers")
+    def test_universe_resolves_before_download(
+        self, mock_sp500, MockPipeline
+    ):
+        """Engine resolves universe tickers before downloading."""
+        mock_sp500.return_value = ["AAPL", "MSFT", "GOOG"]
+        mock_pipeline = MockPipeline.return_value
+        mock_pipeline.fetch.return_value = {}
+
+        config = self._make_config(universe="sp500")
+        engine = BacktestEngine(config["conditions"], config)
+        engine.run()
+
+        mock_sp500.assert_called_once()
+        # fetch was called with resolved tickers
+        call_args = mock_pipeline.fetch.call_args
+        assert call_args[0][0] == ["AAPL", "MSFT", "GOOG"]
+
+    @patch("backtester.engine.DataPipeline")
+    @patch("backtester.universe.get_sp500_tickers")
+    def test_max_tickers_limits_universe(
+        self, mock_sp500, MockPipeline
+    ):
+        """max_tickers truncates the resolved universe."""
+        mock_sp500.return_value = [
+            "A", "B", "C", "D", "E", "F", "G", "H"
+        ]
+        mock_pipeline = MockPipeline.return_value
+        mock_pipeline.fetch.return_value = {}
+
+        config = self._make_config(
+            universe="sp500", max_tickers=3
+        )
+        engine = BacktestEngine(config["conditions"], config)
+        engine.run()
+
+        call_args = mock_pipeline.fetch.call_args
+        assert call_args[0][0] == ["A", "B", "C"]
+
+    @patch("backtester.engine.DataPipeline")
+    def test_no_universe_uses_explicit_tickers(self, MockPipeline):
+        """Without --universe, explicit tickers are used."""
+        mock_pipeline = MockPipeline.return_value
+        mock_pipeline.fetch.return_value = {}
+
+        config = self._make_config(tickers=["AAPL", "MSFT"])
+        engine = BacktestEngine(config["conditions"], config)
+        engine.run()
+
+        call_args = mock_pipeline.fetch.call_args
+        assert call_args[0][0] == ["AAPL", "MSFT"]
+
+
+class TestReportingSummary:
+    """Tests for summary mode in reporting."""
+
+    def test_summary_mode_for_many_tickers(self):
+        """20+ tickers with trades triggers summary mode."""
+        from backtester.reporting import format_results
+        trades = [
+            Trade("AAPL", pd.Timestamp("2025-01-01"), 100.0,
+                  pd.Timestamp("2025-01-10"), 110.0, 10, 0.10),
+        ]
+        # Build 25 tickers with trades
+        ticker_results = {}
+        for i in range(25):
+            ticker = f"T{i:03d}"
+            ticker_results[ticker] = trades
+
+        result = BacktestResult(
+            trades=trades * 25,
+            metrics={
+                "total_trades": 25, "win_rate": 0.6,
+                "total_return": 0.15, "annualized_return": 0.10,
+                "sharpe_ratio": 1.2, "sortino_ratio": 1.8,
+                "max_drawdown": 0.05, "profit_factor": 2.0,
+            },
+            benchmark_metrics={},
+            ticker_results=ticker_results,
+            conditions=[Condition("RSI", (), None, "<", 30.0, "1d")],
+            config={"tickers": [], "hold": 10, "capital": 10_000.0,
+                    "benchmark": "SPY", "years": 2,
+                    "stop_loss": None, "universe": "sp500"},
+        )
+        output = format_results(result)
+        assert "Universe Summary" in output
+        assert "Top 5" in output
+        assert "Bottom 5" in output
+
+    def test_detail_mode_for_few_tickers(self):
+        """< 20 tickers uses detail mode."""
+        from backtester.reporting import format_results
+        trades = [
+            Trade("AAPL", pd.Timestamp("2025-01-01"), 100.0,
+                  pd.Timestamp("2025-01-10"), 110.0, 10, 0.10),
+        ]
+        result = BacktestResult(
+            trades=trades,
+            metrics={"total_trades": 1, "win_rate": 1.0,
+                     "total_return": 0.10, "total_trades": 1},
+            benchmark_metrics={},
+            ticker_results={"AAPL": trades},
+            conditions=[Condition("RSI", (), None, "<", 30.0, "1d")],
+            config={"tickers": ["AAPL"], "hold": 10,
+                    "capital": 10_000.0, "benchmark": "SPY",
+                    "years": 2, "stop_loss": None},
+        )
+        output = format_results(result)
+        assert "--- AAPL ---" in output
+        assert "Universe Summary" not in output
