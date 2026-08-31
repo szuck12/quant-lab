@@ -5,6 +5,56 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com) and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] - 2026-08-31
+
+### Added
+- **Web application** — FastAPI backend + React/Vite/TypeScript
+  frontend with Recharts charts and Tailwind CSS styling.
+- **`GET /api/indicators`** — returns available indicators with
+  parameter schemas for dynamic form rendering.
+- **`GET /api/periods`** — returns analysis period options
+  (1mo through 20yr).
+- **`POST /api/backtest`** — runs backtest and returns trades,
+  metrics, equity curve, and benchmark comparison.
+- **Equity curve chart** — Recharts LineChart showing strategy
+  vs benchmark performance over time.
+- **Metrics table** — side-by-side comparison of strategy and
+  benchmark metrics (return, Sharpe, max drawdown, etc.).
+- **Trades table** — scrollable, color-coded P&L with
+  multi-ticker support.
+- **Period selector** — 10 period options from 1 month to 20 years.
+- **Dynamic indicator params** — form renders inputs based on
+  indicator schema from the API.
+- **CORS support** — backend allows Vite dev server on port 5173.
+- **Vite proxy** — `/api` and `/health` requests proxied to
+  FastAPI backend on port 8000.
+- **Web-developer agent** — new agent in `agents/` and
+  `.opencode/opencode.json` for web app development.
+- **Webapp skill** — `skills/webapp/SKILL.md` workflow for
+  web app features.
+- **API tests** — 17 tests in `mocktests/test_api.py` covering
+  indicators endpoint, periods endpoint, backtest endpoint,
+  validation, and error handling.
+- **Web conventions** — §19 added to `docs/conventions_reference.md`.
+- **Legacy CLI mode** — `python main.py backtest <args>` still
+  works alongside the web server.
+
+### Changed
+- **`main.py` simplified** — primary entry is now `python main.py`
+  which starts uvicorn. CLI dispatch moved to legacy mode.
+- **`requirements.txt`** — added `fastapi`, `uvicorn[standard]`,
+  `pydantic`.
+- **`.gitignore`** — added `web/node_modules/` and `web/dist/`.
+- **`AGENTS.md`** — added Web Developer to roster, routing,
+  file ownership, and skills index.
+- **`MEMORY.md`** — v3.0.0 web application decisions logged.
+
+### Preserved
+- **`indicators/` package** — kept for internal use by backtester
+  and web API. Not deleted.
+- **Backtester engine** — `backtester/` package unchanged. All
+  existing features work via the API.
+
 ## [2.1.0] - 2026-08-31
 
 ### Added

@@ -27,14 +27,24 @@ echo ""
 echo "Lint..."
 run_check "ruff check main.py" ruff check main.py
 run_check "ruff check indicators/" ruff check indicators/
+run_check "ruff check backtester/" ruff check backtester/
+run_check "ruff check api/" ruff check api/
 
 echo ""
 echo "Smoke test..."
-run_check "python3 main.py (echo pipe)" bash -c 'echo "AAPL SMA 20" | python3 main.py'
+run_check "python3 main.py backtest (legacy CLI)" python3 main.py backtest AAPL RSI '<' 30 1d --hold 5
 
 echo ""
 echo "Mock tests..."
 run_check "python3 run_mock_tests.py" python3 run_mock_tests.py
+
+echo ""
+echo "API tests..."
+run_check "pytest mocktests/test_api.py" python3 -m pytest mocktests/test_api.py -q
+
+echo ""
+echo "Frontend build..."
+run_check "npm run build (web/)" bash -c 'cd web && npm run build'
 
 if [[ "${1:-}" == "--full" ]]; then
     echo ""

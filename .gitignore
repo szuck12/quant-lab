@@ -5,3 +5,5 @@ __pycache__/
 .ruff_cache/
 .DS_Store
 backtester/cache/
+web/node_modules/
+web/dist/

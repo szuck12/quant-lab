@@ -4,7 +4,7 @@
 import pytest
 from unittest.mock import patch
 import pandas as pd
-import main
+import cli as main
 
 
 _MOCK_SERIES = pd.Series([42.0])
@@ -29,7 +29,7 @@ class TestMain:
         """Verify main() calls calculate_adx for an ADX input."""
         with patch("builtins.input",
                    return_value="AAPL ADX 14,14"):
-            with patch("main.calculate_adx",
+            with patch("cli.calculate_adx",
                        return_value=_MOCK_ADX) as mock_fn:
                 main.main()
                 mock_fn.assert_called_once_with(
@@ -40,7 +40,7 @@ class TestMain:
         """Verify ADX defaults to (14, 14) when not provided."""
         with patch("builtins.input",
                    return_value="AAPL ADX"):
-            with patch("main.calculate_adx",
+            with patch("cli.calculate_adx",
                        return_value=_MOCK_ADX) as mock_fn:
                 main.main()
                 mock_fn.assert_called_once_with(
@@ -53,7 +53,7 @@ class TestMain:
         """Verify main() calls calculate_atr for an ATR input."""
         with patch("builtins.input",
                    return_value="AAPL ATR 14"):
-            with patch("main.calculate_atr",
+            with patch("cli.calculate_atr",
                        return_value=_MOCK_SERIES) as mock_atr:
                 main.main()
                 mock_atr.assert_called_once_with(
@@ -63,7 +63,7 @@ class TestMain:
         """Verify ATR defaults to window=14 when not provided."""
         with patch("builtins.input",
                    return_value="AAPL ATR"):
-            with patch("main.calculate_atr",
+            with patch("cli.calculate_atr",
                        return_value=_MOCK_SERIES) as mock_atr:
                 main.main()
                 mock_atr.assert_called_once_with(
@@ -75,7 +75,7 @@ class TestMain:
         """Verify main() calls calculate_cci for a CCI input."""
         with patch("builtins.input",
                    return_value="AAPL CCI 20"):
-            with patch("main.calculate_cci",
+            with patch("cli.calculate_cci",
                        return_value=_MOCK_SERIES) as mock_fn:
                 main.main()
                 mock_fn.assert_called_once_with(
@@ -85,7 +85,7 @@ class TestMain:
         """Verify CCI defaults to window=20 when not provided."""
         with patch("builtins.input",
                    return_value="AAPL CCI"):
-            with patch("main.calculate_cci",
+            with patch("cli.calculate_cci",
                        return_value=_MOCK_SERIES) as mock_fn:
                 main.main()
                 mock_fn.assert_called_once_with(
@@ -97,7 +97,7 @@ class TestMain:
         """Verify main() calls calculate_roc for an ROC input."""
         with patch("builtins.input",
                    return_value="AAPL ROC 9"):
-            with patch("main.calculate_roc",
+            with patch("cli.calculate_roc",
                        return_value=_MOCK_SERIES) as mock_fn:
                 main.main()
                 mock_fn.assert_called_once_with(
@@ -107,7 +107,7 @@ class TestMain:
         """Verify ROC defaults to window=9 when not provided."""
         with patch("builtins.input",
                    return_value="AAPL ROC"):
-            with patch("main.calculate_roc",
+            with patch("cli.calculate_roc",
                        return_value=_MOCK_SERIES) as mock_fn:
                 main.main()
                 mock_fn.assert_called_once_with(
@@ -119,7 +119,7 @@ class TestMain:
         """Verify main() calls calculate_obv for an OBV input."""
         with patch("builtins.input",
                    return_value="AAPL OBV 30"):
-            with patch("main.calculate_obv",
+            with patch("cli.calculate_obv",
                        return_value=_MOCK_SERIES) as mock_fn:
                 main.main()
                 mock_fn.assert_called_once_with(
@@ -129,7 +129,7 @@ class TestMain:
         """Verify OBV defaults to window=30 when not provided."""
         with patch("builtins.input",
                    return_value="AAPL OBV"):
-            with patch("main.calculate_obv",
+            with patch("cli.calculate_obv",
                        return_value=_MOCK_SERIES) as mock_fn:
                 main.main()
                 mock_fn.assert_called_once_with(
@@ -140,7 +140,7 @@ class TestMain:
     def test_valid_sma_dispatch(self):
         """Verify main() calls calculate_sma for an SMA input."""
         with patch("builtins.input", return_value="AAPL SMA 20"):
-            with patch("main.calculate_sma", return_value=_MOCK_SERIES) as mock_sma:
+            with patch("cli.calculate_sma", return_value=_MOCK_SERIES) as mock_sma:
                 main.main()
                 mock_sma.assert_called_once_with(
                     "AAPL", 20, interval="1d", count=1)
@@ -148,7 +148,7 @@ class TestMain:
     def test_valid_ema_dispatch(self):
         """Verify main() calls calculate_ema for an EMA input."""
         with patch("builtins.input", return_value="TSLA EMA 15"):
-            with patch("main.calculate_ema", return_value=_MOCK_SERIES) as mock_ema:
+            with patch("cli.calculate_ema", return_value=_MOCK_SERIES) as mock_ema:
                 main.main()
                 mock_ema.assert_called_once_with(
                     "TSLA", 15, interval="1d", count=1)
@@ -156,7 +156,7 @@ class TestMain:
     def test_valid_rsi_dispatch(self):
         """Verify main() calls calculate_rsi for an RSI input."""
         with patch("builtins.input", return_value="MSFT RSI 14"):
-            with patch("main.calculate_rsi", return_value=_MOCK_SERIES) as mock_rsi:
+            with patch("cli.calculate_rsi", return_value=_MOCK_SERIES) as mock_rsi:
                 main.main()
                 mock_rsi.assert_called_once_with(
                     "MSFT", 14, interval="1d", count=1)
@@ -166,7 +166,7 @@ class TestMain:
     def test_default_window_sma(self):
         """Verify SMA defaults to window=50 when not provided."""
         with patch("builtins.input", return_value="AAPL SMA"):
-            with patch("main.calculate_sma", return_value=_MOCK_SERIES) as mock_sma:
+            with patch("cli.calculate_sma", return_value=_MOCK_SERIES) as mock_sma:
                 main.main()
                 mock_sma.assert_called_once_with(
                     "AAPL", 50, interval="1d", count=1)
@@ -178,7 +178,7 @@ class TestMain:
         with explicit parameters."""
         with patch("builtins.input",
                    return_value="AAPL STOCH 14,3,3"):
-            with patch("main.calculate_stoch",
+            with patch("cli.calculate_stoch",
                        return_value=_MOCK_STOCH) as mock_fn:
                 main.main()
                 mock_fn.assert_called_once_with(
@@ -189,7 +189,7 @@ class TestMain:
         """Verify STOCH defaults to (14,3,3) when not provided."""
         with patch("builtins.input",
                    return_value="AAPL STOCH"):
-            with patch("main.calculate_stoch",
+            with patch("cli.calculate_stoch",
                        return_value=_MOCK_STOCH) as mock_fn:
                 main.main()
                 mock_fn.assert_called_once_with(
@@ -199,7 +199,7 @@ class TestMain:
     def test_default_window_ema(self):
         """Verify EMA defaults to window=20 when not provided."""
         with patch("builtins.input", return_value="TSLA EMA"):
-            with patch("main.calculate_ema", return_value=_MOCK_SERIES) as mock_ema:
+            with patch("cli.calculate_ema", return_value=_MOCK_SERIES) as mock_ema:
                 main.main()
                 mock_ema.assert_called_once_with(
                     "TSLA", 20, interval="1d", count=1)
@@ -207,7 +207,7 @@ class TestMain:
     def test_default_window_rsi(self):
         """Verify RSI defaults to window=14 when not provided."""
         with patch("builtins.input", return_value="MSFT RSI"):
-            with patch("main.calculate_rsi", return_value=_MOCK_SERIES) as mock_rsi:
+            with patch("cli.calculate_rsi", return_value=_MOCK_SERIES) as mock_rsi:
                 main.main()
                 mock_rsi.assert_called_once_with(
                     "MSFT", 14, interval="1d", count=1)
@@ -217,7 +217,7 @@ class TestMain:
         with explicit parameters."""
         with patch("builtins.input",
                    return_value="AAPL MACD 12,26,9"):
-            with patch("main.calculate_macd",
+            with patch("cli.calculate_macd",
                        return_value=_MOCK_MACD) as mock_macd:
                 main.main()
                 mock_macd.assert_called_once_with(
@@ -229,7 +229,7 @@ class TestMain:
         provided."""
         with patch("builtins.input",
                    return_value="AAPL MACD"):
-            with patch("main.calculate_macd",
+            with patch("cli.calculate_macd",
                        return_value=_MOCK_MACD) as mock_macd:
                 main.main()
                 mock_macd.assert_called_once_with(
@@ -241,7 +241,7 @@ class TestMain:
         with explicit parameters."""
         with patch("builtins.input",
                    return_value="AAPL BB 20,2.5"):
-            with patch("main.calculate_bb",
+            with patch("cli.calculate_bb",
                        return_value=_MOCK_BB) as mock_bb:
                 main.main()
                 mock_bb.assert_called_once_with(
@@ -253,7 +253,7 @@ class TestMain:
         with explicit window."""
         with patch("builtins.input",
                    return_value="AAPL VWAP 20"):
-            with patch("main.calculate_vwap",
+            with patch("cli.calculate_vwap",
                        return_value=_MOCK_SERIES_VWAP) as mock_fn:
                 main.main()
                 mock_fn.assert_called_once_with(
@@ -264,7 +264,7 @@ class TestMain:
         provided."""
         with patch("builtins.input",
                    return_value="AAPL VWAP"):
-            with patch("main.calculate_vwap",
+            with patch("cli.calculate_vwap",
                        return_value=_MOCK_SERIES_VWAP) as mock_fn:
                 main.main()
                 mock_fn.assert_called_once_with(
@@ -275,7 +275,7 @@ class TestMain:
         with explicit window."""
         with patch("builtins.input",
                    return_value="AAPL AV 20"):
-            with patch("main.calculate_av",
+            with patch("cli.calculate_av",
                        return_value=_MOCK_SERIES_AV) as mock_fn:
                 main.main()
                 mock_fn.assert_called_once_with(
@@ -286,7 +286,7 @@ class TestMain:
         provided."""
         with patch("builtins.input",
                    return_value="AAPL AV"):
-            with patch("main.calculate_av",
+            with patch("cli.calculate_av",
                        return_value=_MOCK_SERIES_AV) as mock_fn:
                 main.main()
                 mock_fn.assert_called_once_with(
@@ -297,7 +297,7 @@ class TestMain:
         with explicit window."""
         with patch("builtins.input",
                    return_value="AAPL RVOL 10"):
-            with patch("main.calculate_rvol",
+            with patch("cli.calculate_rvol",
                        return_value=_MOCK_SERIES_RVOL) as mock_fn:
                 main.main()
                 mock_fn.assert_called_once_with(
@@ -308,7 +308,7 @@ class TestMain:
         provided."""
         with patch("builtins.input",
                    return_value="AAPL RVOL"):
-            with patch("main.calculate_rvol",
+            with patch("cli.calculate_rvol",
                        return_value=_MOCK_SERIES_RVOL) as mock_fn:
                 main.main()
                 mock_fn.assert_called_once_with(
@@ -319,7 +319,7 @@ class TestMain:
         provided."""
         with patch("builtins.input",
                    return_value="AAPL BB"):
-            with patch("main.calculate_bb",
+            with patch("cli.calculate_bb",
                        return_value=_MOCK_BB) as mock_bb:
                 main.main()
                 mock_bb.assert_called_once_with(
@@ -331,7 +331,7 @@ class TestMain:
     def test_count_with_defaults(self):
         """Verify C<count> sets count without overriding window."""
         with patch("builtins.input", return_value="AAPL SMA C10"):
-            with patch("main.calculate_sma", return_value=_MOCK_SERIES) as mock_sma:
+            with patch("cli.calculate_sma", return_value=_MOCK_SERIES) as mock_sma:
                 main.main()
                 mock_sma.assert_called_once_with(
                     "AAPL", 50, interval="1d", count=10)
@@ -339,7 +339,7 @@ class TestMain:
     def test_count_with_window_and_interval(self):
         """Verify C<count> works alongside window and interval."""
         with patch("builtins.input", return_value="AAPL SMA 20 C5 1wk"):
-            with patch("main.calculate_sma", return_value=_MOCK_SERIES) as mock_sma:
+            with patch("cli.calculate_sma", return_value=_MOCK_SERIES) as mock_sma:
                 main.main()
                 mock_sma.assert_called_once_with(
                     "AAPL", 20, interval="1wk", count=5)
@@ -347,7 +347,7 @@ class TestMain:
     def test_count_before_window(self):
         """Verify C<count> can appear before the window."""
         with patch("builtins.input", return_value="AAPL SMA C5 20"):
-            with patch("main.calculate_sma", return_value=_MOCK_SERIES) as mock_sma:
+            with patch("cli.calculate_sma", return_value=_MOCK_SERIES) as mock_sma:
                 main.main()
                 mock_sma.assert_called_once_with(
                     "AAPL", 20, interval="1d", count=5)
@@ -355,7 +355,7 @@ class TestMain:
     def test_lowercase_count(self):
         """Verify lowercase c<count> is recognised."""
         with patch("builtins.input", return_value="AAPL RSI c3"):
-            with patch("main.calculate_rsi", return_value=_MOCK_SERIES) as mock_rsi:
+            with patch("cli.calculate_rsi", return_value=_MOCK_SERIES) as mock_rsi:
                 main.main()
                 mock_rsi.assert_called_once_with(
                     "AAPL", 14, interval="1d", count=3)
@@ -365,7 +365,7 @@ class TestMain:
     def test_case_insensitive(self):
         """Verify indicator matching is case-insensitive."""
         with patch("builtins.input", return_value="aapl rsi 14"):
-            with patch("main.calculate_rsi", return_value=_MOCK_SERIES) as mock_rsi:
+            with patch("cli.calculate_rsi", return_value=_MOCK_SERIES) as mock_rsi:
                 main.main()
                 mock_rsi.assert_called_once_with(
                     "aapl", 14, interval="1d", count=1)
@@ -375,7 +375,7 @@ class TestMain:
     def test_valid_sma_with_interval(self):
         """Verify main() passes an explicit bar interval to SMA."""
         with patch("builtins.input", return_value="AAPL SMA 20 1wk"):
-            with patch("main.calculate_sma", return_value=_MOCK_SERIES) as mock_sma:
+            with patch("cli.calculate_sma", return_value=_MOCK_SERIES) as mock_sma:
                 main.main()
                 mock_sma.assert_called_once_with(
                     "AAPL", 20, interval="1wk", count=1)
@@ -383,7 +383,7 @@ class TestMain:
     def test_valid_ema_with_interval(self):
         """Verify main() passes an explicit bar interval to EMA."""
         with patch("builtins.input", return_value="TSLA EMA 15 1mo"):
-            with patch("main.calculate_ema", return_value=_MOCK_SERIES) as mock_ema:
+            with patch("cli.calculate_ema", return_value=_MOCK_SERIES) as mock_ema:
                 main.main()
                 mock_ema.assert_called_once_with(
                     "TSLA", 15, interval="1mo", count=1)
@@ -391,7 +391,7 @@ class TestMain:
     def test_valid_rsi_with_interval(self):
         """Verify main() passes an explicit bar interval to RSI."""
         with patch("builtins.input", return_value="MSFT RSI 14 1mo"):
-            with patch("main.calculate_rsi", return_value=_MOCK_SERIES) as mock_rsi:
+            with patch("cli.calculate_rsi", return_value=_MOCK_SERIES) as mock_rsi:
                 main.main()
                 mock_rsi.assert_called_once_with(
                     "MSFT", 14, interval="1mo", count=1)
@@ -399,7 +399,7 @@ class TestMain:
     def test_valid_sma_with_monthly_interval(self):
         """Verify main() works with a monthly bar interval."""
         with patch("builtins.input", return_value="GOOG SMA 10 1mo"):
-            with patch("main.calculate_sma", return_value=_MOCK_SERIES) as mock_sma:
+            with patch("cli.calculate_sma", return_value=_MOCK_SERIES) as mock_sma:
                 main.main()
                 mock_sma.assert_called_once_with(
                     "GOOG", 10, interval="1mo", count=1)
@@ -408,7 +408,7 @@ class TestMain:
         """Verify interval and window are recognised regardless of
         order."""
         with patch("builtins.input", return_value="AAPL SMA 1wk 20"):
-            with patch("main.calculate_sma", return_value=_MOCK_SERIES) as mock_sma:
+            with patch("cli.calculate_sma", return_value=_MOCK_SERIES) as mock_sma:
                 main.main()
                 mock_sma.assert_called_once_with(
                     "AAPL", 20, interval="1wk", count=1)
@@ -508,7 +508,7 @@ class TestMain:
     def test_two_tickers_sma(self):
         """Verify main() dispatches to SMA for each of two tickers."""
         with patch("builtins.input", return_value="AAPL,MSFT SMA 20"):
-            with patch("main.calculate_sma",
+            with patch("cli.calculate_sma",
                        return_value=_MOCK_SERIES) as mock_sma:
                 main.main()
                 assert mock_sma.call_count == 2
@@ -521,7 +521,7 @@ class TestMain:
         """Verify main() dispatches to EMA for three tickers."""
         with patch("builtins.input",
                    return_value="AAPL,GOOG,TSLA EMA"):
-            with patch("main.calculate_ema",
+            with patch("cli.calculate_ema",
                        return_value=_MOCK_SERIES) as mock_ema:
                 main.main()
                 assert mock_ema.call_count == 3
@@ -529,7 +529,7 @@ class TestMain:
     def test_two_tickers_rsi(self):
         """Verify main() dispatches to RSI for two tickers."""
         with patch("builtins.input", return_value="AAPL,MSFT RSI 14"):
-            with patch("main.calculate_rsi",
+            with patch("cli.calculate_rsi",
                        return_value=_MOCK_SERIES) as mock_rsi:
                 main.main()
                 assert mock_rsi.call_count == 2
@@ -538,7 +538,7 @@ class TestMain:
         """Verify whitespace around commas is normalised."""
         with patch("builtins.input",
                    return_value="AAPL , MSFT SMA 20"):
-            with patch("main.calculate_sma",
+            with patch("cli.calculate_sma",
                        return_value=_MOCK_SERIES) as mock_sma:
                 main.main()
                 assert mock_sma.call_count == 2
@@ -547,7 +547,7 @@ class TestMain:
         """Verify an empty ticker between two commas is filtered."""
         with patch("builtins.input",
                    return_value="AAPL,,MSFT SMA 20"):
-            with patch("main.calculate_sma",
+            with patch("cli.calculate_sma",
                        return_value=_MOCK_SERIES) as mock_sma:
                 main.main()
                 assert mock_sma.call_count == 2
@@ -555,7 +555,7 @@ class TestMain:
     def test_multi_ticker_with_count(self):
         """Verify count is passed to each ticker dispatch."""
         with patch("builtins.input", return_value="AAPL,MSFT SMA C3"):
-            with patch("main.calculate_sma",
+            with patch("cli.calculate_sma",
                        return_value=_MOCK_SERIES) as mock_sma:
                 main.main()
                 assert mock_sma.call_count == 2
@@ -568,7 +568,7 @@ class TestMain:
         """Verify interval is passed to each ticker dispatch."""
         with patch("builtins.input",
                    return_value="AAPL,MSFT EMA 1wk"):
-            with patch("main.calculate_ema",
+            with patch("cli.calculate_ema",
                        return_value=_MOCK_SERIES) as mock_ema:
                 main.main()
                 assert mock_ema.call_count == 2
@@ -581,7 +581,7 @@ class TestMain:
         """Verify window, interval, and count with two tickers."""
         with patch("builtins.input",
                    return_value="AAPL,MSFT RSI 30 1mo C5"):
-            with patch("main.calculate_rsi",
+            with patch("cli.calculate_rsi",
                        return_value=_MOCK_SERIES) as mock_rsi:
                 main.main()
                 assert mock_rsi.call_count == 2
@@ -594,7 +594,7 @@ class TestMain:
         """Verify output for two tickers with count=1."""
         with patch("builtins.input",
                    return_value="AAPL,MSFT SMA 50"):
-            with patch("main.calculate_sma",
+            with patch("cli.calculate_sma",
                        return_value=_MOCK_SERIES):
                 main.main()
         captured = capsys.readouterr()
@@ -606,7 +606,7 @@ class TestMain:
         data = pd.Series([45.23, 44.10])
         with patch("builtins.input",
                    return_value="AAPL,MSFT RSI C2"):
-            with patch("main.calculate_rsi",
+            with patch("cli.calculate_rsi",
                        return_value=data):
                 main.main()
         captured = capsys.readouterr()
@@ -625,7 +625,7 @@ class TestMain:
                         _MOCK_SERIES]
         with patch("builtins.input",
                    return_value="AAPL,MSFT SMA 20"):
-            with patch("main.calculate_sma",
+            with patch("cli.calculate_sma",
                        side_effect=side_effects) as mock_sma:
                 main.main()
                 assert mock_sma.call_count == 2

@@ -37,6 +37,7 @@ assigns each task to the most specialized agent for it.
 | Security Auditor | Security and dependency auditing | Release, dependency change | Security gate |
 | Release Manager | Versioning and release | All work is done | Final release gate |
 | Backtest Engineer | Backtesting engine and strategy simulation | Backtester features/fixes | Backtester correctness |
+| Web Developer | React frontend + FastAPI backend | Web app features/fixes | Web app correctness |
 
 ## 4. Routing
 
@@ -53,6 +54,7 @@ assigns each task to the most specialized agent for it.
 | Release | Release Manager (+ Code Reviewer, Security Auditor gates) |
 | Check conventions | Consistency Guardian (§1) |
 | Run a backtest | Backtest Engineer (+ Indicator Specialist + Data Engineer) |
+| Web app feature | Web Developer (+ Test Engineer) |
 
 ## 5. File Ownership
 
@@ -60,6 +62,7 @@ assigns each task to the most specialized agent for it.
 |-------|--------------|
 | `main.py`, `indicators/**`, `requirements.txt`, `pytest.ini` | Feature Implementer |
 | `backtester/**` | Backtest Engineer |
+| `api/**`, `web/src/**`, `mocktests/test_api.py` | Web Developer |
 | `indicators/_data.py`, `mocktests/conftest.py` | Data Engineer |
 | `mocktests/**`, `realtests/**`, `run_*_tests.py` | Test Engineer |
 | `README.md`, `docs/**` | Documentation Expert |
@@ -81,6 +84,7 @@ to detail files.
 | `skills/release-cut/` | Cutting a release | Release Manager |
 | `skills/security-audit/` | Running security scans | Security Auditor |
 | `skills/backtester/` | Backtester workflow | Backtest Engineer |
+| `skills/webapp/` | Web app workflow | Web Developer |
 
 ## 7. Handoff & Gate Rules
 

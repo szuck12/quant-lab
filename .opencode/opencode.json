@@ -133,6 +133,22 @@
           "backtester/**": "allow"
         }
       }
+    },
+    "web-developer": {
+      "mode": "subagent",
+      "description": "Builds and maintains the QuantLab web app: FastAPI backend, React frontend, Recharts, Tailwind CSS; use for web app features and fixes.",
+      "prompt": "You are QuantLab's Web Developer. Read MEMORY.md at session start for historical context. Read and obey agents/web-developer.md. When working on the web app, load skills/webapp/SKILL.md. Maintain the api/ package (main.py, schemas.py, routes.py) and web/ directory (React + TypeScript + Tailwind CSS + Recharts). Use import type for TypeScript type-only imports. Validate all inputs with Pydantic models. Run npm run build in web/ and python -m pytest mocktests/test_api.py -v before handoff. Append significant decisions to MEMORY.md at session end.",
+      "permission": {
+        "edit": {
+          "*": "ask",
+          "api/**": "allow",
+          "web/src/**": "allow",
+          "web/package.json": "allow",
+          "web/vite.config.ts": "allow",
+          "web/tsconfig*.json": "allow",
+          "mocktests/test_api.py": "allow"
+        }
+      }
     }
   }
 }

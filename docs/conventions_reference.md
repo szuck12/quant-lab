@@ -225,3 +225,32 @@ so the same class of bug cannot recur silently.
   to avoid rate-limiting and memory issues.
 - Reporting switches to compact summary mode (top/bottom 5, median,
   mean) when ≥20 tickers have trades.
+
+## 19. Web Application Conventions
+
+- **Backend**: FastAPI with Pydantic v2 models in `api/schemas.py`.
+  Endpoints in `api/routes.py`, app setup in `api/main.py`.
+- **Frontend**: React + TypeScript + Vite. Tailwind CSS v4 for
+  styling (utility classes, no custom CSS, no CSS modules).
+  Recharts for all charts.
+- **Type safety**: Use `import type` for TypeScript type-only
+  imports (`verbatimModuleSyntax` is enabled).
+- **API client**: `web/src/api.ts` wraps fetch calls. Types in
+  `web/src/types.ts` mirror `api/schemas.py` exactly.
+- **Components**: Named exports only. Each component in its own
+  file under `web/src/components/`.
+- **NaN handling**: Always sanitize NaN/Inf values before JSON
+  serialization. Use `None` checks, not `pd.isna()` in Pydantic
+  models.
+- **CORS**: Backend allows `localhost:5173` (Vite dev server).
+  Vite proxies `/api` and `/health` to `127.0.0.1:8000`.
+- **Period options**: Frontend uses label/value pairs from
+  `GET /api/periods`. Values map to `years` param in the
+  backtest request.
+- **Indicator params**: Frontend dynamically renders param inputs
+  based on `GET /api/indicators` response. Default values come
+  from `INDICATOR_SCHEMA` in `api/routes.py`.
+- **Error handling**: API returns `{ "detail": "..." }` on errors.
+  Frontend displays error messages in a red banner.
+- **Startup**: `python main.py` starts uvicorn. Legacy CLI mode:
+  `python main.py backtest <args>` still works.

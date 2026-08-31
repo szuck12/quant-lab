@@ -99,3 +99,31 @@ Agents read this at session start and append at session end.
     `hold` bars before re-entry (prevents rapid re-trading).
 - All agent files updated with universe/scanner constraints.
 - conventions_reference.md §18 added for universe conventions.
+
+### v3.0.0 — Web Application Conversion
+
+- **2026-08-31**: v3.0.0 — web application. CLI replaced by FastAPI
+  backend + React/Vite/TypeScript frontend.
+  - Backend: `api/` package with `main.py` (FastAPI app), `schemas.py`
+    (Pydantic models), `routes.py` (endpoints).
+  - Frontend: `web/` directory with Vite, React 19, TypeScript,
+    Tailwind CSS v4, Recharts.
+  - Endpoints: `GET /api/indicators`, `GET /api/periods`,
+    `POST /api/backtest`.
+  - Period selector: 1mo, 3mo, 6mo, 1yr, 2yr, 3yr, 5yr, 10yr,
+    15yr, 20yr.
+  - Dynamic indicator params: form renders inputs based on
+    `INDICATOR_SCHEMA` in `api/routes.py`.
+  - Equity curve chart: Recharts LineChart with strategy vs benchmark.
+  - Metrics table: side-by-side strategy vs benchmark comparison.
+  - Trades table: scrollable, color-coded P&L, multi-ticker support.
+  - CORS: allows `localhost:5173`. Vite proxies `/api` to backend.
+  - NaN sanitization: equity curve always replaces NaN with capital.
+  - New agent: `web-developer` in `agents/` and `.opencode/`.
+  - New skill: `skills/webapp/SKILL.md`.
+  - conventions_reference.md §19 added for web conventions.
+  - 17 API tests in `mocktests/test_api.py` (all pass).
+  - Frontend builds clean (TypeScript + Vite).
+  - Legacy CLI mode: `python main.py backtest <args>` still works.
+  - `indicators/` package kept for web use (not deleted).
+  - All tools free: FastAPI, React, Vite, Recharts, Tailwind, npm.
