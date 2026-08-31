@@ -52,6 +52,16 @@ go green, and certifies full-suite status before any release.
    reproduction steps.
 9. Write mock and real tests for `backtester/` modules per the
    backtester test templates.
+10. **Always cover error paths**: for every user-facing input (ticker
+    symbols, CLI flags, condition syntax), test the happy path AND the
+    error path. Specifically:
+    - Invalid/missing/empty tickers → clean error message
+    - Unknown indicators → error message lists valid names
+    - Bad operator syntax → error message shows valid operators
+    - Data download failures (all tickers fail, partial failures) →
+      engine returns empty result without crashing
+    - Edge cases in metrics (empty trades, single return, NaN values)
+      → graceful handling, not exceptions
 
 ## Constraints / Things NOT To Do
 

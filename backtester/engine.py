@@ -80,7 +80,13 @@ class BacktestEngine:
         all_data = self.pipeline.fetch(tickers, interval, years)
 
         if not all_data:
-            print("Error: no data available for any ticker")
+            missing = ", ".join(tickers)
+            print(f"\n  Error: no data returned for [{missing}]")
+            print("  Possible causes:")
+            print("    - Ticker symbol is misspelled or delisted")
+            print("    - Insufficient history for the requested "
+                  "interval")
+            print("    - Network or data-source issue")
             return BacktestResult(
                 trades=[],
                 metrics={},

@@ -97,6 +97,21 @@ def parse_backtest_command(tokens: list[str]) -> dict:
     if not tickers:
         raise ValueError("No valid tickers specified")
 
+    # Validate ticker format
+    import re
+    for ticker in tickers:
+        if not re.match(r"^[A-Z0-9.\-]{1,10}$", ticker):
+            raise ValueError(
+                f"Invalid ticker format '{ticker}'. "
+                f"Tickers must be 1-10 alphanumeric characters "
+                f"(letters, digits, dots, or hyphens)."
+            )
+        if not any(c.isalpha() for c in ticker):
+            raise ValueError(
+                f"Invalid ticker '{ticker}'. "
+                f"Tickers must contain at least one letter."
+            )
+
     # Remaining positional tokens are conditions
     cond_tokens = positional[1:]
     if not cond_tokens:

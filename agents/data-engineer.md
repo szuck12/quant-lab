@@ -52,6 +52,12 @@ surfaces as a clean, canonical error instead of a crash.
 8. Maintain the parquet caching strategy for the backtester
    (`backtester/cache/`, `backtester/data_pipeline.py`).
 9. Validate batch download behavior against single-ticker downloads.
+10. **Error handling in `data_pipeline.py`**: always suppress noisy
+    yfinance logging (set `yfinance` logger to ERROR before download,
+    restore after). Track failed tickers separately from successful
+    ones. Print clear messages: which tickers failed, possible causes
+    (misspelled, delisted, insufficient history). Never let yfinance
+    exceptions propagate as raw tracebacks.
 
 ## Constraints / Things NOT To Do
 

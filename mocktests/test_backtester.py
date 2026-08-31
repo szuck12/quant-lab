@@ -1410,3 +1410,216 @@ class TestDataPipelineEdgeCases:
                           return_value={"AAPL": mock_df}):
             result = self.pipeline.fetch(["AAPL"], "1d", 1)
         assert "AAPL" in result
+
+
+# ==========================================================================
+# §17 — Ticker validation in CLI parser
+# ==========================================================================
+
+
+class TestTickerValidation:
+    """Tests for ticker format validation in parse_backtest_command."""
+
+    def test_valid_single_ticker(self):
+        cfg = parse_backtest_command(["AAPL", "RSI", "below", "30", "1d"])
+        assert cfg["tickers"] == ["AAPL"]
+
+    def test_valid_multi_ticker(self):
+        cfg = parse_backtest_command(
+            ["AAPL,MSFT,GOOG", "RSI", "below", "30", "1d"]
+        )
+        assert cfg["tickers"] == ["AAPL", "MSFT", "GOOG"]
+
+    def test_valid_ticker_with_dot(self):
+        """BRK.B is a valid ticker with a dot."""
+        cfg = parse_backtest_command(
+            ["BRK.B", "RSI", "below", "30", "1d"]
+        )
+        assert cfg["tickers"] == ["BRK.B"]
+
+    def test_valid_ticker_with_hyphen(self):
+        """BF-B is a valid ticker with a hyphen."""
+        cfg = parse_backtest_command(
+            ["BF-B", "RSI", "below", "30", "1d"]
+        )
+        assert cfg["tickers"] == ["BF-B"]
+
+    def test_invalid_ticker_all_digits(self):
+        with pytest.raises(ValueError, match="at least one letter"):
+            parse_backtest_command(["123", "RSI", "below", "30", "1d"])
+
+    def test_invalid_ticker_too_long(self):
+        with pytest.raises(ValueError, match="Invalid ticker format"):
+            parse_backtest_command(
+                ["TOOLONGTICKER", "RSI", "below", "30", "1d"]
+            )
+
+    def test_invalid_ticker_special_chars(self):
+        with pytest.raises(ValueError, match="Invalid ticker format"):
+            parse_backtest_command(
+                ["AA@L", "RSI", "below", "30", "1d"]
+            )
+
+    def test_invalid_ticker_empty_segment(self):
+        """Trailing comma should be stripped, not create empty ticker."""
+        cfg = parse_backtest_command(
+            ["AAPL,", "RSI", "below", "30", "1d"]
+        )
+        assert cfg["tickers"] == ["AAPL"]
+
+    def test_ticker_uppercased(self):
+        """Tickers are uppercased automatically."""
+        cfg = parse_backtest_command(
+            ["aapl", "RSI", "below", "30", "1d"]
+        )
+        assert cfg["tickers"] == ["AAPL"]
+
+
+# ==========================================================================
+# §18 — Engine error handling
+# ==========================================================================
+
+
+class TestEngineErrorHandling:
+    """Tests for engine error paths when tickers fail."""
+
+    def _make_config(self, **overrides):
+        from backtester.cli import Condition
+        cond = Condition("RSI", (), None, "<", 30.0, "1d")
+        cfg = {
+            "conditions": [cond],
+            "tickers": ["AAPL"],
+            "years": 2,
+            "hold": 10,
+            "capital": 10000,
+            "benchmark": "SPY",
+            "stop_loss": None,
+        }
+        cfg.update(overrides)
+        return cfg
+
+    @patch("backtester.engine.DataPipeline")
+    def test_empty_data_returns_empty_result(self, MockPipeline):
+        """All tickers fail → returns empty BacktestResult."""
+        mock_pipeline = MockPipeline.return_value
+        mock_pipeline.fetch.return_value = {}
+
+        config = self._make_config()
+        engine = BacktestEngine(config["conditions"], config)
+        result = engine.run()
+
+        assert result.trades == []
+        assert result.metrics == {}
+        assert result.ticker_results == {}
+
+    @patch("backtester.engine.DataPipeline")
+    def test_partial_ticker_failure(self, MockPipeline):
+        """Some tickers fail, some succeed → only valid ones traded."""
+        dates = pd.date_range(start="2025-01-01", periods=200, freq="B")
+        close = np.linspace(100, 110, 200)
+        mock_df = pd.DataFrame(
+            {"Open": close, "High": close + 1, "Low": close - 1,
+             "Close": close, "Volume": np.full(200, 1_000_000.0)},
+            index=dates,
+        )
+        mock_pipeline = MockPipeline.return_value
+        # Only AAPL returns data, INVALID fails
+        mock_pipeline.fetch.return_value = {"AAPL": mock_df}
+
+        config = self._make_config(tickers=["AAPL", "INVALID"])
+        engine = BacktestEngine(config["conditions"], config)
+        result = engine.run()
+
+        assert "AAPL" in result.ticker_results
+        assert "INVALID" not in result.ticker_results
+
+    @patch("backtester.engine.DataPipeline")
+    def test_all_tickers_fail_shows_error(self, MockPipeline, capsys):
+        """All tickers fail → error message is printed."""
+        mock_pipeline = MockPipeline.return_value
+        mock_pipeline.fetch.return_value = {}
+
+        config = self._make_config(tickers=["APPL", "MSFTT"])
+        engine = BacktestEngine(config["conditions"], config)
+        result = engine.run()
+
+        captured = capsys.readouterr()
+        assert "APPL" in captured.out
+        assert "MSFTT" in captured.out
+        assert "misspelled" in captured.out.lower()
+
+
+# ==========================================================================
+# §19 — DataPipeline error paths
+# ==========================================================================
+
+
+class TestDataPipelineErrors:
+    """Tests for data pipeline error handling."""
+
+    @patch("backtester.data_pipeline.yf.download")
+    def test_download_batch_empty_raw(self, mock_download):
+        """yf.download returns empty DataFrame → empty dict."""
+        mock_download.return_value = pd.DataFrame()
+        pipeline = DataPipeline()
+        result = pipeline._download_batch(["AAPL"], "1d", 2)
+        assert result == {}
+
+    @patch("backtester.data_pipeline.yf.download")
+    def test_download_batch_single_ticker_empty_after_dropna(
+        self, mock_download
+    ):
+        """Single ticker with all-NaN rows → empty dict."""
+        dates = pd.date_range(start="2025-01-01", periods=5, freq="B")
+        raw = pd.DataFrame(
+            {"Open": [np.nan] * 5, "High": [np.nan] * 5,
+             "Low": [np.nan] * 5, "Close": [np.nan] * 5,
+             "Volume": [np.nan] * 5},
+            index=dates,
+        )
+        # yf.download returns MultiIndex columns
+        raw.columns = pd.MultiIndex.from_product(
+            [["AAPL"], raw.columns], names=["Ticker", "Price"]
+        )
+        mock_download.return_value = raw
+        pipeline = DataPipeline()
+        result = pipeline._download_batch(["AAPL"], "1d", 2)
+        assert result == {}
+
+    @patch("backtester.data_pipeline.yf.download")
+    def test_download_batch_multi_ticker_partial_failure(
+        self, mock_download
+    ):
+        """Multi-ticker: one succeeds, one has no data."""
+        dates = pd.date_range(start="2025-01-01", periods=5, freq="B")
+        cols = ["Open", "High", "Low", "Close", "Volume"]
+        aapl_data = np.array([
+            [100, 101, 99, 100, 1_000_000],
+            [100, 101, 99, 100, 1_000_000],
+            [100, 101, 99, 100, 1_000_000],
+            [100, 101, 99, 100, 1_000_000],
+            [100, 101, 99, 100, 1_000_000],
+        ], dtype=float)
+        bad_data = np.full((5, 5), np.nan)
+        idx = pd.MultiIndex.from_product(
+            [["AAPL", "BAD"], cols],
+            names=["Ticker", "Price"],
+        )
+        raw = pd.DataFrame(
+            np.hstack([aapl_data, bad_data]),
+            columns=idx,
+            index=dates,
+        )
+        mock_download.return_value = raw
+        pipeline = DataPipeline()
+        result = pipeline._download_batch(["AAPL", "BAD"], "1d", 2)
+        assert "AAPL" in result
+        assert "BAD" not in result
+
+    @patch("backtester.data_pipeline.yf.download")
+    def test_download_batch_exception_returns_empty(self, mock_download):
+        """yf.download raises exception → empty dict."""
+        mock_download.side_effect = Exception("network error")
+        pipeline = DataPipeline()
+        result = pipeline._download_batch(["AAPL"], "1d", 2)
+        assert result == {}

@@ -81,6 +81,13 @@ class DataPipeline:
         end = datetime.now()
         start = end - timedelta(days=years * 365)
 
+        import logging as _log
+
+        # Suppress noisy yfinance warnings (e.g. "1 Failed download")
+        _yf_logger = _log.getLogger("yfinance")
+        _prev_level = _yf_logger.level
+        _yf_logger.setLevel(_log.ERROR)
+
         try:
             raw = yf.download(
                 tickers=tickers,
@@ -94,13 +101,20 @@ class DataPipeline:
             )
         except Exception as exc:
             print(f"Error: batch download failed: {exc}")
+            _yf_logger.setLevel(_prev_level)
             return {}
+        finally:
+            _yf_logger.setLevel(_prev_level)
 
         if raw.empty:
-            print("Error: no data returned from yfinance")
+            failed = ", ".join(tickers)
+            print(f"  Error: no data returned for {failed}")
+            print("  Hint: check that the ticker symbols are correct "
+                  "and currently active.")
             return {}
 
         result: dict[str, pd.DataFrame] = {}
+        failed_tickers: list[str] = []
 
         if len(tickers) == 1:
             df = raw.copy()
@@ -113,18 +127,22 @@ class DataPipeline:
                 result[tickers[0]] = df
                 print(f"  Downloaded {len(df)} rows for "
                       f"{tickers[0]}")
+            else:
+                failed_tickers.append(tickers[0])
         else:
             for ticker in tickers:
                 try:
                     df = raw[ticker].copy()
                 except KeyError:
-                    print(f"  Warning: no data for {ticker}")
+                    failed_tickers.append(ticker)
                     continue
                 df = df.dropna(how="all")
                 if not df.empty:
                     result[ticker] = df
                     print(f"  Downloaded {len(df)} rows for "
                           f"{ticker}")
+                else:
+                    failed_tickers.append(ticker)
 
         return result
 

@@ -32,6 +32,11 @@ Primary: **Backtest Engineer** (`agents/backtest-engineer.md`).
 - [ ] Verify batch indicators match single-ticker results
 - [ ] Verify metrics match expected financial formulas
 - [ ] Verify parquet caching works (read/write cycle)
+- [ ] Test invalid tickers (misspelled, delisted, special chars) → clean error
+- [ ] Test partial download failures (some tickers succeed, some fail)
+- [ ] Test complete download failure (all tickers fail, network error)
+- [ ] Test empty trades (no signals found) → metrics section handles gracefully
+- [ ] Test edge cases: single return, zero std, NaN values in metrics
 
 ### Handoff
 - [ ] Report to Test Engineer for independent verification
@@ -75,3 +80,25 @@ Examples:
 | Max Drawdown | Largest peak-to-trough decline in equity curve |
 | Win Rate | Percentage of winning trades |
 | Profit Factor | Gross profit / gross loss |
+
+## Error Handling
+
+When working on the backtester, always ensure:
+
+1. **CLI layer** (`cli.py`): validates ticker format (1-10 alphanumeric
+   chars, must contain at least one letter) before sending to engine.
+2. **Data pipeline** (`data_pipeline.py`): suppresses yfinance logging,
+   tracks failed tickers, prints which tickers failed and why.
+3. **Engine** (`engine.py`): when all tickers fail, prints specific
+   error with the failed ticker names and possible causes, returns
+   empty BacktestResult without crashing.
+4. **Metrics** (`metrics.py`): handles edge cases — empty trades list
+   (returns all-zero metrics), single return (Sharpe returns 0.0),
+   NaN std (returns 0.0 instead of NaN).
+
+Common user errors to handle gracefully:
+- Typo in ticker symbol (e.g. APPL instead of AAPL)
+- Delisted ticker
+- Intraday data beyond yfinance limits
+- No entry signals found (strategy too restrictive)
+- Zero trades (market conditions didn't match strategy)
