@@ -88,9 +88,14 @@ Agents read this at session start and append at session end.
   - Summary reporting mode for 20+ tickers (top/bottom 5, median, mean).
   - Wikipedia cache TTL is 24 hours.
   - CSV auto-detects ticker column by name patterns.
-  - 644 total mock tests (192 backtester + 25 universe + 12 integration).
+  - 647 total mock tests (197 backtester + 25 universe + 12 integration).
   - **403 fix**: Wikipedia scraping uses browser-like User-Agent
     header to avoid 403 Forbidden. Falls back to hardcoded S&P 500
     snapshot (~503 tickers) if scraping fails for any reason.
+  - **Total return overflow fix**: `compute_total_return` now uses
+    equal-weight model (`avg_return * n_trades`) instead of sequential
+    compounding. Prevents astronomical values with many trades.
+  - **Cooldown**: after a trade exits, the same ticker must wait
+    `hold` bars before re-entry (prevents rapid re-trading).
 - All agent files updated with universe/scanner constraints.
 - conventions_reference.md §18 added for universe conventions.

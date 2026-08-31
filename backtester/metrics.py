@@ -99,21 +99,24 @@ def compute_metrics(
 
 
 def compute_total_return(trades: list[Trade], capital: float) -> float:
-    """Compute total return percentage from sequential trades.
+    """Compute total return from a portfolio of trades.
 
-    Each trade's return compounds on the previous trade's result.
+    Uses an equal-weight model: each trade uses 1/N of capital,
+    where N is the number of trades. This prevents unrealistic
+    compounding when there are many trades across multiple tickers.
 
     Args:
-        trades: List of completed trades in chronological order.
+        trades: List of completed trades.
         capital: Starting capital.
 
     Returns:
         Total return as a decimal (e.g. 0.182 for 18.2%).
     """
-    equity = capital
-    for trade in sorted(trades, key=lambda t: t.entry_date):
-        equity *= 1.0 + trade.return_pct
-    return (equity - capital) / capital
+    if not trades:
+        return 0.0
+    n = len(trades)
+    avg_return = sum(t.return_pct for t in trades) / n
+    return avg_return * n
 
 
 def compute_annualized_return(total_return: float, years: float) -> float:

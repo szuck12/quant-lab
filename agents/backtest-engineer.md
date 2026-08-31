@@ -65,6 +65,12 @@ evaluation.
   from trade exits) so `pct_change()` produces actual daily returns,
   not per-trade returns. A sparse curve inflates the Sharpe ratio by
   a factor of ~√hold_period.
+- MUST NOT compound all trades sequentially for total return — use
+  an equal-weight model (`avg_return * n_trades`) to prevent
+  astronomical overflow when many trades exist across tickers.
+- MUST NOT allow re-entry on the same ticker immediately after
+  exit — enforce a cooldown of `hold` bars between trades on the
+  same ticker to prevent rapid re-trading.
 - MUST NOT print pyarrow/fastparquet installation warnings — parquet
   caching is optional; if the engine is missing, `_save_cache` should
   silently skip (catch and pass). Users see no warning.

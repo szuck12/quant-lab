@@ -176,6 +176,11 @@ Release X.Y.Z — <brief summary>
 - Multi-component indicators require component: `BB upper >150 1d`,
   `STOCH 14,5,5 k>80 1d`, `MACD line>0 1d`.
 - Simple indicators omit component: `RSI <30 1d`, `SMA 50 >200 1d`.
+- Total return uses equal-weight model: `avg_return * n_trades`.
+  Never compound all trades sequentially (causes overflow with
+  large trade counts).
+- Cooldown: after a trade exits, the same ticker must wait `hold`
+  bars before re-entry to prevent rapid re-trading.
 - Metrics use annualized return, Sharpe ratio, Sortino ratio, max
   drawdown, win rate, profit factor.
 - Parquet cache format: columns are Date (index), Open, High, Low,

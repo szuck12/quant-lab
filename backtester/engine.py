@@ -314,7 +314,7 @@ class BacktestEngine:
                         return_pct=ret,
                     )
                 )
-                i = exit_idx + 1
+                i = exit_idx + 1 + hold  # cooldown: skip hold bars
             else:
                 i += 1
 

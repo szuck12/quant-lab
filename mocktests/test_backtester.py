@@ -632,6 +632,37 @@ class TestBacktestEngine:
             assert trade.hold_bars == 10
 
     @patch("backtester.engine.DataPipeline")
+    def test_cooldown_after_exit(self, MockPipeline):
+        """After a trade exits, the next entry must be at least
+        hold bars later (cooldown prevents re-entry on next bar)."""
+        # All RSI values below 30 → every bar is an entry signal
+        dates = pd.date_range(start="2025-01-01", periods=50, freq="B")
+        close = np.full(50, 100.0)
+        mock_df = pd.DataFrame(
+            {"Open": close, "High": close + 1, "Low": close - 1,
+             "Close": close, "Volume": np.full(50, 1_000_000.0)},
+            index=dates,
+        )
+        mock_df["rsi_14"] = 25.0  # Always triggers
+        mock_pipeline = MockPipeline.return_value
+        mock_pipeline.fetch.return_value = {"AAPL": mock_df}
+
+        config = self._make_config(hold=5)
+        engine = BacktestEngine(config["conditions"], config)
+        result = engine.run()
+
+        # With cooldown, trades should not overlap or be back-to-back
+        for i in range(len(result.trades) - 1):
+            current_exit = result.trades[i].exit_date
+            next_entry = result.trades[i + 1].entry_date
+            gap = (next_entry - current_exit).days
+            # Cooldown = hold bars (5 business days ≈ 7 calendar days)
+            assert gap >= 5, (
+                f"Trade {i+1} entered {gap} days after trade {i} "
+                f"exited — expected >= 5 day gap"
+            )
+
+    @patch("backtester.engine.DataPipeline")
     def test_no_signals(self, MockPipeline):
         # Monotonically increasing prices → RSI stays above 50
         dates = pd.date_range(start="2025-01-01", periods=200, freq="B")
@@ -1242,21 +1273,43 @@ class TestMetricsEdgeCases:
         assert result == 0.0
 
     def test_total_return_compounding(self):
-        """Two 10% wins compound to 21%."""
+        """Equal-weight model: two 10% wins = 20% total."""
         trades = [
             self._make_trade(100.0, 110.0, 5),
             self._make_trade(110.0, 121.0, 5),
         ]
         result = compute_total_return(trades, 10_000.0)
-        assert result == pytest.approx(0.21, abs=1e-3)
+        # Equal-weight: avg(0.10, 0.10) * 2 = 0.20
+        assert result == pytest.approx(0.20, abs=1e-3)
 
     def test_total_return_mixed(self):
-        """Win + loss should compound correctly."""
+        """Win + loss: equal-weight model."""
         trades = [
             self._make_trade(100.0, 110.0, 5),  # +10%
             self._make_trade(110.0, 99.0, 5),    # -10%
         ]
         result = compute_total_return(trades, 10_000.0)
+        # Equal-weight: avg(0.10, -0.10) * 2 = 0.0
+        assert result == pytest.approx(0.0, abs=1e-3)
+
+    def test_total_return_many_trades_no_overflow(self):
+        """2528 trades at 6.7% average should not overflow."""
+        # Simulate 2528 trades with 6.7% average return
+        trades = [
+            self._make_trade(100.0, 106.7, 10)
+            for _ in range(2528)
+        ]
+        result = compute_total_return(trades, 10_000.0)
+        # Equal-weight: 0.067 * 2528 = 169.4 (16,940%)
+        # NOT (1.067)^2528 = 9.9e15
+        assert result == pytest.approx(169.376, abs=0.1)
+        assert result < 1000  # Sanity: should be < 100,000%
+
+    def test_total_return_single_trade(self):
+        """Single trade: equal-weight = raw return."""
+        trades = [self._make_trade(100.0, 115.0, 10)]
+        result = compute_total_return(trades, 10_000.0)
+        assert result == pytest.approx(0.15, abs=1e-3)
 
     def test_equity_curve_includes_daily_values(self):
         """Equity curve should have entries for every business day,

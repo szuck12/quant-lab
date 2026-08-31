@@ -37,6 +37,14 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `backtester/engine.py` — `run()` calls `resolve_universe()` before
   download; supports `universe` and `max_tickers` config keys.
 
+### Fixed
+- **Total return overflow** — `compute_total_return` used sequential
+  compounding which produced astronomical values (9.9e15%) with
+  many trades. Now uses equal-weight model (`avg_return * n_trades`).
+- **Rapid re-trading** — after a trade exits, the same ticker can
+  now re-enter immediately. Added cooldown of `hold` bars between
+  trades on the same ticker.
+
 ## [2.0.1] - 2026-08-30
 
 ### Fixed
