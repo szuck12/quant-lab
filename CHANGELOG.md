@@ -23,7 +23,10 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   when ≥20 tickers have trades.
 - **Ticker validation** — rejects invalid tickers (1–10 chars, must
   contain a letter) before calling yfinance.
-- **Universe tests** — 20 new tests in `mocktests/test_universe.py`,
+- **Wikipedia scraping fallback** — browser-like User-Agent header
+  to avoid 403 errors; falls back to hardcoded S&P 500 snapshot
+  (~503 tickers) if scraping fails.
+- **Universe tests** — 25 tests in `mocktests/test_universe.py`,
   12 integration tests in `mocktests/test_backtester.py` §20.
 
 ### Changed

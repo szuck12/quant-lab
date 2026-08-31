@@ -1,10 +1,10 @@
 # QuantLab
 
-Current version: **2.0.0** — [Changelog](CHANGELOG.md)
+Current version: **2.1.0** — [Changelog](CHANGELOG.md)
 
 A command-line tool that fetches stock price data via [yfinance](https://github.com/ranaroussi/yfinance) and computes one of fourteen technical indicators: Average Directional Index (ADX), Average True Range (ATR), Average Volume (AV), Bollinger Bands (BB), Commodity Channel Index (CCI), Exponential Moving Average (EMA), Moving Average Convergence Divergence (MACD), On-Balance Volume (OBV), Rate of Change (ROC), Relative Strength Index (RSI), Relative Volume (RVOL), Simple Moving Average (SMA), Stochastic Oscillator (STOCH), or Volume Weighted Average Price (VWAP). Input is provided through stdin and the result is printed to stdout. The tool is designed for quick terminal lookups — you type a ticker and an indicator, and you get back a number.
 
-As of v2.0.0, QuantLab also includes a **backtester** that runs multi-condition strategies across multiple tickers with batch data download and parquet caching.
+As of v2.1.0, QuantLab also includes a **backtester** that runs multi-condition strategies across multiple tickers with batch data download, parquet caching, and universe scanning (S&P 500 or custom CSV).
 
 yfinance provides access to Yahoo Finance market data. The tool does not require an API key or account.
 
@@ -428,7 +428,8 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
 ├── backtester/                     # Backtesting engine: CLI parser,
 │   │                              # batch data pipeline, vectorized
 │   │                              # indicators, strategy simulation,
-│   │                              # financial metrics, reporting.
+│   │                              # financial metrics, reporting,
+│   │                              # and universe scanning.
 │   │
 │   ├── __init__.py
 │   ├── cli.py                     # BACKTEST command parser.
@@ -437,6 +438,7 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
 │   ├── engine.py                  # Core simulation loop.
 │   ├── metrics.py                 # Financial metrics (Sharpe, etc.).
 │   ├── reporting.py               # Console output formatting.
+│   ├── universe.py                # Universe resolution (S&P 500, CSV).
 │   └── cache/                     # Parquet cache directory.
 │
 ├── CHANGELOG.md                   # Version history and release notes.
@@ -461,6 +463,9 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
 │
 ├── MEMORY.md                      # Persistent decision and learning
 │                                  # log for agent sessions.
+│
+├── SECURITY.md                    # Security policy: supported
+│                                  # versions, vulnerability reporting.
 │
 ├── AGENTS.md                      # Usage guide for the agent-based
 │                                  # development workflow.
@@ -584,14 +589,23 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
 │   │                              # calculation, default window, count,
 │   │                              # parameter, zero volume, edge cases.
 │   │
+│   ├── test_backtester.py         # Backtester tests: CLI parsing,
+│   │                              # conditions, simulation, metrics,
+│   │                              # reporting, data pipeline errors,
+│   │                              # universe integration (192 tests).
+│   │
 │   ├── test_data_period.py        # Tests for _data_period(): validates
 │   │                              # every threshold in _DATA_PERIOD_MAP
 │   │                              # for every interval.
 │   │
-│   └── test_main.py               # Tests for main(): parser dispatch,
+│   ├── test_main.py               # Tests for main(): parser dispatch,
 │   │                              # default windows, C<count> syntax,
 │   │                              # duplicate detection, multi-ticker
 │   │                              # handling, error cases.
+│   │
+│   └── test_universe.py           # Universe module tests: S&P 500
+│                                  # resolution, CSV loading, caching,
+│                                  # scraping fallback (25 tests).
 │
 └── realtests/                     # Integration tests using the live
     │                              # yfinance API. These verify that the
@@ -671,7 +685,7 @@ quality gate #1 for every change.
 Mock tests patch `yfinance.Ticker` so no real API calls are made. The `conftest.py` fixture creates a `MagicMock` that returns a predefined pandas DataFrame of `Close` prices. This means:
 
 - **Deterministic** — tests always produce the same results regardless of market conditions or network availability.
-- **Fast** — 521 tests run in under 1 second.
+- **Fast** — 644 tests run in under 1 second.
 - **Comprehensive** — covers calculation logic, edge cases, parser dispatch, count behaviour, multi-ticker input, duplicate detection, and error conditions.
 
 ### Real Tests

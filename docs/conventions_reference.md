@@ -136,10 +136,10 @@ Release X.Y.Z — <brief summary>
 
 | Change Type | Bump | Example |
 |-------------|------|---------|
-| New indicator, new interval | MINOR | 1.7.0 → 1.8.0 |
-| Test additions, refactoring | PATCH | 1.8.0 → 1.8.1 |
+| New indicator, new interval | MINOR | 2.0.0 → 2.1.0 |
+| Test additions, refactoring | PATCH | 2.1.0 → 2.1.1 |
 | Breaking CLI change | MAJOR | 1.x.x → 2.0.0 |
-| Bug fix, doc improvement | PATCH | 1.8.0 → 1.8.1 |
+| Bug fix, doc improvement | PATCH | 2.0.0 → 2.0.1 |
 
 ## 14. README Structure
 
