@@ -45,42 +45,139 @@ ticker(s) indicator [bar_size] [window] [C<count>]
 ### Backtester Syntax
 
 ```
-BACKTEST ticker(s) <INDICATOR [params] [component] OP VALUE INTERVAL> [options]
+python3 main.py BACKTEST ticker(s) <INDICATOR [params] [component] OP VALUE INTERVAL> [options]
 ```
+
+**Shell quoting**: The `<` and `>` characters are shell operators. You **must** either quote them or use word-based aliases (see below):
+
+```bash
+# These all work:
+python3 main.py BACKTEST AAPL RSI below 30 1d        # word-based aliases
+python3 main.py BACKTEST AAPL RSI '<' 30 1d           # single quotes
+python3 main.py BACKTEST AAPL RSI "<" 30 1d           # double quotes
+python3 main.py BACKTEST AAPL RSI \\< 30 1d           # escaped
+
+# This will fail in zsh/bash:
+python3 main.py BACKTEST AAPL RSI < 30 1d             # ERROR: shell interprets <
+```
+
+#### Operator Aliases
+
+Instead of symbol operators, use these word-based aliases (case-insensitive):
+
+| Symbol | Alias(es) |
+|--------|-----------|
+| `<` | `below`, `under`, `less_than`, `lt` |
+| `>` | `above`, `over`, `greater_than`, `gt` |
+| `<=` | `at_or_below`, `at_most`, `lte` |
+| `>=` | `at_or_above`, `at_least`, `gte` |
+| `=` | `equals`, `equal_to`, `eq` |
+
+#### Token Reference
 
 | Token | Meaning | Example |
 |-------|---------|---------|
 | `BACKTEST` | Command keyword | `BACKTEST` |
 | `ticker(s)` | Stock symbol(s), comma-separated | `AAPL,MSFT` |
-| `<INDICATOR ...>` | One or more conditions (each must end with interval) | `RSI < 30 1d` |
+| `<INDICATOR ...>` | One or more conditions (each must end with interval) | `RSI below 30 1d` |
 | `--hold N` | Hold period in bars (default: 10) | `--hold 5` |
 | `--capital N` | Starting capital (default: 10000) | `--capital 50000` |
 | `--benchmark TICKER` | Benchmark ticker (default: SPY) | `--benchmark QQQ` |
 | `--years N` | Years of history (default: 2) | `--years 3` |
 | `--stop-loss N` | Stop-loss percentage (default: disabled) | `--stop-loss 5` |
 
-Conditions use the format: `INDICATOR [params] [component] OP VALUE INTERVAL`
+#### Condition Format
 
-- Simple: `RSI < 30 1d`, `SMA 50 > 200 1d`
-- With params: `STOCH 14,5,5 k > 80 1d`, `BB 20,2 upper > 150 1d`
-- With component: `MACD 12,26,9 signal > 0 1d`
-- Multiple conditions (AND logic): `RSI < 30 1d SMA 50 > 200 1d`
+```
+INDICATOR [params] [component] OP VALUE INTERVAL
+```
+
+- **Simple**: `RSI below 30 1d`, `SMA 50 above 200 1d`
+- **With params**: `STOCH 14,5,5 k above 80 1d`, `BB 20,2 upper above 150 1d`
+- **With component**: `MACD 12,26,9 signal above 0 1d`
+- **Multiple conditions (AND logic)**: `RSI below 30 1d SMA 50 above 200 1d`
 
 ### Backtester Examples
 
 ```bash
-# Basic RSI oversold strategy
-python3 main.py BACKTEST AAPL RSI < 30 1d
+# Basic RSI oversold strategy (word-based aliases, no quoting needed)
+python3 main.py BACKTEST AAPL RSI below 30 1d
 
 # Multi-condition strategy
-python3 main.py BACKTEST AAPL,MSFT RSI < 30 1d SMA 50 > 200 1d
+python3 main.py BACKTEST AAPL,MSFT RSI below 30 1d SMA 50 above 200 1d
 
 # Custom hold period and capital
-python3 main.py BACKTEST AAPL RSI < 30 1d --hold 5 --capital 50000
+python3 main.py BACKTEST AAPL RSI below 30 1d --hold 5 --capital 50000
 
 # With stop-loss
-python3 main.py BACKTEST AAPL RSI < 30 1d --stop-loss 5
+python3 main.py BACKTEST AAPL RSI below 30 1d --stop-loss 5
+
+# Using escaped shell operators
+python3 main.py BACKTEST AAPL RSI \< 30 1d
+
+# Bollinger Bands breakout
+python3 main.py BACKTEST AAPL BB 20,2 upper above 150 1d
+
+# MACD signal crossover
+python3 main.py BACKTEST AAPL MACD 12,26,9 signal above 0 1d
+
+# Stochastic overbought
+python3 main.py BACKTEST AAPL STOCH 14,5,5 k above 80 1d
+
+# Weekly timeframe
+python3 main.py BACKTEST AAPL RSI below 30 1wk
+
+# 3 years of data, custom benchmark
+python3 main.py BACKTEST AAPL,MSFT RSI below 30 1d --years 3 --benchmark QQQ
 ```
+
+### Supported Indicators
+
+| Indicator | Parameters | Components | Default Window |
+|-----------|-----------|------------|----------------|
+| ADX | `di_len,adx_len` | — | `14,14` |
+| ATR | `window` | — | `14` |
+| AV | `window` | — | `20` |
+| BB | `window,num_std` | `upper`, `middle`, `lower` | `20,2.0` |
+| CCI | `window` | — | `20` |
+| EMA | `window` | — | `20` |
+| MACD | `fast,slow,signal` | `macd`, `signal`, `hist` | `12,26,9` |
+| OBV | `window` | — | `30` |
+| ROC | `window` | — | `9` |
+| RSI | `window` | — | `14` |
+| RVOL | `window` | — | `10` |
+| SMA | `window` | — | `50` |
+| STOCH | `window,smooth_k,smooth_d` | `k`, `d` | `14,3,3` |
+| VWAP | — | — | — |
+
+### Valid Intervals
+
+| Interval | Description |
+|----------|-------------|
+| `1m`, `2m`, `5m`, `15m`, `30m`, `60m`, `90m`, `1h` | Intraday |
+| `1d` | Daily |
+| `1wk` | Weekly |
+| `1mo`, `3mo` | Monthly |
+
+**Intraday limits**: 1m data is limited to 7 days, 2m–15m to 60 days, 30m–90m to 60 days.
+
+### How the Backtester Works
+
+1. **Data download**: Uses `yfinance` to batch-download OHLCV data for all tickers and the benchmark. Data is cached as Parquet files (requires `pyarrow` or `fastparquet`).
+2. **Indicator computation**: Computes all requested indicators on each ticker's data.
+3. **Condition evaluation**: Scans each bar for entry signals where ALL conditions match simultaneously.
+4. **Trade simulation**: For each entry signal, enters a long position and holds for exactly N bars (configurable via `--hold`). Stop-loss exits early if price drops below the threshold.
+5. **Performance metrics**: Computes total return, annualized return, Sharpe ratio, Sortino ratio, max drawdown, win rate, and risk-reward ratio.
+6. **Benchmark comparison**: Runs a simple buy-and-hold strategy on the benchmark ticker for comparison.
+
+### Known Limitations
+
+- **Long-only**: No short selling support.
+- **No transaction costs**: Assumes zero commissions or slippage.
+- **Survivorship bias**: Only includes currently listed tickers.
+- **Fixed hold period**: Every trade exits after exactly N bars (or earlier if stop-loss triggers).
+- **AND logic only**: All conditions must match on the same bar to enter a trade.
+- **Intraday data limits**: Yahoo Finance limits intraday data to 7–60 days depending on interval.
 
 ### Argument Parsing Rules
 

@@ -5,6 +5,24 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com) and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] - 2026-08-30
+
+### Fixed
+- **KeyError: 'Close'** — `yf.download()` returns MultiIndex columns even
+  for a single ticker; `_download_batch` now flattens the ticker level.
+- **Shell operator aliases** — `below`, `above`, `at_or_below`, etc.
+  added so BACKTEST commands work without shell quoting.
+- **Sharpe/Sortino NaN std** — single-return edge case now returns 0.0
+  instead of NaN.
+- **Parameter validation** — single-default indicators (RSI, SMA, etc.)
+  now reject >1 params instead of crashing at compute time.
+
+### Changed
+- README backtester documentation expanded with operator alias table,
+  indicator reference, interval list, how-it-works section, and
+  known limitations.
+- Test suite expanded to 161 backtester tests (from 99).
+
 ## [2.0.0] - 2026-08-30
 
 ### Added

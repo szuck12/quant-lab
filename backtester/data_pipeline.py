@@ -105,6 +105,10 @@ class DataPipeline:
         if len(tickers) == 1:
             df = raw.copy()
             df = df.dropna(how="all")
+            # yf.download returns MultiIndex columns even for a single
+            # ticker: ('AAPL', 'Close'). Flatten to just 'Close'.
+            if isinstance(df.columns, pd.MultiIndex):
+                df.columns = df.columns.droplevel("Ticker")
             if not df.empty:
                 result[tickers[0]] = df
                 print(f"  Downloaded {len(df)} rows for "
