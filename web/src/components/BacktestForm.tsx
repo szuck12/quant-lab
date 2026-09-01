@@ -29,10 +29,20 @@ export function BacktestForm({ loading, onSubmit }: Props) {
   const [years, setYears] = useState('2');
   const [capitalError, setCapitalError] = useState('');
   const [yearsError, setYearsError] = useState('');
+  const [fetchError, setFetchError] = useState('');
 
   useEffect(() => {
-    fetchIndicators().then(setIndicators).catch(console.error);
-    fetchConfig().then((cfg) => setMaxYears(cfg.max_years)).catch(console.error);
+    fetchIndicators()
+      .then(setIndicators)
+      .catch((err) => {
+        console.error('Failed to fetch indicators:', err);
+        setFetchError('Failed to load indicators. Is the backend server running?');
+      });
+    fetchConfig()
+      .then((cfg) => setMaxYears(cfg.max_years))
+      .catch((err) => {
+        console.error('Failed to fetch config:', err);
+      });
   }, []);
 
   const addCondition = () =>
@@ -97,6 +107,13 @@ export function BacktestForm({ loading, onSubmit }: Props) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Error banner */}
+      {fetchError && (
+        <div className="rounded bg-red-50 p-3 text-sm text-red-700">
+          {fetchError}
+        </div>
+      )}
+
       {/* Period + Capital row */}
       <div className="grid grid-cols-2 gap-4">
         <label className="flex flex-col text-xs text-gray-500">
