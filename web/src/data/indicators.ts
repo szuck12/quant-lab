@@ -1,4 +1,4 @@
-export type IndicatorType = 'Momentum' | 'Trend' | 'Volatility' | 'Volume' | 'Other';
+export type IndicatorType = 'Momentum' | 'Trend' | 'Volatility' | 'Volume';
 
 export interface ParameterInfo {
   name: string;
@@ -46,7 +46,7 @@ export const INDICATORS: IndicatorData[] = [
       'ADX falling while −DI > +DI (bearish trend strengthening)',
     ],
     bestFor: 'Filtering ranging markets from trending ones. Use ADX to avoid false signals in choppy conditions.',
-    similarTo: ['Aroon', 'Chaikin ADX'],
+    similarTo: ['SMA', 'EMA'],
     tips: [
       'Combine ADX with +DI/−DI to determine trend direction',
       'ADX above 25 with +DI > −DI = bullish trend',
@@ -75,7 +75,7 @@ export const INDICATORS: IndicatorData[] = [
       'ATR spike during downtrend (panic selling)',
     ],
     bestFor: 'Setting stop-loss levels, position sizing, and identifying volatility breakouts.',
-    similarTo: ['Historical Volatility', 'Keltner Channels'],
+    similarTo: ['BB'],
     tips: [
       'Use ATR to set trailing stops (e.g., 2× ATR)',
       'Compare current ATR to historical ATR for context',
@@ -104,7 +104,7 @@ export const INDICATORS: IndicatorData[] = [
       'Declining volume on price increase (weak trend)',
     ],
     bestFor: 'Confirming breakouts and identifying accumulation/distribution phases.',
-    similarTo: ['OBV', 'RVOL', 'Volume Profile'],
+    similarTo: ['OBV', 'RVOL'],
     tips: [
       'Volume should confirm price—a breakout without volume is suspect',
       'Look for volume climaxes (extreme spikes) as potential reversals',
@@ -135,7 +135,7 @@ export const INDICATORS: IndicatorData[] = [
       'Price crosses below middle band from above',
     ],
     bestFor: 'Identifying volatility conditions and potential overbought/oversold levels.',
-    similarTo: ['Keltner Channels', 'Donchian Channels'],
+    similarTo: ['ATR'],
     tips: [
       'The "Bollinger squeeze" (contracting bands) often precedes big moves',
       'Don\'t automatically sell at upper band in strong uptrends',
@@ -166,7 +166,7 @@ export const INDICATORS: IndicatorData[] = [
       'Bearish divergence: price higher high, CCI lower high',
     ],
     bestFor: 'Identifying overbought/oversold conditions and trend direction in any market.',
-    similarTo: ['RSI', 'Stochastic Oscillator'],
+    similarTo: ['RSI', 'STOCH'],
     tips: [
       'CCI is more volatile than RSI—use wider thresholds (+200/−200) in trending markets',
       'Combine with ADX to confirm trend strength',
@@ -196,7 +196,7 @@ export const INDICATORS: IndicatorData[] = [
       'Price rejected at EMA as resistance',
     ],
     bestFor: 'Trend following, dynamic support/resistance, and crossover strategies.',
-    similarTo: ['SMA', 'DEMA', 'TEMA'],
+    similarTo: ['SMA', 'ADX'],
     tips: [
       'Common periods: 9 (short), 21 (medium), 50 (long), 200 (very long)',
       'The 50/200 EMA crossover is a major long-term signal',
@@ -231,7 +231,7 @@ export const INDICATORS: IndicatorData[] = [
       'Bearish divergence: price higher high, MACD lower high',
     ],
     bestFor: 'Identifying trend changes, momentum shifts, and divergence signals.',
-    similarTo: ['RSI', 'Stochastic Oscillator'],
+    similarTo: ['RSI', 'EMA'],
     tips: [
       'The zero line crossover is a stronger signal than signal line crossover',
       'Look for histogram divergence before price reverses',
@@ -262,7 +262,7 @@ export const INDICATORS: IndicatorData[] = [
       'OBV crosses below its moving average',
     ],
     bestFor: 'Confirming trends and identifying accumulation/distribution before price moves.',
-    similarTo: ['Volume Price Trend', 'Chaikin Money Flow'],
+    similarTo: ['AV', 'RVOL'],
     tips: [
       'OBV is cumulative—focus on the trend, not absolute values',
       'Look for OBV divergence as an early warning signal',
@@ -292,7 +292,7 @@ export const INDICATORS: IndicatorData[] = [
       'ROC decelerating downward (weakening trend)',
     ],
     bestFor: 'Measuring momentum strength and identifying overbought/oversold extremes.',
-    similarTo: ['RSI', 'Momentum'],
+    similarTo: ['RSI', 'MACD'],
     tips: [
       'Shorter periods (5–10) for short-term trading, longer (20–50) for swing trading',
       'ROC works well combined with moving average filters',
@@ -324,7 +324,7 @@ export const INDICATORS: IndicatorData[] = [
       'RSI forms double top at 70 level',
     ],
     bestFor: 'Identifying overbought/oversold conditions and momentum reversals.',
-    similarTo: ['Stochastic Oscillator', 'CCI', 'ROC'],
+    similarTo: ['STOCH', 'CCI', 'ROC'],
     tips: [
       'Use RSI with trend direction for better signals',
       'In strong trends, RSI can stay overbought/oversold for extended periods',
@@ -354,7 +354,7 @@ export const INDICATORS: IndicatorData[] = [
       'RVOL spike at resistance level (potential reversal)',
     ],
     bestFor: 'Confirming breakouts and identifying unusual trading activity.',
-    similarTo: ['AV', 'Volume Profile', 'OBV'],
+    similarTo: ['AV', 'OBV'],
     tips: [
       'RVOL > 2.0 is significant; > 3.0 is very significant',
       'Combine RVOL with price action for best results',
@@ -384,7 +384,7 @@ export const INDICATORS: IndicatorData[] = [
       'Price rejected at SMA as resistance',
     ],
     bestFor: 'Trend following, dynamic support/resistance, and crossover strategies.',
-    similarTo: ['EMA', 'WMA', 'DEMA'],
+    similarTo: ['EMA', 'ADX'],
     tips: [
       'Common periods: 20 (short), 50 (medium), 200 (long)',
       'The 50/200 SMA crossover is a major long-term signal',
@@ -417,7 +417,7 @@ export const INDICATORS: IndicatorData[] = [
       'Bearish divergence: price higher high, stochastic lower high',
     ],
     bestFor: 'Identifying overbought/oversold conditions and short-term reversals.',
-    similarTo: ['RSI', 'CCI', 'Williams %R'],
+    similarTo: ['RSI', 'CCI'],
     tips: [
       'Use wider thresholds (80/20) in trending markets',
       'Combine with trend filters for better results',
@@ -429,7 +429,7 @@ export const INDICATORS: IndicatorData[] = [
   },
   {
     name: 'VWAP',
-    type: 'Other',
+    type: 'Volume',
     description:
       'Volume Weighted Average Price calculates the average price weighted by volume, representing the "fair value" of an asset for the day.',
     interpretation:
@@ -448,7 +448,7 @@ export const INDICATORS: IndicatorData[] = [
       'VWAP trending downward',
     ],
     bestFor: 'Intraday trading, identifying fair value, and institutional order execution.',
-    similarTo: ['TWAP', 'Volume Profile'],
+    similarTo: ['AV', 'OBV'],
     tips: [
       'VWAP is most useful for intraday trading',
       'The first touch of VWAP often acts as support/resistance',
@@ -467,5 +467,4 @@ export const TYPE_COLORS: Record<IndicatorType, { bg: string; text: string; bord
   Trend: { bg: 'bg-cyan-100', text: 'text-cyan-700', border: 'border-cyan-200' },
   Volatility: { bg: 'bg-purple-100', text: 'text-purple-700', border: 'border-purple-200' },
   Volume: { bg: 'bg-amber-100', text: 'text-amber-700', border: 'border-amber-200' },
-  Other: { bg: 'bg-slate-100', text: 'text-slate-700', border: 'border-slate-200' },
 };

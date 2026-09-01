@@ -58,6 +58,16 @@ Agents read this at session start and append at session end.
   with one-click RSI demo, results summary cards. Micro-interactions:
   card hover effects, gradient text, glass morphism nav. All 671
   tests passing.
+- **2026-08-31**: v3.3.0 — three-page structure + rich animations.
+  New Home page with hero section, animated counters, floating
+  particles, page previews, and open source banner. Navigation
+  redesigned with gradient active states and version badge. Bug
+  fixes: VWAP type changed from 'Other' to 'Volume', similar
+  indicators filtered to only project indicators, Expand All/
+  Collapse All fixed. Added rose (#F43F5E) as 4th accent color.
+  Rich animations: floating dots, gradient rotation, stagger-fade-in,
+  page transitions, glow hover effects. Typography consistency
+  improved across all components. All 671 tests passing.
 
 ## Corrections & Lessons Learned
 
@@ -88,7 +98,7 @@ Agents read this at session start and append at session end.
 
 <!-- Brief snapshot of where work left off. Updated at end of session. -->
 
-- Current version: 3.2.0
+- Current version: 3.3.0
 - All 671 mock tests passing (24 API + 197 backtester + 25 universe +
   12 integration + 413 indicator tests).
 - 13 agents total (11 original + backtest-engineer + web-developer).
@@ -102,15 +112,17 @@ Agents read this at session start and append at session end.
 - Skills: `add-indicator/`, `release-cut/`, `security-audit/`,
   `backtester/`, `webapp/`.
 - All agent files updated with web app constraints.
-- README updated for v3.2.0: UI/UX revamp, indicators page.
+- README updated for v3.3.0: three-page structure, rich animations.
 - docs/agents_overview.md: thirteen agents, updated roster.
 - docs/agent_workflows.md: Workflow I (web app), updated graph, web verify cmds.
 - agents/README.md: 13-agent roster.
 - Root `package.json` with `npm run dev` for concurrent startup.
-- New data file: `web/src/data/indicators.ts` (14 indicators with
+- Data file: `web/src/data/indicators.ts` (14 indicators with
   full descriptions, signals, parameters, tips, formulas).
 - Design system: Space Grotesk (display) + Inter (body) + JetBrains Mono (code).
-- Colors: emerald + cyan + purple accents, dot grid background.
+- Colors: emerald + cyan + purple + rose accents, dot grid background.
+- Three-page structure: Home, Backtest, Indicators.
+- Home page: hero, animated counters, floating particles, page previews.
 - Indicators page: category filtering, type badges, expanded content.
-- Backtest page: "How It Works" guide, "Why QuantLab" features,
-  Quick Start example, results summary cards.
+- Backtest page: Quick Start example, results summary cards.
+- Rich animations: float, gradient-rotate, stagger-fade-in, page-in.

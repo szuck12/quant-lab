@@ -7,18 +7,19 @@ import {
   type IndicatorData,
 } from '../data/indicators';
 
-function IndicatorAccordion({ indicator }: { indicator: IndicatorData }) {
+function IndicatorAccordion({ indicator, expandAll }: { indicator: IndicatorData; expandAll: boolean }) {
   const [isOpen, setIsOpen] = useState(false);
+  const effectiveIsOpen = expandAll || isOpen;
   const colors = TYPE_COLORS[indicator.type];
 
   return (
     <div
       className={`border-b border-slate-200/60 last:border-0 transition-colors ${
-        isOpen ? 'bg-slate-50/50' : ''
+        effectiveIsOpen ? 'bg-slate-50/50' : ''
       }`}
     >
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => setIsOpen(!effectiveIsOpen)}
         className="flex w-full items-center justify-between py-4 text-left transition-colors hover:bg-slate-50/50"
       >
         <div className="flex items-center gap-3">
@@ -33,7 +34,7 @@ function IndicatorAccordion({ indicator }: { indicator: IndicatorData }) {
         </div>
         <span
           className={`text-slate-400 transition-transform duration-200 ${
-            isOpen ? 'rotate-180' : ''
+            effectiveIsOpen ? 'rotate-180' : ''
           }`}
         >
           <svg
@@ -54,7 +55,7 @@ function IndicatorAccordion({ indicator }: { indicator: IndicatorData }) {
         </span>
       </button>
 
-      {isOpen && (
+      {effectiveIsOpen && (
         <div className="pb-5 animate-fade-in">
           {/* Description */}
           <p className="mb-4 text-sm leading-relaxed text-slate-600">
@@ -207,14 +208,13 @@ export function IndicatorsPage() {
     Trend: INDICATORS.filter((i) => i.type === 'Trend').length,
     Volatility: INDICATORS.filter((i) => i.type === 'Volatility').length,
     Volume: INDICATORS.filter((i) => i.type === 'Volume').length,
-    Other: INDICATORS.filter((i) => i.type === 'Other').length,
   };
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-8">
       {/* Header */}
       <div className="mb-8 text-center">
-        <h1 className="text-3xl font-bold tracking-tight text-slate-800">
+        <h1 className="font-display text-3xl font-bold tracking-tight text-slate-800">
           Technical{' '}
           <span className="bg-gradient-to-r from-emerald-500 to-cyan-500 bg-clip-text text-transparent">
             Indicators
@@ -255,7 +255,7 @@ export function IndicatorsPage() {
       <section className="rounded-2xl border border-slate-200/60 bg-white px-6 shadow-sm">
         <div className="divide-y divide-slate-200/60">
           {filteredIndicators.map((ind) => (
-            <IndicatorAccordion key={ind.name} indicator={ind} />
+            <IndicatorAccordion key={ind.name} indicator={ind} expandAll={expandAll} />
           ))}
         </div>
       </section>

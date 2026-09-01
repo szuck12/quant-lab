@@ -5,6 +5,54 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com) and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.3.0] - 2026-08-31
+
+### Added
+- **Home page** — new landing page with hero section, animated
+  counters, floating particles, and page previews.
+- **Three-page navigation** — Home, Backtest, and Indicators pages
+  with dedicated routes and smooth transitions.
+- **Animated counters** — number count-up animations on stats
+  section showing S&P 500 stocks, indicators, tests, and cost.
+- **Floating particles** — subtle animated dots in hero section
+  for visual depth and movement.
+- **Page previews** — interactive cards linking to Backtest and
+  Indicators pages with hover effects.
+- **Open source banner** — dedicated section with GitHub link
+  and call-to-action.
+- **Gradient nav pills** — active page shows gradient background
+  instead of flat color.
+- **Version badge** — v3.3.0 badge in navigation header.
+- **Rich animations** — float, gradient-rotate, ticker, count-up,
+  stagger-fade-in, page-in, subtle-pulse animations.
+- **Glow hover effects** — emerald and cyan glow on button hover.
+- **Rose accent color** — added rose (#F43F5E) as 4th accent
+  color for warnings and negative values.
+
+### Fixed
+- **VWAP indicator type** — changed from 'Other' to 'Volume' to
+  properly categorize the indicator.
+- **Similar indicators filtering** — updated all 14 indicators
+  to only reference other project indicators (removed Aroon,
+  Chaikin ADX, DEMA, TEMA, Williams %R, Keltner Channels,
+  Donchian Channels, Volume Profile, TWAP, Momentum, WMA,
+  Chaikin Money Flow, Volume Price Trend, Historical Volatility).
+- **Expand All/Collapse All** — fixed accordion functionality
+  by passing expandAll prop to child components and using
+  effectiveIsOpen state.
+- **Error styling** — updated error messages to use rose color
+  instead of red for consistency.
+
+### Changed
+- **Typography consistency** — applied font-display (Space Grotesk)
+  to all headings across components.
+- **Color palette** — added rose color and applied more broadly
+  for negative values and warnings.
+- **Navigation design** — gradient active state, version badge,
+  and hover transitions.
+- **Removed 'Other' type** — eliminated 'Other' from IndicatorType
+  union and TYPE_COLORS since all indicators now have proper types.
+
 ## [3.2.0] - 2026-08-31
 
 ### Added

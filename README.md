@@ -1,6 +1,6 @@
 # QuantLab
 
-Current version: **3.0.0** — [Changelog](CHANGELOG.md)
+Current version: **3.3.0** — [Changelog](CHANGELOG.md)
 
 A stock-data backtesting tool with a **web application** (FastAPI + React) and a
 **command-line interface**. Fetches stock price data via
@@ -57,22 +57,32 @@ Open `http://localhost:5173` in your browser.
 
 ### Web App Features
 
+- **Three-page navigation** — Home, Backtest, and Indicators pages
+  with smooth transitions and gradient active states
+- **Home page** — hero section with animated counters, floating
+  particles, "Why QuantLab" features, "How It Works" guide,
+  and page preview cards
+- **Backtest page** — form-based UI with Quick Start example,
+  interactive equity curve chart, metrics comparison, and trade tables
+- **Indicators page** — 14 indicators with formulas, signals,
+  parameters, usage tips, and category filtering
 - **Indicator selector** — choose from 14 indicators with dynamic
   parameter inputs (window, num_std, fast/slow/signal, etc.)
 - **Condition builder** — add multiple conditions with AND logic
-- **Period selector** — 1 month to 20 years of historical data
 - **Equity curve chart** — strategy vs benchmark (buy-and-hold SPY)
   rendered with Recharts
 - **Metrics table** — side-by-side comparison of strategy and
   benchmark (return, Sharpe, Sortino, max drawdown, win rate, etc.)
 - **Trades table** — scrollable, color-coded P&L per trade
+- **Rich animations** — floating particles, gradient text, counter
+  animations, page transitions, and hover effects
 
 ### API Endpoints
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/api/indicators` | GET | Available indicators with parameter schemas |
-| `/api/periods` | GET | Analysis period options (1mo–20yr) |
+| `/api/config` | GET | App configuration (periods, intervals) |
 | `/api/backtest` | POST | Run backtest, return trades/metrics/equity curve |
 | `/health` | GET | Health check |
 
@@ -478,6 +488,9 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
 │           ├── BacktestForm.tsx   # Form: tickers, conditions, params.
 │           ├── ConditionRow.tsx   # Single condition editor.
 │           ├── EquityChart.tsx    # Recharts equity curve chart.
+│           ├── HomePage.tsx       # Landing page with hero, stats,
+│           │                      # features, and page previews.
+│           ├── IndicatorsPage.tsx  # Indicator reference with accordion.
 │           ├── MetricsTable.tsx   # Strategy vs benchmark metrics.
 │           └── TradesTable.tsx    # Scrollable trade list.
 │
