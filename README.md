@@ -1,6 +1,6 @@
 # QuantLab
 
-Current version: **3.3.0** — [Changelog](CHANGELOG.md)
+Current version: **3.5.0** — [Changelog](CHANGELOG.md)
 
 A stock-data backtesting tool with a **web application** (FastAPI + React) and a
 **command-line interface**. Fetches stock price data via
@@ -58,14 +58,14 @@ Open `http://localhost:5173` in your browser.
 ### Web App Features
 
 - **Three-page navigation** — Home, Backtest, and Indicators pages
-  with smooth transitions and gradient active states
-- **Home page** — hero section with animated counters, floating
-  particles, "Why QuantLab" features, "How It Works" guide,
-  and page preview cards
+  with smooth transitions and underline active indicators
+- **Home page** — left-aligned hero with solid emerald accent, scrolling
+  ticker tape of all indicators, terminal preview, asymmetric feature
+  grid, split-layout "How It Works", and page preview cards
 - **Backtest page** — form-based UI with Quick Start example,
   interactive equity curve chart, metrics comparison, and trade tables
 - **Indicators page** — 14 indicators with formulas, signals,
-  parameters, usage tips, and category filtering
+  parameters, usage tips, category filtering, and type-colored accents
 - **Indicator selector** — choose from 14 indicators with dynamic
   parameter inputs (window, num_std, fast/slow/signal, etc.)
 - **Condition builder** — add multiple conditions with AND logic
@@ -74,8 +74,7 @@ Open `http://localhost:5173` in your browser.
 - **Metrics table** — side-by-side comparison of strategy and
   benchmark (return, Sharpe, Sortino, max drawdown, win rate, etc.)
 - **Trades table** — scrollable, color-coded P&L per trade
-- **Rich animations** — floating particles, gradient text, counter
-  animations, page transitions, and hover effects
+- **Legal disclaimer** — research/educational disclaimer on every page
 
 ### API Endpoints
 

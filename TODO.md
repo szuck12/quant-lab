@@ -5,6 +5,17 @@
 
 ## Done
 
+- [x] 2026-09-01 — v3.5.0 — Round 2 visual refinements: node-graph
+      favicon/logo, mini equity chart preview, color-coded ticker tape,
+      constellation dots, gradient blob, typing animation, pulse badge,
+      section dividers, scroll-stagger animations, smart expand/collapse,
+      3-section formula, indicator glow, disclaimer redesign, backtest
+      header, corrected indicator list, fixed CLI commands (#design, @web-developer)
+- [x] 2026-09-01 — v3.4.0 — de-AI web redesign: custom sigma favicon,
+      solid emerald palette, left-aligned hero, asymmetric feature grid,
+      scrolling ticker tape, terminal preview, noise texture, math symbol
+      decorations, type-colored indicator accents, expand/collapse fix,
+      legal disclaimer (#design, @web-developer)
 - [x] 2026-08-31 — v3.0.0 web application: FastAPI backend +
       React/Vite/TypeScript frontend, 17 API tests, web-developer
       agent, webapp skill, updated docs

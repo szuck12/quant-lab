@@ -20,6 +20,7 @@ export interface IndicatorData {
   similarTo: string[];
   tips: string[];
   formula: string;
+  formulaComponents: string;
   formulaBreakdown: string;
 }
 
@@ -30,39 +31,52 @@ export const INDICATORS: IndicatorData[] = [
     description:
       'The Average Directional Index measures trend strength regardless of direction. It ranges from 0 to 100, where values above 25 typically indicate a strong trend.',
     interpretation:
-      'ADX does not indicate trend direction—only strength. Values below 20 suggest a weak or nonexistent trend (ranging market). Values between 20–40 suggest a developing trend. Values above 40 suggest a strong trend. Above 60 suggests an extremely strong trend, which is rare.',
+      'ADX does not indicate trend direction, only strength. Values below 20 suggest a weak or nonexistent trend (ranging market). Values between 20\u201340 suggest a developing trend. Values above 40 suggest a strong trend. Above 60 suggests an extremely strong trend, which is rare.',
     parameters: [
       { name: 'window', default: 14, min: 2, max: 200, description: 'DI smoothing period' },
       { name: 'adx_window', default: 14, min: 2, max: 200, description: 'ADX smoothing period' },
     ],
     bullishSignals: [
       'ADX crosses above 25 (trend emerging)',
-      '+DI crosses above −DI (bullish trend)',
-      'ADX rising while +DI > −DI (bullish trend strengthening)',
+      '+DI crosses above \u2212DI (bullish trend)',
+      'ADX rising while +DI > \u2212DI (bullish trend strengthening)',
     ],
     bearishSignals: [
       'ADX crosses below 25 (trend weakening)',
-      '−DI crosses above +DI (bearish trend)',
-      'ADX falling while −DI > +DI (bearish trend strengthening)',
+      '\u2212DI crosses above +DI (bearish trend)',
+      'ADX falling while \u2212DI > +DI (bearish trend strengthening)',
     ],
     bestFor: 'Filtering ranging markets from trending ones. Use ADX to avoid false signals in choppy conditions.',
     similarTo: ['SMA', 'EMA'],
     tips: [
-      'Combine ADX with +DI/−DI to determine trend direction',
-      'ADX above 25 with +DI > −DI = bullish trend',
+      'Combine ADX with +DI/\u2212DI to determine trend direction',
+      'ADX above 25 with +DI > \u2212DI = bullish trend',
       'Use ADX to filter signals from other indicators',
     ],
-    formula: 'ADX = 100 × EMA(|+DI − −DI| / (+DI + −DI), period)',
+    formula:
+      '+DM_t = H_t \u2212 H_{t\u22121}  (if +DM > \u2212DM and H_t > H_{t\u22121}, else 0)\n' +
+      '\u2212DM_t = L_{t\u22121} \u2212 L_t  (if \u2212DM > +DM and L_t < L_{t\u22121}, else 0)\n' +
+      'TR_t = max(H_t \u2212 L_t, |H_t \u2212 C_{t\u22121}|, |L_t \u2212 C_{t\u22121}|)\n' +
+      '+DI_t = 100 \u00d7 RMA(+DM) / RMA(TR)\n' +
+      '\u2212DI_t = 100 \u00d7 RMA(\u2212DM) / RMA(TR)\n' +
+      'DX_t = 100 \u00d7 |+DI \u2212 \u2212DI| / (+DI + \u2212DI)\n' +
+      'ADX_t = RMA(DX, m)',
+    formulaComponents:
+      'H_t = High price at bar t|L_t = Low price at bar t|C_t = Close price at bar t|' +
+      '+DM_t = Upward directional movement|\u2212DM_t = Downward directional movement|' +
+      'TR_t = True Range|+DI_t = Plus Directional Indicator|\u2212DI_t = Minus Directional Indicator|' +
+      'DX_t = Directional Index|n = DI smoothing window (default 14)|' +
+      'm = ADX smoothing window (default 14)|\u03b1 = Wilder smoothing factor (1/n)',
     formulaBreakdown:
-      '+DI (Plus Directional Indicator) measures upward momentum. −DI (Minus Directional Indicator) measures downward momentum. The DX is the absolute difference divided by the sum, smoothed with EMA. ADX is the EMA of DX over the specified period.',
+      '+DI (Plus Directional Indicator) measures upward momentum. \u2212DI (Minus Directional Indicator) measures downward momentum. The DX is the absolute difference divided by the sum, smoothed with Wilder RMA. ADX is the RMA of DX over the specified period.',
   },
   {
     name: 'ATR',
     type: 'Volatility',
     description:
-      'The Average True Range measures market volatility by calculating the average of true ranges over a period. It does not indicate direction—only the magnitude of price movement.',
+      'The Average True Range measures market volatility by calculating the average of true ranges over a period. It does not indicate direction, only the magnitude of price movement.',
     interpretation:
-      'Higher ATR values indicate higher volatility; lower values indicate lower volatility. ATR is useful for setting stop-loss levels (e.g., 2× ATR below entry) and position sizing (risk a fixed percentage of capital per trade).',
+      'Higher ATR values indicate higher volatility; lower values indicate lower volatility. ATR is useful for setting stop-loss levels (e.g., 2\u00d7 ATR below entry) and position sizing (risk a fixed percentage of capital per trade).',
     parameters: [
       { name: 'window', default: 14, min: 2, max: 200, description: 'Lookback period for averaging' },
     ],
@@ -77,13 +91,19 @@ export const INDICATORS: IndicatorData[] = [
     bestFor: 'Setting stop-loss levels, position sizing, and identifying volatility breakouts.',
     similarTo: ['BB'],
     tips: [
-      'Use ATR to set trailing stops (e.g., 2× ATR)',
+      'Use ATR to set trailing stops (e.g., 2\u00d7 ATR)',
       'Compare current ATR to historical ATR for context',
-      'ATR is absolute, not percentage—compare across similar-priced assets',
+      'ATR is absolute, not percentage; compare across similar-priced assets',
     ],
-    formula: 'TR = max(H−L, |H−Cprev|, |L−Cprev|)\nATR = SMA(TR, period)',
+    formula:
+      'TR_t = max(H_t \u2212 L_t, |H_t \u2212 C_{t\u22121}|, |L_t \u2212 C_{t\u22121}|)\n' +
+      'ATR_t = TR_t  (if t = 1)\n' +
+      'ATR_t = ATR_{t\u22121} \u00d7 (1 \u2212 \u03b1) + TR_t \u00d7 \u03b1  (otherwise)',
+    formulaComponents:
+      'H_t = High price at bar t|L_t = Low price at bar t|C_{t\u22121} = Close price at previous bar|' +
+      'TR_t = True Range at bar t|\u03b1 = Smoothing factor (1/window)',
     formulaBreakdown:
-      'True Range (TR) is the greatest of: current high minus current low, absolute value of current high minus previous close, or absolute value of current low minus previous close. ATR is the simple moving average of TR over the specified period.',
+      'True Range (TR) is the greatest of: current high minus current low, absolute value of current high minus previous close, or absolute value of current low minus previous close. ATR uses Wilder smoothing: ATR_t = ATR_{t\u22121} \u00d7 (1\u2212\u03b1) + TR_t \u00d7 \u03b1.',
   },
   {
     name: 'AV',
@@ -91,25 +111,27 @@ export const INDICATORS: IndicatorData[] = [
     description:
       'Average Volume smooths volume data over a specified period, making it easier to identify volume spikes and trends.',
     interpretation:
-      'Comparing current volume to the average helps confirm price movements. Breakouts on high volume (2× average or more) are more reliable than those on low volume. Volume spikes often precede significant price moves.',
+      'Comparing current volume to the average helps confirm price movements. Breakouts on high volume (2\u00d7 average or more) are more reliable than those on low volume. Volume spikes often precede significant price moves.',
     parameters: [
       { name: 'window', default: 20, min: 2, max: 500, description: 'Lookback period for averaging' },
     ],
     bullishSignals: [
-      'Volume spikes above 2× average on up days (buying pressure)',
+      'Volume spikes above 2\u00d7 average on up days (buying pressure)',
       'Rising volume on price increase (trend confirmation)',
     ],
     bearishSignals: [
-      'Volume spikes above 2× average on down days (selling pressure)',
+      'Volume spikes above 2\u00d7 average on down days (selling pressure)',
       'Declining volume on price increase (weak trend)',
     ],
     bestFor: 'Confirming breakouts and identifying accumulation/distribution phases.',
     similarTo: ['OBV', 'RVOL'],
     tips: [
-      'Volume should confirm price—a breakout without volume is suspect',
+      'Volume should confirm price; a breakout without volume is suspect',
       'Look for volume climaxes (extreme spikes) as potential reversals',
     ],
-    formula: 'AV = SMA(Volume, period)',
+    formula: 'AV_t = (1/n) \u00d7 \u03a3 V_{t\u2212i}',
+    formulaComponents:
+      'V_t = Volume at bar t|n = Window (default 20)',
     formulaBreakdown:
       'Take the closing volume for each bar and compute the simple moving average over the specified period. This creates a baseline to compare against current volume levels.',
   },
@@ -141,9 +163,17 @@ export const INDICATORS: IndicatorData[] = [
       'Don\'t automatically sell at upper band in strong uptrends',
       'Use bandwidth to gauge volatility before entering trades',
     ],
-    formula: 'Middle = SMA(close, period)\nUpper = Middle + (num_std × σ)\nLower = Middle − (num_std × σ)',
+    formula:
+      'Middle_t = SMA(C_t, n) = (1/n) \u00d7 \u03a3 C_{t\u2212i}\n' +
+      '\u03c3_t = \u221a((1/n) \u00d7 \u03a3 (C_{t\u2212i} \u2212 Middle_t)\u00b2)\n' +
+      'Upper_t = Middle_t + k \u00d7 \u03c3_t\n' +
+      'Lower_t = Middle_t \u2212 k \u00d7 \u03c3_t',
+    formulaComponents:
+      'C_t = Closing price at bar t|n = Window for SMA and standard deviation (default 20)|' +
+      'k = Number of standard deviations (num_std, default 2.0)|\u03c3_t = Population standard deviation of last n closes|' +
+      'Middle_t = SMA of closing prices|Upper_t = Upper band|Lower_t = Lower band',
     formulaBreakdown:
-      'The middle band is a simple moving average (typically 20 periods). The upper and lower bands are calculated by adding and subtracting a multiple of the standard deviation (typically 2) from the middle band.',
+      'The middle band is a simple moving average (typically 20 periods). The standard deviation uses population normalization (ddof=0). The upper and lower bands are calculated by adding and subtracting k multiples of the standard deviation from the middle band.',
   },
   {
     name: 'CCI',
@@ -151,12 +181,12 @@ export const INDICATORS: IndicatorData[] = [
     description:
       'The Commodity Channel Index measures the difference between the current price and the historical average price. Despite its name, it works on any asset class.',
     interpretation:
-      'Values above +100 suggest overbought conditions; values below −100 suggest oversold conditions. The zero line separates bullish and bearish momentum. CCI can also be used to identify divergences and trend direction.',
+      'Values above +100 suggest overbought conditions; values below \u2212100 suggest oversold conditions. The zero line separates bullish and bearish momentum. CCI can also be used to identify divergences and trend direction.',
     parameters: [
       { name: 'window', default: 20, min: 2, max: 200, description: 'Lookback period' },
     ],
     bullishSignals: [
-      'CCI crosses above −100 (exiting oversold)',
+      'CCI crosses above \u2212100 (exiting oversold)',
       'CCI crosses above zero (bullish momentum)',
       'Bullish divergence: price lower low, CCI higher low',
     ],
@@ -168,12 +198,21 @@ export const INDICATORS: IndicatorData[] = [
     bestFor: 'Identifying overbought/oversold conditions and trend direction in any market.',
     similarTo: ['RSI', 'STOCH'],
     tips: [
-      'CCI is more volatile than RSI—use wider thresholds (+200/−200) in trending markets',
+      'CCI is more volatile than RSI; use wider thresholds (+200/\u2212200) in trending markets',
       'Combine with ADX to confirm trend strength',
     ],
-    formula: 'CCI = (TP − SMA(TP, period)) / (0.015 × Mean Deviation)',
+    formula:
+      'TP_t = (H_t + L_t + C_t) / 3\n' +
+      'SMA_t = (1/n) \u00d7 \u03a3 TP_{t\u2212i}\n' +
+      'MD_t = (1/n) \u00d7 \u03a3 |TP_{t\u2212i} \u2212 SMA_t|\n' +
+      'CCI_t = (TP_t \u2212 SMA_t) / (0.015 \u00d7 MD_t)',
+    formulaComponents:
+      'H_t = High price at bar t|L_t = Low price at bar t|C_t = Close price at bar t|' +
+      'TP_t = Typical Price at bar t|n = Window for SMA and Mean Deviation (default 20)|' +
+      'SMA_t = SMA of Typical Prices over the window|MD_t = Mean Deviation of Typical Prices from their SMA|' +
+      '0.015 = Lambert\'s constant scaling factor',
     formulaBreakdown:
-      'Typical Price (TP) = (High + Low + Close) / 3. The mean deviation is the average of absolute deviations from the SMA. The constant 0.015 ensures approximately 70–80% of values fall between −100 and +100.',
+      'Typical Price (TP) = (High + Low + Close) / 3. The mean deviation is the average of absolute deviations from the SMA. The constant 0.015 ensures approximately 70\u201380% of values fall between \u2212100 and +100.',
   },
   {
     name: 'EMA',
@@ -202,9 +241,15 @@ export const INDICATORS: IndicatorData[] = [
       'The 50/200 EMA crossover is a major long-term signal',
       'EMA works better than SMA in fast-moving markets',
     ],
-    formula: 'EMA = Close × k + EMAprev × (1 − k)\nk = 2 / (period + 1)',
+    formula:
+      '\u03b1 = 2 / (n + 1)\n' +
+      'EMA_t = \u03b1 \u00d7 C_t + (1 \u2212 \u03b1) \u00d7 EMA_{t\u22121}\n' +
+      'Seed: EMA_1 = C_1',
+    formulaComponents:
+      'C_t = Closing price at bar t|n = Span of the EMA (window parameter)|' +
+      '\u03b1 = Smoothing factor, derived from the span|EMA_{t\u22121} = Previous EMA value',
     formulaBreakdown:
-      'The multiplier k (smoothing factor) gives more weight to recent prices. For a 20-period EMA, k ≈ 0.095. The EMA is calculated recursively, starting with the SMA as the initial value.',
+      'The multiplier \u03b1 (smoothing factor) gives more weight to recent prices. For a 20-period EMA, \u03b1 \u2248 0.095. The EMA is calculated recursively, starting with the first closing price as the seed value.',
   },
   {
     name: 'MACD',
@@ -237,7 +282,13 @@ export const INDICATORS: IndicatorData[] = [
       'Look for histogram divergence before price reverses',
       'MACD works best in trending markets, not ranging ones',
     ],
-    formula: 'MACD = EMA(fast) − EMA(slow)\nSignal = EMA(MACD, signal)\nHistogram = MACD − Signal',
+    formula:
+      'MACD Line_t = EMA_{fast}(C_t) \u2212 EMA_{slow}(C_t)\n' +
+      'Signal Line_t = EMA_{signal}(MACD Line_t)\n' +
+      'Histogram_t = MACD Line_t \u2212 Signal Line_t',
+    formulaComponents:
+      'EMA_{fast} = EMA with span = fast (default 12)|EMA_{slow} = EMA with span = slow (default 26)|' +
+      'EMA_{signal} = EMA of the MACD line with span = signal (default 9)',
     formulaBreakdown:
       'The MACD line is the difference between a fast EMA (12) and slow EMA (26). The signal line is an EMA of the MACD line (9 periods). The histogram shows the divergence between MACD and signal.',
   },
@@ -264,10 +315,13 @@ export const INDICATORS: IndicatorData[] = [
     bestFor: 'Confirming trends and identifying accumulation/distribution before price moves.',
     similarTo: ['AV', 'RVOL'],
     tips: [
-      'OBV is cumulative—focus on the trend, not absolute values',
+      'OBV is cumulative; focus on the trend, not absolute values',
       'Look for OBV divergence as an early warning signal',
     ],
-    formula: 'If C > Cprev: OBV = OBVprev + Vol\nIf C < Cprev: OBV = OBVprev − Vol\nIf C = Cprev: OBV = OBVprev',
+    formula: 'OBV_t = OBV_{t\u22121} + sign(C_t \u2212 C_{t\u22121}) \u00d7 V_t',
+    formulaComponents:
+      'C_t = Closing price at bar t|C_{t\u22121} = Close price at previous bar|' +
+      'V_t = Volume at bar t|sign(x) = +1 if x > 0, \u22121 if x < 0, 0 if x = 0',
     formulaBreakdown:
       'OBV starts at zero. Each day, if the close is higher, volume is added. If lower, volume is subtracted. If unchanged, OBV remains the same.',
   },
@@ -294,10 +348,12 @@ export const INDICATORS: IndicatorData[] = [
     bestFor: 'Measuring momentum strength and identifying overbought/oversold extremes.',
     similarTo: ['RSI', 'MACD'],
     tips: [
-      'Shorter periods (5–10) for short-term trading, longer (20–50) for swing trading',
+      'Shorter periods (5\u201310) for short-term trading, longer (20\u201350) for swing trading',
       'ROC works well combined with moving average filters',
     ],
-    formula: 'ROC = ((Close − Closeprev) / Closeprev) × 100',
+    formula: 'ROC_t = ((C_t \u2212 C_{t\u2212n}) / C_{t\u2212n}) \u00d7 100',
+    formulaComponents:
+      'C_t = Closing price at bar t|C_{t\u2212n} = Closing price n bars ago|n = Lookback window (default 9)',
     formulaBreakdown:
       'Subtract the closing price N periods ago from the current closing price, divide by the closing price N periods ago, and multiply by 100 to get a percentage.',
   },
@@ -329,11 +385,22 @@ export const INDICATORS: IndicatorData[] = [
       'Use RSI with trend direction for better signals',
       'In strong trends, RSI can stay overbought/oversold for extended periods',
       'Look for divergences for early reversal signals',
-      'RSI 40–80 in uptrends, 20–60 in downtrends',
+      'RSI 40\u201380 in uptrends, 20\u201360 in downtrends',
     ],
-    formula: 'RS = Avg Gain / Avg Loss\nRSI = 100 − (100 / (1 + RS))',
+    formula:
+      '\u0394_t = C_t \u2212 C_{t\u22121}\n' +
+      'G_t = max(\u0394_t, 0),  L_t = max(\u2212\u0394_t, 0)\n' +
+      'AvgGain_t = (1/n) \u00d7 G_t + (1 \u2212 1/n) \u00d7 AvgGain_{t\u22121}\n' +
+      'AvgLoss_t = (1/n) \u00d7 L_t + (1 \u2212 1/n) \u00d7 AvgLoss_{t\u22121}\n' +
+      'RS_t = AvgGain_t / AvgLoss_t\n' +
+      'RSI_t = 100 \u2212 (100 / (1 + RS_t))',
+    formulaComponents:
+      'C_t = Closing price at bar t|n = Lookback window|\u0394_t = Period-over-period price change|' +
+      'G_t = Gain (positive changes only)|L_t = Loss (negative changes, as positive)|' +
+      'AvgGain_t = Exponentially smoothed average gain (Wilder)|AvgLoss_t = Exponentially smoothed average loss (Wilder)|' +
+      'RS_t = Ratio of average gain to average loss|RSI_t = Relative Strength Index, bounded 0\u2013100',
     formulaBreakdown:
-      'Average Gain is the average of upward price changes over the period. Average Loss is the average of downward price changes (as a positive number). RS is their ratio. RSI normalizes RS to a 0–100 scale.',
+      'Average Gain is the average of upward price changes over the period. Average Loss is the average of downward price changes (as a positive number). RS is their ratio. RSI normalizes RS to a 0\u2013100 scale using Wilder smoothing (alpha = 1/n).',
   },
   {
     name: 'RVOL',
@@ -359,7 +426,9 @@ export const INDICATORS: IndicatorData[] = [
       'RVOL > 2.0 is significant; > 3.0 is very significant',
       'Combine RVOL with price action for best results',
     ],
-    formula: 'RVOL = Volume / SMA(Volume, period)',
+    formula: 'RVOL_t = V_t / AV_t',
+    formulaComponents:
+      'V_t = Volume at bar t|AV_t = Average Volume over the window (default 10)',
     formulaBreakdown:
       'Divide the current bar\'s volume by the simple moving average of volume over the specified period. Values above 1.0 indicate above-average volume.',
   },
@@ -388,9 +457,11 @@ export const INDICATORS: IndicatorData[] = [
     tips: [
       'Common periods: 20 (short), 50 (medium), 200 (long)',
       'The 50/200 SMA crossover is a major long-term signal',
-      'SMA is slower to react than EMA—better for longer timeframes',
+      'SMA is slower to react than EMA; better for longer timeframes',
     ],
-    formula: 'SMA = (C1 + C2 + ... + Cn) / n',
+    formula: 'SMA_t = (1/n) \u00d7 \u03a3 C_{t\u2212i}',
+    formulaComponents:
+      'C_t = Closing price at bar t|n = Window (number of bars)',
     formulaBreakdown:
       'Sum the closing prices for the last n periods and divide by n. Each price in the period has equal weight.',
   },
@@ -423,7 +494,14 @@ export const INDICATORS: IndicatorData[] = [
       'Combine with trend filters for better results',
       'The faster %K line is more sensitive; the slower %D is smoother',
     ],
-    formula: '%K = ((Close − Low) / (High − Low)) × 100\n%D = SMA(%K, smooth_k)',
+    formula:
+      'K_{raw} = ((C_t \u2212 L_t) / (H_t \u2212 L_t)) \u00d7 100\n' +
+      '%K = SMA(K_{raw}, smooth_k)\n' +
+      '%D = SMA(%K, smooth_d)',
+    formulaComponents:
+      'C_t = Closing price at bar t|L_t = Lowest low over the window|' +
+      'H_t = Highest high over the window|smooth_k = %K smoothing period (default 3)|' +
+      'smooth_d = %D smoothing period (default 3)',
     formulaBreakdown:
       'The highest high and lowest low are calculated over the lookback period. %K shows where the close sits within that range as a percentage. %D is a moving average of %K, providing a smoother signal.',
   },
@@ -454,9 +532,14 @@ export const INDICATORS: IndicatorData[] = [
       'The first touch of VWAP often acts as support/resistance',
       'Reset VWAP at the start of each trading day',
     ],
-    formula: 'VWAP = Σ(Price × Volume) / Σ(Volume)',
+    formula:
+      'TP_t = (H_t + L_t + C_t) / 3\n' +
+      'VWAP_t = \u03a3(TP_{t\u2212i} \u00d7 V_{t\u2212i}) / \u03a3 V_{t\u2212i}',
+    formulaComponents:
+      'H_t = High price at bar t|L_t = Low price at bar t|C_t = Close price at bar t|' +
+      'V_t = Volume at bar t|TP_t = Typical Price|n = Window (default 20)',
     formulaBreakdown:
-      'For each bar, multiply the typical price (H+L+C)/3 by the volume, accumulate these products, and divide by the cumulative volume.',
+      'For each bar, multiply the typical price (H+L+C)/3 by the volume, accumulate these products over the window, and divide by the cumulative volume.',
   },
 ];
 

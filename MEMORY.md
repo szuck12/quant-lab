@@ -68,6 +68,30 @@ Agents read this at session start and append at session end.
   Rich animations: floating dots, gradient rotation, stagger-fade-in,
   page transitions, glow hover effects. Typography consistency
   improved across all components. All 671 tests passing.
+- **2026-09-01**: v3.4.0 — de-AI web redesign. Replaced all AI-slop
+  patterns: removed floating dots, gradient text, glass morphism nav,
+  uniform rounded-2xl, gradient buttons. Added: custom sigma favicon,
+  left-aligned hero, solid emerald palette, asymmetric feature grid,
+  scrolling ticker tape, terminal preview, noise texture overlay,
+  decorative math symbols, left-edge accent hover, type-colored
+  indicator accents, color-coded filter tabs, legal disclaimer.
+  Stats section updated (14 indicators, 1M+ combinations, 100% free).
+  Fixed Expand All / Collapse All state management bug.
+- **2026-09-01**: v3.5.0 — Round 2 visual refinements + uniqueness
+  improvements. 21 changes across 7 files. New node-graph favicon/logo
+  (non-letter abstract shape). Hero: mini equity chart preview replacing
+  terminal, typing animation, constellation dot grid, gradient blob.
+  Ticker tape: color-coded dots by indicator type. Stats: purple "100%".
+  How It Works: connecting gradient line, bigger step circles, hover
+  accent. Why QuantLab: corrected indicator list, skinnier tags. Open
+  Source: fixed CLI commands. Disclaimer: dark background, heading,
+  left-aligned. Backtest page: header + solid button. Indicators page:
+  smart expand/collapse (count-based), 3-section formula (formula,
+  components, breakdown), glow effect on hover. Scroll-triggered stagger
+  animations. Section dividers with formula fragments. Version badge
+  in nav + footer. All em dashes removed from indicator data. All 14
+  formulas expanded from docs/formulas.md with new formulaComponents
+  field.
 
 ## Corrections & Lessons Learned
 
@@ -98,7 +122,7 @@ Agents read this at session start and append at session end.
 
 <!-- Brief snapshot of where work left off. Updated at end of session. -->
 
-- Current version: 3.3.0
+- Current version: 3.5.0
 - All 671 mock tests passing (24 API + 197 backtester + 25 universe +
   12 integration + 413 indicator tests).
 - 13 agents total (11 original + backtest-engineer + web-developer).
@@ -112,17 +136,24 @@ Agents read this at session start and append at session end.
 - Skills: `add-indicator/`, `release-cut/`, `security-audit/`,
   `backtester/`, `webapp/`.
 - All agent files updated with web app constraints.
-- README updated for v3.3.0: three-page structure, rich animations.
+- README updated for v3.4.0: de-AI redesign, custom favicon, asymmetric layouts.
 - docs/agents_overview.md: thirteen agents, updated roster.
 - docs/agent_workflows.md: Workflow I (web app), updated graph, web verify cmds.
 - agents/README.md: 13-agent roster.
 - Root `package.json` with `npm run dev` for concurrent startup.
 - Data file: `web/src/data/indicators.ts` (14 indicators with
-  full descriptions, signals, parameters, tips, formulas).
+  full descriptions, signals, parameters, tips, expanded formulas,
+  and formulaComponents field).
 - Design system: Space Grotesk (display) + Inter (body) + JetBrains Mono (code).
-- Colors: emerald + cyan + purple + rose accents, dot grid background.
+- Colors: emerald + cyan + purple + rose accents, warm off-white background + noise texture.
 - Three-page structure: Home, Backtest, Indicators.
-- Home page: hero, animated counters, floating particles, page previews.
-- Indicators page: category filtering, type badges, expanded content.
-- Backtest page: Quick Start example, results summary cards.
-- Rich animations: float, gradient-rotate, stagger-fade-in, page-in.
+- Home page: hero with typing animation + constellation dots + gradient blob,
+  mini equity chart preview, color-coded ticker tape, purple stats,
+  connecting-line How It Works, section dividers with formula fragments.
+- Indicators page: category filtering, type badges, smart expand/collapse,
+  3-section formula (formula + components + breakdown), glow hover.
+- Backtest page: header with accent line, solid emerald button.
+- Disclaimer: dark navy background, heading, left-aligned, emerald accent.
+- Animations: gradient-drift, scan-line, constellation-dot, stagger-child,
+  typing, ping pulse, fade-in, page-in, count-up, ticker, scale-in.
+- Version badge in nav and footer.

@@ -204,7 +204,7 @@ export function BacktestForm({ loading, onSubmit }: Props) {
       <button
         type="submit"
         disabled={loading}
-        className="w-full rounded-xl bg-gradient-to-r from-emerald-500 via-cyan-500 to-purple-500 px-6 py-3.5 font-display text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 transition-all hover:shadow-xl hover:shadow-emerald-500/30 disabled:opacity-50 disabled:shadow-none"
+        className="w-full rounded-xl bg-emerald-600 px-6 py-3.5 font-display text-sm font-semibold text-white transition-colors hover:bg-emerald-700 disabled:opacity-50"
       >
         {loading ? (
           <span className="flex items-center justify-center gap-2">

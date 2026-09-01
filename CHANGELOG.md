@@ -5,6 +5,144 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com) and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.5.0] - 2026-09-01
+
+### Added
+- **Node-graph favicon/logo** — abstract diamond-shaped node graph with
+  4 colored dots connected by lines, replacing the sigma mark that
+  resembled the letter "Z". Non-letter abstract shape.
+- **Mini equity chart preview** — hero section now shows a Recharts
+  AreaChart with an upward-trending equity curve and 3 metric chips
+  (+24.7% Return, 1.41 Sharpe, 62.3% Win Rate), replacing the static
+  terminal code block.
+- **Color-coded ticker tape dots** — each indicator name's dot is now
+  colored by its type: emerald (Momentum), cyan (Trend), amber
+  (Volatility), rose (Volume).
+- **Constellation dot grid** — subtle SVG overlay in the hero background
+  with small drifting dots and faint connecting lines, creating a
+  data-network visualization.
+- **Hero gradient blob** — large, soft emerald radial gradient blob
+  that slowly drifts position behind the hero text using CSS animation.
+- **Hero typing animation** — headline "Backtest Technical Indicators"
+  types in letter by letter with a blinking cursor on first load.
+- **Live indicator pulse badge** — pulsing green dot next to the "14
+  Indicators" stat suggesting the platform is active.
+- **Section dividers with formula fragments** — thin gradient lines
+  between major sections with faint math symbols (sigma, alpha, beta,
+  etc.) as decorative breaks reinforcing the quantitative theme.
+- **Scroll-triggered stagger animations** — elements fade in from below
+  with staggered delays as their parent section enters the viewport,
+  using IntersectionObserver.
+- **Smart expand/collapse toggle** — button now shows "Expand All" when
+  fewer than half of indicators are open, "Collapse All" when more than
+  half are open, derived from actual open count rather than a boolean.
+- **3-part formula section** — indicator accordions now show Formula
+  (expanded from docs/formulas.md), Components (symbol-by-symbol
+  explanations), and Breakdown (verbal description), replacing the
+  previous 2-part layout.
+- **Indicator card glow effect** — hover over any indicator accordion
+  to see a subtle type-colored glow shadow (emerald for Momentum, cyan
+  for Trend, etc.).
+- **Version badge** — "v3.5.0" displayed in the nav header and footer.
+- **Backtest page header** — matching accent line, heading, and
+  subtitle consistent with the Indicators page design.
+
+### Changed
+- **"100%" stat color** — changed from `text-slate-700` to
+  `text-purple-600` for visual distinction.
+- **How It Works steps** — increased step number circle size (h-10 to
+  h-12), added vertical connecting gradient line between steps, added
+  left accent border on hover with background tint.
+- **Indicator tags** — shrunk from `text-[10px] px-2` to `text-[9px]
+  px-1.5` and corrected list to exactly match the 14 project indicators.
+- **Open Source CLI commands** — corrected to match actual README
+  (pip install, cd web && npm install, npm run dev).
+- **Disclaimer section** — redesigned with heading, dark navy-950
+  background, left-aligned text, emerald accent line, and increased
+  padding. Visually distinct from footer.
+- **Backtest button** — replaced gradient button with solid emerald-600.
+- **Ticker tape indicator list** — fixed to exactly 14 project
+  indicators (removed Williams %R, MFI, Parabolic SAR, Ichimoku Cloud).
+- **Em dashes removed** — all em dashes in indicator data replaced
+  with commas or semicolons.
+- **Formula expansion** — all 14 indicator formulas expanded to match
+  full mathematical representation from docs/formulas.md.
+- **Formula Components** — new `formulaComponents` field added to
+  IndicatorData interface with pipe-delimited symbol explanations.
+
+### Removed
+- **Terminal preview** — static CLI code block replaced by mini equity
+  chart and metrics preview.
+- **Gradient button** — backtest "Run Backtest" button no longer uses
+  emerald-cyan-purple gradient.
+
+## [3.4.0] - 2026-09-01
+
+### Added
+- **Custom favicon** — sigma/node-graph SVG mark in emerald, replacing
+  the default Vite lightning bolt.
+- **Scrolling ticker tape** — horizontal marquee of all 14 indicator
+  names below the hero section, animating continuously.
+- **Terminal preview** — mock CLI output block on the homepage showing
+  realistic quantlab commands and results, giving a tool-first feel.
+- **Split-layout "How It Works"** — asymmetric two-column section with
+  text on the left (2/5) and stepped process cards on the right (3/5),
+  breaking the centered three-step AI pattern.
+- **Asymmetric feature grid** — "Why QuantLab" redesigned as a 2/3 + 1/3
+  grid: one large card with full indicator list, two smaller cards for
+  speed and open source. Cards use left-edge accent sweep on hover.
+- **Left-edge accent hover** — new `.card-accent-hover` animation that
+  reveals a colored left border on hover, replacing generic translateY lift.
+- **Noise texture overlay** — subtle SVG noise filter applied to body for
+  a tactile, printed-paper feel. Breaks the flat digital look.
+- **Decorative math symbols** — sigma, delta, mu characters scattered as
+  faint background elements, reinforcing the quantitative theme.
+- **Large display numbers** — `.display-number` utility for oversized stats
+  with tight tracking and tabular numerals.
+- **Legal disclaimer** — research/educational disclaimer below the footer
+  on every page, clarifying QuantLab is not a broker or advisor.
+- **Type-colored indicator accents** — each accordion item on the Indicators
+  page now has a left border colored by type (emerald=Momentum, cyan=Trend,
+  amber=Volatility, rose=Volume).
+- **Color-coded filter tabs** — active indicator type tab now uses the
+  type's own color instead of generic slate-800.
+- **Solid nav underline indicator** — active page shows a 2px emerald
+  underline instead of gradient pill background.
+- **Left-aligned hero** — homepage hero is now left-aligned with a mono
+  label ("QUANTITATIVE RESEARCH PLATFORM") instead of centered gradient text.
+
+### Changed
+- **Favicon** — replaced purple Vite lightning bolt with custom sigma mark.
+- **Navigation logo** — replaced gradient "Q" box with inline SVG sigma mark.
+- **Hero text** — replaced gradient rainbow text with solid emerald color.
+- **Stats section** — removed "500+ S&P 500 Stocks" and "671+ Tests
+  Passing"; replaced with "1M+ Indicator Combinations" and "100% Free".
+  Reduced from 4-column to 3-column grid.
+- **Button styles** — replaced all gradient buttons with solid-color buttons
+  (emerald-600 primary, white secondary).
+- **Nav active states** — replaced gradient pill background with solid
+  underline indicator.
+- **Background** — replaced dot-grid radial gradient with warm off-white
+  (#FAFAF8) + subtle noise texture.
+- **Border radius** — reduced from `rounded-2xl` (16px) to `rounded-xl`
+  (12px) on cards, `rounded-lg` (8px) on buttons. No longer uniform.
+- **Animations trimmed** — removed floating dots, gradient-rotate, shimmer,
+  pulse-glow, subtle-pulse, ticker (replaced with new ticker), stagger
+  beyond 3 steps. Kept: fade-in, page-in, count-up, ticker, blink.
+- **Glass morphism removed** — nav uses solid `bg-white/95` with border
+  instead of `backdrop-blur` translucent glass.
+- **Footer** — simplified, version text removed from footer display.
+- **Indicators page header** — applied `font-display` to h1 and indicator
+  names. Added emerald accent line below title.
+- **Formula block** — improved with colored section headers (emerald for
+  Formula, cyan for Breakdown).
+
+### Fixed
+- **Expand All / Collapse All bug** — moved per-indicator open state from
+  local component to parent `IndicatorsPage` as a `Set<string>`. Individual
+  accordion clicks now properly clear the expand-all flag, preventing state
+  conflicts when mixing manual and bulk toggles.
+
 ## [3.3.0] - 2026-08-31
 
 ### Added
