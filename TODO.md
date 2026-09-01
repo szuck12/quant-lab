@@ -33,6 +33,11 @@
       subpackage (#refactor)
 - [x] Fix realtest conftest 1s delay applying to mock tests when running
       `pytest mocktests/ realtests/` together (#test, #bug)
+- [x] 2026-09-01 — v3.5.1 — shared page atmosphere, continuous ticker,
+      compact labeled hero chart, footer disclaimer consolidation, stable
+      headline wrapping, animated 100% counter, backtest dark accents,
+      calmer indicator hover, explicit VWAP rail, and formula color fixes
+      (#bug, @web-developer)
 
 ## High Priority
 

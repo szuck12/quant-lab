@@ -5,6 +5,7 @@ import {
   type IndicatorType,
   type IndicatorData,
 } from '../data/indicators';
+import { SectionRule } from './PageChrome';
 
 const TYPE_ACCENT: Record<IndicatorType, string> = {
   Momentum: 'border-l-emerald-500',
@@ -28,10 +29,10 @@ const TYPE_TAB_ACTIVE: Record<IndicatorType, string> = {
 };
 
 const TYPE_GLOW: Record<IndicatorType, string> = {
-  Momentum: 'hover:shadow-[0_0_20px_-5px_rgba(16,185,129,0.3)]',
-  Trend: 'hover:shadow-[0_0_20px_-5px_rgba(6,182,212,0.3)]',
-  Volatility: 'hover:shadow-[0_0_20px_-5px_rgba(245,158,11,0.3)]',
-  Volume: 'hover:shadow-[0_0_20px_-5px_rgba(244,63,94,0.3)]',
+  Momentum: 'hover:shadow-[0_0_12px_-6px_rgba(16,185,129,0.12)]',
+  Trend: 'hover:shadow-[0_0_12px_-6px_rgba(6,182,212,0.12)]',
+  Volatility: 'hover:shadow-[0_0_12px_-6px_rgba(245,158,11,0.12)]',
+  Volume: 'hover:shadow-[0_0_12px_-6px_rgba(244,63,94,0.12)]',
 };
 
 function IndicatorAccordion({
@@ -48,16 +49,24 @@ function IndicatorAccordion({
   const glow = TYPE_GLOW[indicator.type];
 
   const components = indicator.formulaComponents.split('|');
+  const panelId = `indicator-panel-${indicator.name.toLowerCase()}`;
+  const buttonId = `indicator-button-${indicator.name.toLowerCase()}`;
 
   return (
     <div
-      className={`border-b border-slate-200/60 last:border-0 border-l-3 transition-all ${accent} ${
-        isOpen ? 'bg-slate-50/60' : ''
-      }`}
+      className={`border-b border-slate-200/60 last:border-0 border-l-[3px]
+        transition-colors ${accent} ${isOpen ? 'bg-slate-50/60' : ''}`}
     >
       <button
         onClick={onToggle}
-        className={`flex w-full items-center justify-between py-4 px-4 text-left transition-all hover:bg-slate-50/40 ${glow}`}
+        aria-expanded={isOpen}
+        aria-controls={panelId}
+        id={buttonId}
+        className={`flex w-full items-center justify-between py-4 px-4
+          text-left transition-colors active:bg-slate-100
+          focus-visible:outline-none focus-visible:ring-2
+          focus-visible:ring-inset focus-visible:ring-emerald-300/40
+          hover:bg-slate-50/40 ${glow}`}
       >
         <div className="flex items-center gap-3">
           <span
@@ -87,7 +96,12 @@ function IndicatorAccordion({
       </button>
 
       {isOpen && (
-        <div className="pb-5 px-4 animate-fade-in">
+        <div
+          aria-labelledby={buttonId}
+          className="px-4 pt-3 pb-5 animate-fade-in"
+          id={panelId}
+          role="region"
+        >
           {/* Description */}
           <p className="mb-4 text-sm leading-relaxed text-slate-600">
             {indicator.description}
@@ -204,7 +218,7 @@ function IndicatorAccordion({
             </pre>
 
             {/* Components */}
-            <h4 className="mb-2 font-display text-xs font-semibold uppercase tracking-wider text-amber-400">
+            <h4 className="mb-2 font-display text-xs font-semibold uppercase tracking-wider text-cyan-400">
               Components
             </h4>
             <div className="mb-4 space-y-1">
@@ -223,7 +237,7 @@ function IndicatorAccordion({
             </div>
 
             {/* Breakdown */}
-            <h4 className="mb-2 font-display text-xs font-semibold uppercase tracking-wider text-cyan-400">
+            <h4 className="mb-2 font-display text-xs font-semibold uppercase tracking-wider text-purple-400">
               Breakdown
             </h4>
             <p className="text-xs leading-relaxed text-slate-400">
@@ -300,6 +314,7 @@ export function IndicatorsPage() {
         <div className="flex flex-wrap gap-1.5">
           <button
             onClick={() => setActiveType('All')}
+            aria-pressed={activeType === 'All'}
             className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
               activeType === 'All'
                 ? 'bg-slate-800 text-white'
@@ -313,6 +328,7 @@ export function IndicatorsPage() {
             <button
               key={type}
               onClick={() => setActiveType(type)}
+              aria-pressed={activeType === type}
               className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
                 activeType === type
                   ? TYPE_TAB_ACTIVE[type]
@@ -331,6 +347,8 @@ export function IndicatorsPage() {
           {showExpand ? 'Expand All' : 'Collapse All'}
         </button>
       </div>
+
+      <SectionRule />
 
       {/* Indicators List */}
       <section className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">

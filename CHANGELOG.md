@@ -5,6 +5,30 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com) and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.5.1] - 2026-09-01
+
+### Changed
+- **Main-page atmosphere** — extended the subtle gradient, constellation,
+  and texture treatment across the Home, Backtest, and Indicators bodies,
+  while keeping the footer separate.
+- **Footer layout** — placed the legal disclaimer directly beneath the
+  version and Free & Open Source copy in one coherent footer section.
+- **Backtest styling** — added darker navy accents and meaningful line-only
+  separators while preserving the existing light form surfaces.
+- **Headline and statistics** — kept "Indicators" on a stable second line
+  during typing and animated the 100% Free counter.
+- **Indicator reference styling** — reduced hover brightness, added top
+  spacing to expanded content, made the Volume rail explicit for VWAP,
+  and aligned formula headers to emerald, cyan, and purple.
+
+### Fixed
+- **Ticker carousel** — made the indicator marquee loop continuously with
+  identical repeated groups and removed the scanning light effect.
+- **Hero chart** — added compact period and currency axes and constrained
+  the plot to a narrower centered width.
+- **Homepage cleanup** — removed the indicators pulse dot, stray triangle,
+  and confusing formula text from decorative separators.
+
 ## [3.5.0] - 2026-09-01
 
 ### Added
@@ -671,4 +695,3 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Documentation: README, adding_indicator guide, commenting_guidelines,
   update_changelog process.
 - MIT License.
-

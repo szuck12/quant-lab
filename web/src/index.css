@@ -56,12 +56,11 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Subtle noise texture overlay for tactile feel */
-body::before {
+/* Subtle noise texture overlay for the routed page body */
+.page-atmosphere::after {
   content: '';
-  position: fixed;
+  position: absolute;
   inset: 0;
-  z-index: 9999;
   pointer-events: none;
   opacity: 0.018;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
@@ -167,7 +166,7 @@ body::before {
 /* Ticker tape — horizontal scrolling marquee */
 @keyframes ticker {
   0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
+  100% { transform: translateX(-33.333333%); }
 }
 
 .animate-ticker {
@@ -247,8 +246,15 @@ body::before {
 }
 
 .ticker-tape-inner {
+  display: flex;
+  width: max-content;
+}
+
+.ticker-tape-group {
   display: inline-flex;
+  flex-shrink: 0;
   gap: 2rem;
+  padding-right: 2rem;
 }
 
 /* Section divider — thin emerald line */
@@ -276,19 +282,6 @@ body::before {
 .code-block .comment { color: #64748B; }
 .code-block .operator { color: #CBD5E1; }
 
-/* Decorative math symbol — background element */
-.math-decoration {
-  position: absolute;
-  font-family: var(--font-mono);
-  opacity: 0.04;
-  pointer-events: none;
-  user-select: none;
-  font-size: 8rem;
-  line-height: 1;
-  font-weight: 700;
-  color: #10B981;
-}
-
 /* ===== ADDITIONAL ANIMATIONS ===== */
 
 /* Hero gradient blob drift */
@@ -300,16 +293,6 @@ body::before {
 
 .animate-gradient-drift {
   animation: gradient-drift 20s ease-in-out infinite;
-}
-
-/* Ticker tape scan line sweep */
-@keyframes scan-line {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(300%); }
-}
-
-.animate-scan-line {
-  animation: scan-line 8s linear infinite;
 }
 
 /* Constellation dots — staggered float */
@@ -328,4 +311,26 @@ body::before {
 .stagger-child.visible {
   opacity: 1;
   transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .stagger-child {
+    opacity: 1;
+    transform: none;
+  }
+
+  .animate-ticker,
+  .animate-gradient-drift,
+  .constellation-dot {
+    animation: none !important;
+  }
 }

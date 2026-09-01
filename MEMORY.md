@@ -92,6 +92,15 @@ Agents read this at session start and append at session end.
   in nav + footer. All em dashes removed from indicator data. All 14
   formulas expanded from docs/formulas.md with new formulaComponents
   field.
+- **2026-09-01**: v3.5.1 — visual patch release. Moved the atmospheric
+  background into a shared routed-page layer so it covers Home, Backtest,
+  and Indicators but not the footer. Made the ticker loop by translating
+  exactly one of three identical groups and removed its scan light. Added
+  labeled, narrower hero chart axes; animated the 100% counter; stabilized
+  the two-line typing layout; consolidated the legal disclaimer into the
+  footer; added restrained Backtest navy accents; and replaced indicator
+  hover bursts with subtle feedback. Explicitly rendered the rose Volume
+  rail for VWAP and changed formula headers to emerald, cyan, and purple.
 
 ## Corrections & Lessons Learned
 
@@ -122,7 +131,7 @@ Agents read this at session start and append at session end.
 
 <!-- Brief snapshot of where work left off. Updated at end of session. -->
 
-- Current version: 3.5.0
+- Current version: 3.5.1
 - All 671 mock tests passing (24 API + 197 backtester + 25 universe +
   12 integration + 413 indicator tests).
 - 13 agents total (11 original + backtest-engineer + web-developer).
@@ -136,7 +145,8 @@ Agents read this at session start and append at session end.
 - Skills: `add-indicator/`, `release-cut/`, `security-audit/`,
   `backtester/`, `webapp/`.
 - All agent files updated with web app constraints.
-- README updated for v3.4.0: de-AI redesign, custom favicon, asymmetric layouts.
+- README updated for v3.5.1: shared atmosphere, continuous ticker,
+  labeled hero preview, and consolidated footer disclaimer.
 - docs/agents_overview.md: thirteen agents, updated roster.
 - docs/agent_workflows.md: Workflow I (web app), updated graph, web verify cmds.
 - agents/README.md: 13-agent roster.
@@ -154,6 +164,17 @@ Agents read this at session start and append at session end.
   3-section formula (formula + components + breakdown), glow hover.
 - Backtest page: header with accent line, solid emerald button.
 - Disclaimer: dark navy background, heading, left-aligned, emerald accent.
-- Animations: gradient-drift, scan-line, constellation-dot, stagger-child,
+- Animations: gradient-drift, constellation-dot, stagger-child,
   typing, ping pulse, fade-in, page-in, count-up, ticker, scale-in.
 - Version badge in nav and footer.
+
+- **2026-09-01**: v3.5.1 frontend review (Sections 2–8) found no functional regression or missed stated visual requirement; residual accessibility risk remains because AnimatedCounter does not suppress its JavaScript interval under prefers-reduced-motion (web/src/components/HomePage.tsx:28-46). Verification passed (lint, smoke, mock/API tests, frontend build).
+- **2026-09-01**: Correction to the v3.5.1 frontend review note above:
+  AnimatedCounter now initializes to its final value and skips its interval
+  when prefers-reduced-motion is enabled. The previously reported residual
+  risk is resolved.
+- **2026-09-01**: Final v3.5.1 read-only security gate completed. No
+  reachable High/Very High findings in SVG, React rendering, URLs, or the
+  changed frontend surface; the requirements audit was clean. Existing
+  lower-bound Python dependency constraints remain a Medium supply-chain
+  posture item under §9c, not introduced by this patch. Verification passed.

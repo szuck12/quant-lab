@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import type { BacktestRequest, BacktestResponse } from './types';
 import { runBacktest } from './api';
 import { BacktestForm } from './components/BacktestForm';
 import { EquityChart } from './components/EquityChart';
-import { MetricsTable } from './components/MetricsTable';
-import { TradesTable } from './components/TradesTable';
-import { IndicatorsPage } from './components/IndicatorsPage';
 import { HomePage } from './components/HomePage';
+import { IndicatorsPage } from './components/IndicatorsPage';
+import { MetricsTable } from './components/MetricsTable';
+import { PageAtmosphere, SectionRule } from './components/PageChrome';
+import { TradesTable } from './components/TradesTable';
+import type { BacktestRequest, BacktestResponse } from './types';
 
 type Page = 'home' | 'backtest' | 'indicators';
 
@@ -26,7 +27,7 @@ function NodeGraphLogo({ className = '' }: { className?: string }) {
   );
 }
 
-export default function App() {
+export function App() {
   const [page, setPage] = useState<Page>('home');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<BacktestResponse | null>(null);
@@ -58,7 +59,10 @@ export default function App() {
   return (
     <div className="min-h-screen">
       {/* Navigation — solid, no glass morphism */}
-      <nav className="sticky top-0 z-50 border-b border-slate-200 bg-white/95">
+      <nav
+        aria-label="Primary navigation"
+        className="sticky top-0 z-50 border-b border-slate-200 bg-white/95"
+      >
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
           <div className="flex items-center gap-2.5">
             <NodeGraphLogo className="h-7 w-7" />
@@ -66,7 +70,7 @@ export default function App() {
               QuantLab
             </span>
             <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">
-              v3.5.0
+              v3.5.1
             </span>
           </div>
 
@@ -75,13 +79,18 @@ export default function App() {
               <button
                 key={p}
                 onClick={() => handleNavigate(p)}
+                aria-current={page === p ? 'page' : undefined}
                 className={`relative px-4 py-2 text-sm font-medium capitalize transition-colors ${
                   page === p
                     ? 'text-emerald-600'
                     : 'text-slate-500 hover:text-slate-800'
                 }`}
               >
-                {p === 'home' ? 'Home' : p === 'backtest' ? 'Backtest' : 'Indicators'}
+                {p === 'home'
+                  ? 'Home'
+                  : p === 'backtest'
+                    ? 'Backtest'
+                    : 'Indicators'}
                 {page === p && (
                   <span className="absolute bottom-0 left-2 right-2 h-0.5 rounded-full bg-emerald-500" />
                 )}
@@ -101,53 +110,56 @@ export default function App() {
       </nav>
 
       {/* Main Content */}
-      <div className="animate-page-in">
-        {page === 'home' && (
-          <HomePage onNavigate={handleNavigate} />
-        )}
-        {page === 'backtest' && (
-          <BacktestPage
-            loading={loading}
-            result={result}
-            error={error}
-            onSubmit={handleSubmit}
-          />
-        )}
-        {page === 'indicators' && (
-          <IndicatorsPage />
-        )}
+      <div
+        key={page}
+        className="relative isolate overflow-hidden animate-page-in"
+      >
+        <PageAtmosphere />
+        <div className="relative z-10">
+          {page === 'home' && (
+            <HomePage onNavigate={handleNavigate} />
+          )}
+          {page === 'backtest' && (
+            <BacktestPage
+              loading={loading}
+              result={result}
+              error={error}
+              onSubmit={handleSubmit}
+            />
+          )}
+          {page === 'indicators' && (
+            <IndicatorsPage />
+          )}
+        </div>
       </div>
 
       {/* Footer */}
-      <footer className="mt-16 border-t border-slate-200 bg-white/60 py-8">
+      <footer className="border-t border-slate-200 bg-white/60 py-8">
         <div className="mx-auto max-w-6xl px-6 text-center">
           <p className="font-display text-sm font-medium text-slate-600">
-            QuantLab v3.5.0
+            QuantLab v3.5.1
           </p>
           <p className="mt-1 text-xs text-slate-400">
-            Free & Open Source — Built for traders who want to understand their indicators
+            Free & Open Source — Built for traders who want to understand
+            their indicators
           </p>
+          <div className="mx-auto mt-6 max-w-3xl border-t border-slate-200 pt-5 text-left">
+            <h3 className="mb-2 font-display text-xs font-semibold text-slate-500">
+              Legal Disclaimer
+            </h3>
+            <p className="text-[11px] leading-relaxed text-slate-400">
+              QuantLab is a research and educational tool for testing quantitative
+              trading strategies. It is not a broker-dealer, investment advisor, or
+              financial advisor. Nothing on this platform constitutes investment
+              advice, a solicitation, or an offer to buy or sell any security.
+              Trading involves risk of loss. Past performance does not guarantee
+              future results. Users should conduct their own due diligence and
+              consult a qualified financial advisor before making investment
+              decisions.
+            </p>
+          </div>
         </div>
       </footer>
-
-      {/* Legal Disclaimer */}
-      <section className="mt-8 border-t-2 border-emerald-500 bg-navy-950 py-10">
-        <div className="mx-auto max-w-4xl px-6">
-          <h3 className="mb-4 font-display text-sm font-semibold text-slate-400">
-            Legal Disclaimer
-          </h3>
-          <p className="text-xs leading-relaxed text-slate-500">
-            QuantLab is a research and educational tool for testing quantitative
-            trading strategies. It is not a broker-dealer, investment advisor, or
-            financial advisor. Nothing on this platform constitutes investment
-            advice, a solicitation, or an offer to buy or sell any security.
-            Trading involves risk of loss. Past performance does not guarantee
-            future results. Users should conduct their own due diligence and
-            consult a qualified financial advisor before making investment
-            decisions.
-          </p>
-        </div>
-      </section>
     </div>
   );
 }
@@ -178,6 +190,8 @@ function BacktestPage({
           Configure conditions, run across S&P 500, analyze results
         </p>
       </div>
+
+      <SectionRule />
 
       {/* Quick Start Toggle */}
       <div className="mb-6 text-center">
@@ -226,7 +240,9 @@ function BacktestPage({
       )}
 
       {/* Form */}
-      <section className="rounded-xl border border-slate-200 bg-white p-6">
+      <section
+        className="rounded-xl border border-slate-300 border-t-4 border-t-navy-800 bg-white/95 p-6 shadow-sm"
+      >
         <BacktestForm loading={loading} onSubmit={onSubmit} />
       </section>
 
@@ -240,6 +256,7 @@ function BacktestPage({
       {/* Results */}
       {result && (
         <div className="mt-8 space-y-6 animate-fade-in">
+          <SectionRule />
           {/* Summary Cards */}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {[

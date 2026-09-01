@@ -1,6 +1,6 @@
 # QuantLab
 
-Current version: **3.5.0** — [Changelog](CHANGELOG.md)
+Current version: **3.5.1** — [Changelog](CHANGELOG.md)
 
 A stock-data backtesting tool with a **web application** (FastAPI + React) and a
 **command-line interface**. Fetches stock price data via
@@ -60,7 +60,7 @@ Open `http://localhost:5173` in your browser.
 - **Three-page navigation** — Home, Backtest, and Indicators pages
   with smooth transitions and underline active indicators
 - **Home page** — left-aligned hero with solid emerald accent, scrolling
-  ticker tape of all indicators, terminal preview, asymmetric feature
+  ticker tape of all indicators, equity preview chart, asymmetric feature
   grid, split-layout "How It Works", and page preview cards
 - **Backtest page** — form-based UI with Quick Start example,
   interactive equity curve chart, metrics comparison, and trade tables
@@ -491,6 +491,7 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
 │           │                      # features, and page previews.
 │           ├── IndicatorsPage.tsx  # Indicator reference with accordion.
 │           ├── MetricsTable.tsx   # Strategy vs benchmark metrics.
+│           ├── PageChrome.tsx     # Shared page atmosphere and separators.
 │           └── TradesTable.tsx    # Scrollable trade list.
 │
 ├── indicators/                    # Indicator calculation subpackage.
@@ -790,7 +791,7 @@ quality gate #1 for every change.
 Mock tests patch `yfinance.Ticker` so no real API calls are made. The `conftest.py` fixture creates a `MagicMock` that returns a predefined pandas DataFrame of `Close` prices. This means:
 
 - **Deterministic** — tests always produce the same results regardless of market conditions or network availability.
-- **Fast** — 664 tests run in under 2 seconds.
+- **Fast** — 671 tests run in under 2 seconds.
 - **Comprehensive** — covers calculation logic, edge cases, parser dispatch, count behaviour, multi-ticker input, duplicate detection, error conditions, API endpoints, and universe scanning.
 
 ### Real Tests

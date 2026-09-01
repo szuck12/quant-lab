@@ -1,18 +1,38 @@
-import { useState, useEffect, useRef } from 'react';
-import { AreaChart, Area, ResponsiveContainer } from 'recharts';
+import { useEffect, useRef, useState } from 'react';
+import {
+  Area,
+  AreaChart,
+  ResponsiveContainer,
+  XAxis,
+  YAxis,
+} from 'recharts';
+import { SectionRule } from './PageChrome';
 
 const MOCK_EQUITY = [
-  { v: 10000 }, { v: 10200 }, { v: 10150 }, { v: 10400 }, { v: 10350 },
-  { v: 10600 }, { v: 10500 }, { v: 10800 }, { v: 10950 }, { v: 10900 },
-  { v: 11100 }, { v: 11300 }, { v: 11200 }, { v: 11500 }, { v: 11700 },
-  { v: 11650 }, { v: 11900 }, { v: 12100 }, { v: 12000 }, { v: 12300 },
-  { v: 12500 }, { v: 12400 }, { v: 12700 }, { v: 12900 }, { v: 12800 },
+  { period: 'W1', v: 10000 }, { period: 'W2', v: 10200 },
+  { period: 'W3', v: 10150 }, { period: 'W4', v: 10400 },
+  { period: 'W5', v: 10350 }, { period: 'W6', v: 10600 },
+  { period: 'W7', v: 10500 }, { period: 'W8', v: 10800 },
+  { period: 'W9', v: 10950 }, { period: 'W10', v: 10900 },
+  { period: 'W11', v: 11100 }, { period: 'W12', v: 11300 },
+  { period: 'W13', v: 11200 }, { period: 'W14', v: 11500 },
+  { period: 'W15', v: 11700 }, { period: 'W16', v: 11650 },
+  { period: 'W17', v: 11900 }, { period: 'W18', v: 12100 },
+  { period: 'W19', v: 12000 }, { period: 'W20', v: 12300 },
+  { period: 'W21', v: 12500 }, { period: 'W22', v: 12400 },
+  { period: 'W23', v: 12700 }, { period: 'W24', v: 12900 },
+  { period: 'W25', v: 12800 },
 ];
+const FULL_HEADLINE = 'Backtest Technical Indicators';
 
 function AnimatedCounter({ value, suffix = '' }: { value: number; suffix?: string }) {
-  const [count, setCount] = useState(0);
+  const prefersReducedMotion =
+    typeof window !== 'undefined' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const [count, setCount] = useState(prefersReducedMotion ? value : 0);
 
   useEffect(() => {
+    if (prefersReducedMotion) return;
     const duration = 1500;
     const steps = 30;
     const increment = value / steps;
@@ -27,7 +47,7 @@ function AnimatedCounter({ value, suffix = '' }: { value: number; suffix?: strin
       }
     }, duration / steps);
     return () => clearInterval(timer);
-  }, [value]);
+  }, [prefersReducedMotion, value]);
 
   return (
     <span className="animate-count-up">
@@ -50,21 +70,21 @@ function TickerTape() {
     'RSI', 'MACD', 'Bollinger Bands', 'SMA', 'EMA', 'VWAP',
     'Stochastic', 'ADX', 'CCI', 'OBV', 'ROC', 'RVOL', 'AV', 'ATR',
   ];
-  const doubled = [...items, ...items];
+  const groups = [items, items, items];
 
   return (
     <div className="ticker-tape relative border-y border-slate-200 bg-white/60 py-3">
-      <div className="animate-ticker ticker-tape-inner">
-        {doubled.map((name, i) => (
-          <span key={`${name}-${i}`} className="inline-flex items-center gap-2 text-xs text-slate-400">
-            <span className={`h-1 w-1 rounded-full ${INDICATOR_TYPE_COLOR[name] || 'bg-emerald-400'}`} />
-            {name}
-          </span>
+      <div className="animate-ticker ticker-tape-inner" aria-hidden="true">
+        {groups.map((group, groupIndex) => (
+          <div key={groupIndex} className="ticker-tape-group">
+            {group.map((name, i) => (
+              <span key={`${name}-${i}`} className="inline-flex items-center gap-2 text-xs text-slate-400">
+                <span className={`h-1 w-1 rounded-full ${INDICATOR_TYPE_COLOR[name] || 'bg-emerald-400'}`} />
+                {name}
+              </span>
+            ))}
+          </div>
         ))}
-      </div>
-      {/* Scan line */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="animate-scan-line h-full w-24 bg-gradient-to-r from-transparent via-emerald-400/20 to-transparent" />
       </div>
     </div>
   );
@@ -79,15 +99,38 @@ function ResultsPreview() {
         <span className="h-2.5 w-2.5 rounded-full bg-emerald-500/60" />
         <span className="ml-2 text-[10px] text-slate-500">backtest results</span>
       </div>
-      <div className="mb-3 h-32">
+      <div
+        aria-label="Mock equity curve rising from ten thousand to twelve thousand eight hundred dollars"
+        className="mx-auto mb-3 h-36 w-2/3 min-w-[240px]"
+        role="img"
+      >
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={MOCK_EQUITY}>
+          <AreaChart
+            data={MOCK_EQUITY}
+            margin={{ top: 8, right: 4, bottom: 0, left: 0 }}
+          >
             <defs>
               <linearGradient id="equityFill" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="#10B981" stopOpacity={0.3} />
                 <stop offset="100%" stopColor="#10B981" stopOpacity={0} />
               </linearGradient>
             </defs>
+            <XAxis
+              dataKey="period"
+              tick={{ fontSize: 9, fill: '#64748B' }}
+              tickLine={false}
+              axisLine={{ stroke: '#334155' }}
+              interval={5}
+            />
+            <YAxis
+              width={34}
+              tick={{ fontSize: 9, fill: '#64748B' }}
+              tickLine={false}
+              axisLine={false}
+              tickFormatter={(value: number) => `$${value / 1000}k`}
+              domain={[10000, 13000]}
+              ticks={[10000, 11000, 12000, 13000]}
+            />
             <Area
               type="monotone"
               dataKey="v"
@@ -111,54 +154,6 @@ function ResultsPreview() {
           </div>
         ))}
       </div>
-    </div>
-  );
-}
-
-function ConstellationDots() {
-  const dots = [
-    { x: 8, y: 15, delay: '0s' }, { x: 22, y: 25, delay: '2s' },
-    { x: 45, y: 10, delay: '4s' }, { x: 60, y: 30, delay: '1s' },
-    { x: 78, y: 18, delay: '3s' }, { x: 92, y: 28, delay: '5s' },
-    { x: 15, y: 55, delay: '6s' }, { x: 35, y: 65, delay: '2.5s' },
-    { x: 55, y: 50, delay: '1.5s' }, { x: 72, y: 60, delay: '4.5s' },
-    { x: 88, y: 48, delay: '3.5s' }, { x: 5, y: 75, delay: '7s' },
-    { x: 28, y: 82, delay: '0.5s' }, { x: 50, y: 78, delay: '5.5s' },
-    { x: 70, y: 85, delay: '2s' }, { x: 90, y: 72, delay: '6.5s' },
-  ];
-  return (
-    <div className="pointer-events-none absolute inset-0 overflow-hidden opacity-40">
-      <svg className="h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-        {dots.map((d, i) => (
-          <circle
-            key={i}
-            cx={d.x}
-            cy={d.y}
-            r="0.4"
-            fill="#10B981"
-            className="constellation-dot"
-            style={{ '--delay': d.delay } as React.CSSProperties}
-          />
-        ))}
-        {/* Faint connecting lines between nearby dots */}
-        <line x1="8" y1="15" x2="22" y2="25" stroke="#10B981" strokeWidth="0.1" opacity="0.3" />
-        <line x1="45" y1="10" x2="60" y2="30" stroke="#06B6D4" strokeWidth="0.1" opacity="0.3" />
-        <line x1="78" y1="18" x2="92" y2="28" stroke="#10B981" strokeWidth="0.1" opacity="0.3" />
-        <line x1="15" y1="55" x2="35" y2="65" stroke="#06B6D4" strokeWidth="0.1" opacity="0.3" />
-        <line x1="55" y1="50" x2="72" y2="60" stroke="#10B981" strokeWidth="0.1" opacity="0.3" />
-        <line x1="5" y1="75" x2="28" y2="82" stroke="#06B6D4" strokeWidth="0.1" opacity="0.3" />
-        <line x1="50" y1="78" x2="70" y2="85" stroke="#10B981" strokeWidth="0.1" opacity="0.3" />
-      </svg>
-    </div>
-  );
-}
-
-function SectionDivider({ symbols }: { symbols: string }) {
-  return (
-    <div className="flex items-center gap-4 py-2">
-      <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
-      <span className="font-mono text-[10px] text-slate-300">{symbols}</span>
-      <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
     </div>
   );
 }
@@ -189,19 +184,24 @@ function useStagger() {
 }
 
 export function HomePage({ onNavigate }: { onNavigate: (page: 'backtest' | 'indicators') => void }) {
-  const [headlineText, setHeadlineText] = useState('');
-  const [showCursor, setShowCursor] = useState(true);
+  const prefersReducedMotion =
+    typeof window !== 'undefined' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const [headlineText, setHeadlineText] = useState(
+    prefersReducedMotion ? FULL_HEADLINE : '',
+  );
+  const [showCursor, setShowCursor] = useState(!prefersReducedMotion);
   const statsRef = useStagger();
   const howItWorksRef = useStagger();
   const whyRef = useStagger();
   const exploreRef = useStagger();
 
   useEffect(() => {
-    const fullText = 'Backtest Technical Indicators';
+    if (prefersReducedMotion) return;
     let i = 0;
     const timer = setInterval(() => {
-      if (i < fullText.length) {
-        setHeadlineText(fullText.slice(0, i + 1));
+      if (i < FULL_HEADLINE.length) {
+        setHeadlineText(FULL_HEADLINE.slice(0, i + 1));
         i++;
       } else {
         clearInterval(timer);
@@ -209,31 +209,22 @@ export function HomePage({ onNavigate }: { onNavigate: (page: 'backtest' | 'indi
       }
     }, 50);
     return () => clearInterval(timer);
-  }, []);
+  }, [prefersReducedMotion]);
 
   return (
     <main className="relative overflow-hidden">
-      {/* Decorative math symbols */}
-      <span className="math-decoration top-20 -left-10 rotate-12">{'\u03c3\u00b2'}</span>
-      <span className="math-decoration top-40 right-0 -rotate-6">{'\u03a3'}</span>
-      <span className="math-decoration bottom-60 left-10 rotate-[-8deg]">{'\u0394'}</span>
-      <span className="math-decoration top-[60%] -right-4 rotate-12">{'\u03bc'}</span>
-
       {/* Hero Section */}
       <section className="relative px-6 pt-20 pb-12 md:pt-28 md:pb-16">
-        {/* Gradient blob */}
-        <div className="pointer-events-none absolute top-10 left-1/2 -translate-x-1/2 h-[400px] w-[400px] rounded-full bg-emerald-500/[0.04] blur-3xl animate-gradient-drift" />
-
-        {/* Constellation dots */}
-        <ConstellationDots />
-
         <div className="relative mx-auto max-w-5xl">
           <div className="max-w-2xl">
             <p className="mb-4 font-mono text-xs font-medium tracking-widest text-emerald-600 uppercase">
               Quantitative Research Platform
             </p>
             <h1 className="font-display text-4xl font-bold tracking-tight text-slate-800 md:text-5xl lg:text-[3.4rem]">
-              {headlineText}
+              <span className="block">{headlineText.slice(0, 18)}</span>
+              <span className="block text-emerald-600">
+                {headlineText.slice(18)}
+              </span>
               {showCursor && (
                 <span className="animate-blink text-emerald-400">|</span>
               )}
@@ -268,7 +259,7 @@ export function HomePage({ onNavigate }: { onNavigate: (page: 'backtest' | 'indi
       {/* Ticker Tape */}
       <TickerTape />
 
-      <SectionDivider symbols="\u03a3 \u00b7 \u03b1 \u00b7 \u03b2" />
+      <SectionRule />
 
       {/* Stats Section */}
       <section className="px-6 py-14" ref={statsRef}>
@@ -280,10 +271,6 @@ export function HomePage({ onNavigate }: { onNavigate: (page: 'backtest' | 'indi
               </div>
               <p className="mt-2 font-display text-sm font-medium text-slate-600">
                 Indicators
-                <span className="relative ml-1.5 inline-flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-                </span>
               </p>
               <p className="mt-1 text-xs text-slate-400">
                 RSI, MACD, Bollinger Bands, and 11 more
@@ -302,7 +289,7 @@ export function HomePage({ onNavigate }: { onNavigate: (page: 'backtest' | 'indi
             </div>
             <div className="stagger-child">
               <div className="display-number text-purple-600">
-                100%
+                <AnimatedCounter value={100} suffix="%" />
               </div>
               <p className="mt-2 font-display text-sm font-medium text-slate-600">
                 Free
@@ -315,7 +302,7 @@ export function HomePage({ onNavigate }: { onNavigate: (page: 'backtest' | 'indi
         </div>
       </section>
 
-      <SectionDivider symbols="EMA \u00b7 RSI \u00b7 MACD" />
+      <SectionRule />
 
       {/* How It Works — split layout with connecting line */}
       <section className="px-6 py-16" ref={howItWorksRef}>
@@ -397,7 +384,7 @@ export function HomePage({ onNavigate }: { onNavigate: (page: 'backtest' | 'indi
         </div>
       </section>
 
-      <SectionDivider symbols="\u0394 \u00b7 \u03bc \u00b7 \u03c3" />
+      <SectionRule />
 
       {/* Why QuantLab */}
       <section className="px-6 py-16 bg-white/50" ref={whyRef}>
@@ -469,7 +456,7 @@ export function HomePage({ onNavigate }: { onNavigate: (page: 'backtest' | 'indi
         </div>
       </section>
 
-      <SectionDivider symbols="BB \u00b7 ATR \u00b7 VWAP" />
+      <SectionRule />
 
       {/* Page Previews */}
       <section className="px-6 py-16" ref={exploreRef}>
@@ -481,9 +468,10 @@ export function HomePage({ onNavigate }: { onNavigate: (page: 'backtest' | 'indi
             Two tools, one platform
           </h2>
           <div className="grid gap-5 md:grid-cols-2">
-            <div
+            <button
+              type="button"
               onClick={() => onNavigate('backtest')}
-              className="stagger-child card-accent-hover group cursor-pointer rounded-xl border border-emerald-200 bg-white p-6 transition-colors hover:border-emerald-300"
+              className="stagger-child card-accent-hover group w-full cursor-pointer rounded-xl border border-emerald-200 bg-white p-6 text-left transition-colors hover:border-emerald-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/50"
             >
               <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-lg bg-emerald-100 transition-colors group-hover:bg-emerald-200">
                 <svg className="h-5 w-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -503,11 +491,12 @@ export function HomePage({ onNavigate }: { onNavigate: (page: 'backtest' | 'indi
                   <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
                 </svg>
               </span>
-            </div>
+            </button>
 
-            <div
+            <button
+              type="button"
               onClick={() => onNavigate('indicators')}
-              className="stagger-child card-accent-hover group cursor-pointer rounded-xl border border-cyan-200 bg-white p-6 transition-colors hover:border-cyan-300"
+              className="stagger-child card-accent-hover group w-full cursor-pointer rounded-xl border border-cyan-200 bg-white p-6 text-left transition-colors hover:border-cyan-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50"
             >
               <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-lg bg-cyan-100 transition-colors group-hover:bg-cyan-200">
                 <svg className="h-5 w-5 text-cyan-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -527,12 +516,12 @@ export function HomePage({ onNavigate }: { onNavigate: (page: 'backtest' | 'indi
                   <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
                 </svg>
               </span>
-            </div>
+            </button>
           </div>
         </div>
       </section>
 
-      <SectionDivider symbols="ROC \u00b7 OBV \u00b7 STOCH" />
+      <SectionRule />
 
       {/* Open Source Section */}
       <section className="px-6 py-16 bg-navy-950 text-white">
