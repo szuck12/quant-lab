@@ -24,7 +24,6 @@ export function ConditionRow({
   const update = (fields: Partial<ConditionRequest>) => {
     const next = { ...condition, ...fields };
 
-    // Reset params when indicator changes
     if (fields.indicator && fields.indicator !== condition.indicator) {
       const ind = indicators.find((i) => i.name === fields.indicator);
       if (ind) {
@@ -35,7 +34,6 @@ export function ConditionRow({
       }
     }
 
-    // Reset component if not valid for new indicator
     if (next.component && !components.includes(next.component)) {
       next.component = null;
     }
@@ -55,7 +53,7 @@ export function ConditionRow({
       <div className="flex flex-wrap items-end gap-3">
         {/* Indicator */}
         <label className="flex flex-1 min-w-[140px] flex-col">
-          <span className="mb-1.5 text-xs font-medium text-slate-500">
+          <span className="mb-1.5 font-display text-xs font-medium text-slate-500">
             Indicator
           </span>
           <select
@@ -74,7 +72,7 @@ export function ConditionRow({
         {/* Component */}
         {components.length > 1 && (
           <label className="flex flex-col">
-            <span className="mb-1.5 text-xs font-medium text-slate-500">
+            <span className="mb-1.5 font-display text-xs font-medium text-slate-500">
               Component
             </span>
             <select
@@ -96,7 +94,7 @@ export function ConditionRow({
 
         {/* Operator */}
         <label className="flex flex-col">
-          <span className="mb-1.5 text-xs font-medium text-slate-500">
+          <span className="mb-1.5 font-display text-xs font-medium text-slate-500">
             Operator
           </span>
           <select
@@ -114,7 +112,7 @@ export function ConditionRow({
 
         {/* Value */}
         <label className="flex flex-col">
-          <span className="mb-1.5 text-xs font-medium text-slate-500">
+          <span className="mb-1.5 font-display text-xs font-medium text-slate-500">
             Value
           </span>
           <input
@@ -128,7 +126,7 @@ export function ConditionRow({
 
         {/* Interval */}
         <label className="flex flex-col">
-          <span className="mb-1.5 text-xs font-medium text-slate-500">
+          <span className="mb-1.5 font-display text-xs font-medium text-slate-500">
             Interval
           </span>
           <select
@@ -159,7 +157,7 @@ export function ConditionRow({
         {/* Params */}
         {selected?.params.map((p) => (
           <label key={p.name} className="flex flex-col">
-            <span className="mb-1 text-xs font-medium text-slate-500">
+            <span className="mb-1 font-display text-xs font-medium text-slate-500">
               {p.name}
               {p.hint && (
                 <span className="ml-1 font-normal text-slate-400">

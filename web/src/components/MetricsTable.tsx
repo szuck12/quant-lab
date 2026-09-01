@@ -56,7 +56,7 @@ function Row({
 export function MetricsTable({ strategy, benchmark }: Props) {
   return (
     <div>
-      <h3 className="mb-4 text-sm font-semibold text-slate-700">
+      <h3 className="mb-4 font-display text-sm font-semibold text-slate-700">
         Performance Metrics
       </h3>
       <table className="w-full text-left">

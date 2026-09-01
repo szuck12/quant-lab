@@ -5,6 +5,45 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com) and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.2.0] - 2026-08-31
+
+### Added
+- **Indicators reference page** — new page with all 14 indicators
+  showing descriptions, interpretation, bullish/bearish signals,
+  parameters, formulas, and usage tips.
+- **Category filtering** — filter indicators by type (Momentum,
+  Trend, Volatility, Volume) with count badges.
+- **Indicator type badges** — colored badges showing indicator
+  category on both pages.
+- **"How It Works" section** — 3-step visual guide explaining
+  the backtesting process.
+- **"Why QuantLab" feature grid** — 6 feature cards highlighting
+  key capabilities (speed, indicators, control, coverage, access,
+  open source).
+- **Quick Start example** — collapsible section with pre-filled
+  RSI oversold example and one-click "Try this example" button.
+- **Results summary cards** — 4 large metric cards above the chart
+  showing Total Return, Sharpe Ratio, Win Rate, and Total Trades.
+- **Space Grotesk font** — distinctive display font for headlines
+  and headings.
+- **Dot grid background** — subtle texture for visual depth.
+- **Gradient text** — emerald-to-cyan gradient for accent text.
+- **Card hover effects** — subtle lift and shadow on card hover.
+- **Staggered animations** — fade-in animations for content sections.
+
+### Changed
+- **Color palette expanded** — added purple as tertiary accent
+  alongside emerald and cyan.
+- **Typography hierarchy** — Space Grotesk for display, Inter for
+  body, JetBrains Mono for code/data.
+- **Card styling** — updated to use rounded-2xl and subtle borders.
+- **Form labels** — using Space Grotesk font for consistency.
+- **Navigation** — using Space Grotesk for brand name.
+
+### Removed
+- **Internal note from indicators page** — moved to internal
+  documentation only (webapp skill).
+
 ## [3.1.0] - 2026-08-31
 
 ### Added

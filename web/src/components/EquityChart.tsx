@@ -31,7 +31,7 @@ export function EquityChart({ data }: Props) {
 
   return (
     <div className="w-full">
-      <h3 className="mb-4 text-sm font-semibold text-slate-700">
+      <h3 className="mb-4 font-display text-sm font-semibold text-slate-700">
         Equity Curve
       </h3>
       <ResponsiveContainer width="100%" height={350}>

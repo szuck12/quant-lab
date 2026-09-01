@@ -107,10 +107,18 @@ When adding a new indicator to QuantLab:
 
 1. Add indicator calculation in `backtester/batch_indicators.py`
 2. Add indicator metadata in `api/routes.py` (`INDICATOR_SCHEMA`)
-3. Add indicator to `web/src/components/IndicatorsPage.tsx` with:
-   - Description (1–2 sentences on what it measures and when to use)
-   - Formula with clear notation
-   - Formula breakdown explaining each component
+3. Add indicator to `web/src/data/indicators.ts` with:
+   - `type`: 'Momentum' | 'Trend' | 'Volatility' | 'Volume' | 'Other'
+   - `description`: 1–2 sentences on what it measures
+   - `interpretation`: How to read the indicator values
+   - `parameters`: Array of `{ name, default, min, max, description }`
+   - `bullishSignals`: Array of bullish signal descriptions
+   - `bearishSignals`: Array of bearish signal descriptions
+   - `bestFor`: What situations it excels in
+   - `similarTo`: Related indicators
+   - `tips`: Practical usage tips
+   - `formula`: Clear notation
+   - `formulaBreakdown`: Explanation of each component
 4. Add API test in `mocktests/test_api.py` for the indicator
 5. Verify with `python -m pytest mocktests/test_api.py -v`
 

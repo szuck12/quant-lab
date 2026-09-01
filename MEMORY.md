@@ -47,16 +47,17 @@ Agents read this at session start and append at session end.
   indicator param hints and value range guidance. New `/api/config`
   endpoint. Engine handles universe internally. Added error banner for
   failed API fetches. 22 API tests, 669 total mock tests passing.
-- **2026-08-31**: v3.2.0 — UI/UX revamp. Complete visual redesign
-  with techy/finance theme. Color palette: navy (#0A1628), emerald
-  (#10B981), cyan (#06B6D4), slate grays. Typography: Inter for body,
-  JetBrains Mono for code/data. New navigation with Backtest and
-  Indicators tabs. Hero section with selling copy ("Backtest in
-  seconds", "14 indicators", "S&P 500 coverage", "Free & open source").
-  Gradient accents, glass morphism, subtle animations. Indicators
-  reference page with accordion design (14 indicators, alphabetical
-  order, descriptions + formulas + breakdowns). Updated all components
-  with rounded corners, proper spacing, and visual hierarchy.
+- **2026-08-31**: v3.2.0 — comprehensive UI/UX revamp. Typography:
+  Space Grotesk for display, Inter for body, JetBrains Mono for code.
+  Colors: emerald + cyan + purple accents on slate background with
+  dot grid texture. Indicators page: expanded with type badges,
+  interpretation, bullish/bearish signals, parameters, best-for,
+  similar indicators, pro tips, formulas. Category filtering
+  (Momentum/Trend/Volatility/Volume). Backtest page: "How It Works"
+  3-step guide, "Why QuantLab" feature grid, Quick Start example
+  with one-click RSI demo, results summary cards. Micro-interactions:
+  card hover effects, gradient text, glass morphism nav. All 671
+  tests passing.
 
 ## Corrections & Lessons Learned
 
@@ -106,6 +107,10 @@ Agents read this at session start and append at session end.
 - docs/agent_workflows.md: Workflow I (web app), updated graph, web verify cmds.
 - agents/README.md: 13-agent roster.
 - Root `package.json` with `npm run dev` for concurrent startup.
-- New components: `IndicatorsPage.tsx` (accordion reference page).
-- Design system: navy/emerald/cyan palette, Inter + JetBrains Mono fonts.
-- Indicators page: 14 indicators with descriptions, formulas, breakdowns.
+- New data file: `web/src/data/indicators.ts` (14 indicators with
+  full descriptions, signals, parameters, tips, formulas).
+- Design system: Space Grotesk (display) + Inter (body) + JetBrains Mono (code).
+- Colors: emerald + cyan + purple accents, dot grid background.
+- Indicators page: category filtering, type badges, expanded content.
+- Backtest page: "How It Works" guide, "Why QuantLab" features,
+  Quick Start example, results summary cards.

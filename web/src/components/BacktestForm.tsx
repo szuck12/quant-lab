@@ -57,7 +57,6 @@ export function BacktestForm({ loading, onSubmit }: Props) {
   const validate = (): boolean => {
     let ok = true;
 
-    // Validate capital
     const cap = parseFloat(capital);
     if (!capital.trim()) {
       setCapitalError('Capital is required');
@@ -72,7 +71,6 @@ export function BacktestForm({ loading, onSubmit }: Props) {
       setCapitalError('');
     }
 
-    // Validate years
     const yr = parseInt(years, 10);
     if (!years.trim()) {
       setYearsError('Years is required');
@@ -117,7 +115,7 @@ export function BacktestForm({ loading, onSubmit }: Props) {
       {/* Period + Capital row */}
       <div className="grid grid-cols-2 gap-4">
         <label className="flex flex-col">
-          <span className="mb-1.5 text-xs font-medium text-slate-500">
+          <span className="mb-1.5 font-display text-xs font-medium text-slate-500">
             Last N years
           </span>
           <input
@@ -126,7 +124,7 @@ export function BacktestForm({ loading, onSubmit }: Props) {
             max={maxYears}
             value={years}
             onChange={(e) => setYears(e.target.value)}
-            className={`rounded-xl border bg-slate-50 px-4 py-2.5 text-sm font-medium transition-colors ${
+            className={`rounded-xl border bg-slate-50 px-4 py-2.5 text-sm font-medium tabular-nums transition-colors ${
               yearsError
                 ? 'border-red-300 focus:border-red-400 focus:ring-red-400/20'
                 : 'border-slate-200 focus:border-emerald-400 focus:ring-emerald-400/20'
@@ -142,7 +140,7 @@ export function BacktestForm({ loading, onSubmit }: Props) {
         </label>
 
         <label className="flex flex-col">
-          <span className="mb-1.5 text-xs font-medium text-slate-500">
+          <span className="mb-1.5 font-display text-xs font-medium text-slate-500">
             Initial Capital
           </span>
           <div className="relative">
@@ -173,10 +171,10 @@ export function BacktestForm({ loading, onSubmit }: Props) {
       {/* Conditions */}
       <div>
         <div className="mb-3 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-slate-700">
+          <h3 className="font-display text-sm font-semibold text-slate-700">
             Conditions
           </h3>
-          <span className="text-xs text-slate-400">
+          <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
             {conditions.length} active
           </span>
         </div>
@@ -206,7 +204,7 @@ export function BacktestForm({ loading, onSubmit }: Props) {
       <button
         type="submit"
         disabled={loading}
-        className="w-full rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 transition-all hover:shadow-xl hover:shadow-emerald-500/30 disabled:opacity-50 disabled:shadow-none"
+        className="w-full rounded-xl bg-gradient-to-r from-emerald-500 via-cyan-500 to-purple-500 px-6 py-3.5 font-display text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 transition-all hover:shadow-xl hover:shadow-emerald-500/30 disabled:opacity-50 disabled:shadow-none"
       >
         {loading ? (
           <span className="flex items-center justify-center gap-2">

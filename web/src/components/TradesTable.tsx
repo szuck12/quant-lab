@@ -18,7 +18,7 @@ export function TradesTable({ trades, tickerResults }: Props) {
   if (trades.length === 0) {
     return (
       <div>
-        <h3 className="mb-4 text-sm font-semibold text-slate-700">
+        <h3 className="mb-4 font-display text-sm font-semibold text-slate-700">
           Trade Log
         </h3>
         <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-8 text-center">
@@ -34,7 +34,7 @@ export function TradesTable({ trades, tickerResults }: Props) {
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-slate-700">
+        <h3 className="font-display text-sm font-semibold text-slate-700">
           Trade Log
         </h3>
         <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
