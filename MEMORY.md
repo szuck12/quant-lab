@@ -42,6 +42,11 @@ Agents read this at session start and append at session end.
   Legacy CLI preserved: `python main.py backtest <args>`. 17 API tests.
   13 agents total (11 original + backtest-engineer + web-developer).
   New skill: `skills/webapp/`. conventions_reference.md §19 added.
+- **2026-08-31**: v3.1.0 — simplified UI + robustness. Removed ticker
+  input, simplified form to "Last N years" + "Initial Capital". Added
+  indicator param hints and value range guidance. New `/api/config`
+  endpoint. Engine handles universe internally. Added error banner for
+  failed API fetches. 22 API tests, 669 total mock tests passing.
 
 ## Corrections & Lessons Learned
 
@@ -60,25 +65,33 @@ Agents read this at session start and append at session end.
 - **`import type` in TypeScript**: When `verbatimModuleSyntax` is
   enabled in tsconfig, type-only imports must use `import type` syntax.
   Apply this to all TypeScript files that import interfaces/types.
+- **Port 8000 conflict**: If another application is already running on
+  port 8000, the QuantLab API will fail with 404. Always check for
+  port conflicts before starting: `lsof -i :8000`. Kill conflicting
+  processes with `kill <PID>` before starting the backend.
+- **Silent fetch failures**: Frontend API calls that fail silently
+  (`.catch(console.error)`) make debugging impossible. Always add
+  visible error state in React components for critical data fetches.
 
 ## Last Session State
 
 <!-- Brief snapshot of where work left off. Updated at end of session. -->
 
-- Current version: 3.0.0
-- All 664 mock tests passing (17 API + 197 backtester + 25 universe +
+- Current version: 3.1.0
+- All 669 mock tests passing (22 API + 197 backtester + 25 universe +
   12 integration + 413 indicator tests).
 - 13 agents total (11 original + backtest-engineer + web-developer).
 - Web app: FastAPI backend on `:8000`, React/Vite frontend on `:5173`.
 - Vite proxies `/api` to backend in dev mode.
-- `python main.py` starts uvicorn. Legacy CLI: `python main.py backtest <args>`.
+- `npm run dev` starts both backend and frontend concurrently.
+- Legacy CLI: `python main.py backtest <args>`.
 - Indicator CLI preserved in `cli.py` (imported by test_main.py).
 - `indicators/` package kept for web use (not deleted).
 - Shared conventions: `docs/conventions_reference.md` §1–§19.
 - Skills: `add-indicator/`, `release-cut/`, `security-audit/`,
   `backtester/`, `webapp/`.
 - All agent files updated with web app constraints.
-- README updated for v3.0.0: web app docs, project structure, agent roster.
+- README updated for v3.1.0: simplified UI, param hints.
 - docs/agents_overview.md: thirteen agents, updated roster.
 - docs/agent_workflows.md: Workflow I (web app), updated graph, web verify cmds.
 - agents/README.md: 13-agent roster.

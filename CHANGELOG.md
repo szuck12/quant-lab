@@ -5,6 +5,51 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com) and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.0] - 2026-08-31
+
+### Added
+- **Simplified UI** — removed ticker input; auto-uses S&P 500
+  universe via engine's `config["universe"]`.
+- **"Last N years" input** — replaced period dropdown with numeric
+  input (1–20 years).
+- **Initial Capital input** — simplified capital entry.
+- **Indicator param hints** — `hint` field on parameter schemas
+  shows purpose (e.g. "Lookback period").
+- **Value range guidance** — `value_hint` field on indicators shows
+  expected value ranges (e.g. "0–100 (30 = oversold, 70 = overbought)").
+- **`GET /api/config`** — returns `max_years` and defaults for
+  form initialization.
+- **Error banner** — visible error state when API fetches fail
+  (e.g. "Failed to load indicators. Is the backend server running?").
+- **Client-side validation** — years (1–max) and capital (positive,
+  ≤$1B) validated before submission.
+- **Server-side validation** — years and capital validated with
+  clear error messages.
+- **NaN/Infinity handling** — MetricsTable shows "—" for invalid
+  numeric values.
+- **Empty trades state** — TradesTable shows helpful message when
+  no trades match conditions.
+- **Frontend integration tests** — 2 new tests verify API responses
+  match TypeScript interfaces.
+
+### Changed
+- **`BacktestRequest` simplified** — now only takes `conditions`,
+  `capital`, `years` (removed tickers, hold, benchmark, stop_loss).
+- **Engine handles universe** — `BacktestEngine` resolves universe
+  internally via `config["universe"]`; route does NOT call
+  `resolve_universe` directly.
+- **`GET /api/periods` replaced** — now `GET /api/config` returns
+  `max_years` instead of period options.
+- **Form simplified** — removed hold, benchmark, stop_loss inputs
+  from top-level form.
+
+### Fixed
+- **Silent fetch failures** — frontend now shows visible error
+  banner when API calls fail (was `.catch(console.error)`).
+- **Port 8000 conflict** — documented in MEMORY.md and agent docs;
+  `lsof -i :8000` check added to webapp skill and web-developer
+  agent tools.
+
 ## [3.0.0] - 2026-08-31
 
 ### Added

@@ -119,6 +119,8 @@ Key conventions for this agent:
 - `cd web && npm run build` — type-check and build frontend.
 - `cd web && npm run dev` — start Vite dev server.
 - `ruff check api/` — lint backend code.
+- `lsof -i :8000` — check for port 8000 conflicts.
+- `kill <PID>` — kill conflicting process on port 8000.
 - `read` / `grep` / `glob` — to find existing patterns before
   implementing.
 
@@ -222,3 +224,18 @@ This agent enforces the code quality standards:
 - [ ] All lists, imports, and route definitions are in
       alphabetical order.
 - [ ] Changes are limited to the briefed scope.
+- [ ] Frontend API calls have visible error handling (no silent
+      `.catch(console.error)` without error state).
+
+## Troubleshooting
+
+### Port 8000 Conflict
+If the API returns 404 or the frontend shows "Failed to load indicators":
+1. Check for conflicting processes: `lsof -i :8000`
+2. Kill conflicting processes: `kill <PID>`
+3. Restart the backend: `uvicorn api.main:app --reload --port 8000`
+
+### Silent Fetch Failures
+Frontend API calls must have visible error handling. Never use
+`.catch(console.error)` alone — always add error state to React
+components so users see when backend requests fail.

@@ -408,3 +408,38 @@ class TestHealth:
         resp = client.get("/health")
         assert resp.status_code == 200
         assert resp.json() == {"status": "ok"}
+
+
+# -- Frontend integration tests --
+
+
+class TestFrontendIntegration:
+    def test_indicators_match_frontend_types(self, client):
+        """Verify indicator response matches TypeScript IndicatorInfo interface."""
+        resp = client.get("/api/indicators")
+        data = resp.json()
+        for ind in data:
+            # Required fields
+            assert "name" in ind
+            assert "params" in ind
+            assert "components" in ind
+            # params structure
+            for param in ind["params"]:
+                assert "name" in param
+                assert "type" in param
+                assert "default" in param
+                # Optional fields
+                if "hint" in param:
+                    assert isinstance(param["hint"], str)
+                if "min" in param:
+                    assert isinstance(param["min"], (int, float))
+                if "max" in param:
+                    assert isinstance(param["max"], (int, float))
+
+    def test_config_matches_frontend_types(self, client):
+        """Verify config response matches TypeScript AppConfig interface."""
+        resp = client.get("/api/config")
+        data = resp.json()
+        assert "max_years" in data
+        assert isinstance(data["max_years"], int)
+        assert data["max_years"] > 0

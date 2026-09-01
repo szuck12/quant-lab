@@ -115,3 +115,16 @@ Bump version per conventions. Commit with descriptive message.
 
 After all steps, run `bash scripts/verify.sh` to confirm the full
 suite passes. For a quick check, run Steps 8 and 9 in parallel.
+
+## Troubleshooting
+
+### Port 8000 Conflict
+If the API returns 404 or the frontend shows "Failed to load indicators":
+1. Check for conflicting processes: `lsof -i :8000`
+2. Kill conflicting processes: `kill <PID>`
+3. Restart the backend: `uvicorn api.main:app --reload --port 8000`
+
+### Silent Fetch Failures
+Frontend API calls must have visible error handling. Never use
+`.catch(console.error)` alone — always add error state to React
+components so users see when backend requests fail.
