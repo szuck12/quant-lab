@@ -3,9 +3,8 @@ import type {
   BacktestRequest,
   ConditionRequest,
   IndicatorInfo,
-  PeriodOption,
 } from '../types';
-import { fetchIndicators, fetchPeriods } from '../api';
+import { fetchConfig, fetchIndicators } from '../api';
 import { ConditionRow } from './ConditionRow';
 
 const EMPTY: ConditionRequest = {
@@ -24,18 +23,16 @@ interface Props {
 
 export function BacktestForm({ loading, onSubmit }: Props) {
   const [indicators, setIndicators] = useState<IndicatorInfo[]>([]);
-  const [periods, setPeriods] = useState<PeriodOption[]>([]);
-  const [tickers, setTickers] = useState('AAPL');
+  const [maxYears, setMaxYears] = useState(20);
   const [conditions, setConditions] = useState<ConditionRequest[]>([EMPTY]);
-  const [hold, setHold] = useState(10);
-  const [capital, setCapital] = useState(10000);
-  const [period, setPeriod] = useState('2yr');
-  const [benchmark, setBenchmark] = useState('SPY');
-  const [stopLoss, setStopLoss] = useState('');
+  const [capital, setCapital] = useState('10000');
+  const [years, setYears] = useState('2');
+  const [capitalError, setCapitalError] = useState('');
+  const [yearsError, setYearsError] = useState('');
 
   useEffect(() => {
     fetchIndicators().then(setIndicators).catch(console.error);
-    fetchPeriods().then(setPeriods).catch(console.error);
+    fetchConfig().then((cfg) => setMaxYears(cfg.max_years)).catch(console.error);
   }, []);
 
   const addCondition = () =>
@@ -47,116 +44,107 @@ export function BacktestForm({ loading, onSubmit }: Props) {
   const removeCondition = (i: number) =>
     setConditions(conditions.filter((_, j) => j !== i));
 
+  const validate = (): boolean => {
+    let ok = true;
+
+    // Validate capital
+    const cap = parseFloat(capital);
+    if (!capital.trim()) {
+      setCapitalError('Capital is required');
+      ok = false;
+    } else if (isNaN(cap) || cap <= 0) {
+      setCapitalError('Must be a positive number');
+      ok = false;
+    } else if (cap > 1_000_000_000) {
+      setCapitalError('Cannot exceed $1,000,000,000');
+      ok = false;
+    } else {
+      setCapitalError('');
+    }
+
+    // Validate years
+    const yr = parseInt(years, 10);
+    if (!years.trim()) {
+      setYearsError('Years is required');
+      ok = false;
+    } else if (isNaN(yr) || yr < 1) {
+      setYearsError('Must be at least 1 year');
+      ok = false;
+    } else if (yr > maxYears) {
+      setYearsError(`Maximum is ${maxYears} years`);
+      ok = false;
+    } else {
+      setYearsError('');
+    }
+
+    if (conditions.length === 0) {
+      ok = false;
+    }
+
+    return ok;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const tickerList = tickers
-      .split(/[,\s]+/)
-      .map((s) => s.trim().toUpperCase())
-      .filter(Boolean);
-
-    if (!tickerList.length || !conditions.length) return;
-
-    const yearsNum = parseInt(period.replace(/\D/g, ''), 10) || 2;
+    if (!validate()) return;
 
     onSubmit({
-      tickers: tickerList,
       conditions,
-      hold,
-      capital,
-      years: yearsNum,
-      benchmark: benchmark.toUpperCase() || 'SPY',
-      stop_loss: stopLoss ? parseFloat(stopLoss) : null,
+      capital: parseFloat(capital) || 10000,
+      years: parseInt(years, 10) || 2,
     });
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {/* Tickers */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700">
-          Tickers
-        </label>
-        <input
-          type="text"
-          value={tickers}
-          onChange={(e) => setTickers(e.target.value)}
-          placeholder="AAPL, MSFT, GOOG"
-          className="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm"
-        />
-        <p className="mt-1 text-xs text-gray-400">
-          Comma-separated. Max 100 for scanner mode.
-        </p>
-      </div>
-
-      {/* Period / Hold / Capital row */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      {/* Period + Capital row */}
+      <div className="grid grid-cols-2 gap-4">
         <label className="flex flex-col text-xs text-gray-500">
-          Period
-          <select
-            value={period}
-            onChange={(e) => setPeriod(e.target.value)}
-            className="mt-1 rounded border border-gray-300 bg-white px-2 py-1.5 text-sm"
-          >
-            {periods.map((p) => (
-              <option key={p.value} value={p.value}>
-                {p.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col text-xs text-gray-500">
-          Hold (bars)
+          Last N years
           <input
             type="number"
             min={1}
-            max={100}
-            value={hold}
-            onChange={(e) => setHold(parseInt(e.target.value, 10) || 10)}
-            className="mt-1 rounded border border-gray-300 bg-white px-2 py-1.5 text-sm"
+            max={maxYears}
+            value={years}
+            onChange={(e) => setYears(e.target.value)}
+            className={`mt-1 rounded border bg-white px-3 py-2 text-sm ${
+              yearsError ? 'border-red-400' : 'border-gray-300'
+            }`}
           />
+          {yearsError ? (
+            <span className="mt-1 text-xs text-red-500">{yearsError}</span>
+          ) : (
+            <span className="mt-1 text-xs text-gray-400">
+              Max {maxYears} years
+            </span>
+          )}
         </label>
+
         <label className="flex flex-col text-xs text-gray-500">
-          Capital ($)
-          <input
-            type="number"
-            min={100}
-            step={100}
-            value={capital}
-            onChange={(e) => setCapital(parseInt(e.target.value, 10) || 10000)}
-            className="mt-1 rounded border border-gray-300 bg-white px-2 py-1.5 text-sm"
-          />
-        </label>
-        <label className="flex flex-col text-xs text-gray-500">
-          Benchmark
+          Initial Capital ($)
           <input
             type="text"
-            value={benchmark}
-            onChange={(e) => setBenchmark(e.target.value)}
-            className="mt-1 rounded border border-gray-300 bg-white px-2 py-1.5 text-sm"
+            value={capital}
+            onChange={(e) => setCapital(e.target.value)}
+            className={`mt-1 rounded border bg-white px-3 py-2 text-sm ${
+              capitalError ? 'border-red-400' : 'border-gray-300'
+            }`}
           />
-        </label>
-      </div>
-
-      {/* Stop loss */}
-      <div className="w-48">
-        <label className="flex flex-col text-xs text-gray-500">
-          Stop Loss % (optional)
-          <input
-            type="number"
-            min={0}
-            max={100}
-            step={0.5}
-            value={stopLoss}
-            onChange={(e) => setStopLoss(e.target.value)}
-            placeholder="None"
-            className="mt-1 rounded border border-gray-300 bg-white px-2 py-1.5 text-sm"
-          />
+          {capitalError ? (
+            <span className="mt-1 text-xs text-red-500">{capitalError}</span>
+          ) : (
+            <span className="mt-1 text-xs text-gray-400">
+              Starting capital for backtest
+            </span>
+          )}
         </label>
       </div>
 
       {/* Conditions */}
       <div>
-        <h3 className="mb-2 text-sm font-medium text-gray-700">Conditions</h3>
+        <h3 className="mb-2 text-sm font-medium text-gray-700">
+          Conditions
+        </h3>
         <div className="space-y-2">
           {conditions.map((c, i) => (
             <ConditionRow

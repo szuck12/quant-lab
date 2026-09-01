@@ -6,7 +6,7 @@ All yfinance calls are mocked — no network access in these tests.
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
@@ -22,13 +22,12 @@ def client():
     return TestClient(app)
 
 
-def _make_ohlcv(rows: int = 200, start_price: float = 100.0) -> pd.DataFrame:
+def _make_ohlcv(rows: int = 200, start_price: float = 50.0) -> pd.DataFrame:
     """Create a mock OHLCV DataFrame with trending prices."""
     dates = pd.date_range(start="2025-01-01", periods=rows, freq="B")
-    # Create prices that oscillate to trigger RSI signals
     np.random.seed(42)
-    close = start_price + np.cumsum(np.random.randn(rows) * 2)
-    close = np.maximum(close, 10)  # floor at 10
+    close = start_price + np.cumsum(np.random.randn(rows) * 3)
+    close = np.maximum(close, 10)
     return pd.DataFrame(
         {
             "Open": close - 0.5,
@@ -70,6 +69,19 @@ class TestListIndicators:
         assert rsi["params"][0]["name"] == "window"
         assert rsi["params"][0]["default"] == 14
 
+    def test_indicator_has_hint(self, client):
+        resp = client.get("/api/indicators")
+        data = resp.json()
+        rsi = next(i for i in data if i["name"] == "RSI")
+        assert "value_hint" in rsi
+        assert "0" in rsi["value_hint"]
+
+    def test_param_has_hint(self, client):
+        resp = client.get("/api/indicators")
+        data = resp.json()
+        rsi = next(i for i in data if i["name"] == "RSI")
+        assert "hint" in rsi["params"][0]
+
     def test_multi_param_indicator(self, client):
         resp = client.get("/api/indicators")
         data = resp.json()
@@ -95,26 +107,30 @@ class TestListIndicators:
         assert rsi["components"] == ["value"]
 
 
-# -- GET /api/periods tests --
+# -- GET /api/config tests --
 
 
-class TestListPeriods:
-    def test_returns_period_options(self, client):
-        resp = client.get("/api/periods")
+class TestGetConfig:
+    def test_returns_config(self, client):
+        resp = client.get("/api/config")
         assert resp.status_code == 200
         data = resp.json()
-        assert len(data) == 10
-        values = [p["value"] for p in data]
-        assert "1mo" in values
-        assert "5yr" in values
-        assert "20yr" in values
+        assert "max_years" in data
+        assert "default_years" in data
+        assert "default_capital" in data
+
+    def test_max_years_reasonable(self, client):
+        resp = client.get("/api/config")
+        data = resp.json()
+        assert data["max_years"] >= 5
+        assert data["max_years"] <= 100
 
 
 # -- POST /api/backtest tests --
 
 
 class TestRunBacktest:
-    @patch("api.routes.DataPipeline")
+    @patch("backtester.engine.DataPipeline")
     def test_basic_backtest(self, MockPipeline, client):
         mock_pipeline = MockPipeline.return_value
         mock_pipeline.fetch.return_value = _mock_pipeline_fetch(
@@ -124,7 +140,6 @@ class TestRunBacktest:
         resp = client.post(
             "/api/backtest",
             json={
-                "tickers": ["AAPL"],
                 "conditions": [
                     {
                         "indicator": "RSI",
@@ -134,7 +149,6 @@ class TestRunBacktest:
                         "interval": "1d",
                     }
                 ],
-                "hold": 10,
                 "capital": 10000,
                 "years": 2,
             },
@@ -146,7 +160,7 @@ class TestRunBacktest:
         assert "equity_curve" in data
         assert "benchmark_metrics" in data
 
-    @patch("api.routes.DataPipeline")
+    @patch("backtester.engine.DataPipeline")
     def test_response_structure(self, MockPipeline, client):
         mock_pipeline = MockPipeline.return_value
         mock_pipeline.fetch.return_value = _mock_pipeline_fetch(
@@ -156,7 +170,6 @@ class TestRunBacktest:
         resp = client.post(
             "/api/backtest",
             json={
-                "tickers": ["AAPL"],
                 "conditions": [
                     {
                         "indicator": "RSI",
@@ -170,7 +183,6 @@ class TestRunBacktest:
         )
         data = resp.json()
 
-        # Check trade structure
         if data["trades"]:
             trade = data["trades"][0]
             assert "ticker" in trade
@@ -181,7 +193,6 @@ class TestRunBacktest:
             assert "hold_bars" in trade
             assert "return_pct" in trade
 
-        # Check metrics structure
         m = data["metrics"]
         assert "total_trades" in m
         assert "win_rate" in m
@@ -189,7 +200,6 @@ class TestRunBacktest:
         assert "sharpe_ratio" in m
         assert "max_drawdown" in m
 
-        # Check equity curve
         assert isinstance(data["equity_curve"], list)
         if data["equity_curve"]:
             pt = data["equity_curve"][0]
@@ -197,7 +207,7 @@ class TestRunBacktest:
             assert "strategy" in pt
             assert "benchmark" in pt
 
-    @patch("api.routes.DataPipeline")
+    @patch("backtester.engine.DataPipeline")
     def test_multi_condition(self, MockPipeline, client):
         mock_pipeline = MockPipeline.return_value
         mock_pipeline.fetch.return_value = _mock_pipeline_fetch(
@@ -207,20 +217,19 @@ class TestRunBacktest:
         resp = client.post(
             "/api/backtest",
             json={
-                "tickers": ["AAPL"],
                 "conditions": [
                     {
                         "indicator": "RSI",
                         "params": {"window": 14},
                         "operator": "<",
-                        "value": 30,
+                        "value": 70,
                         "interval": "1d",
                     },
                     {
                         "indicator": "SMA",
                         "params": {"window": 50},
                         "operator": ">",
-                        "value": 100,
+                        "value": 10,
                         "interval": "1d",
                     },
                 ],
@@ -230,8 +239,8 @@ class TestRunBacktest:
         data = resp.json()
         assert len(data["conditions"]) == 2
 
-    @patch("api.routes.DataPipeline")
-    def test_custom_hold_and_capital(self, MockPipeline, client):
+    @patch("backtester.engine.DataPipeline")
+    def test_custom_capital(self, MockPipeline, client):
         mock_pipeline = MockPipeline.return_value
         mock_pipeline.fetch.return_value = _mock_pipeline_fetch(
             ["AAPL"], "1d", 2
@@ -240,7 +249,6 @@ class TestRunBacktest:
         resp = client.post(
             "/api/backtest",
             json={
-                "tickers": ["AAPL"],
                 "conditions": [
                     {
                         "indicator": "RSI",
@@ -250,20 +258,17 @@ class TestRunBacktest:
                         "interval": "1d",
                     }
                 ],
-                "hold": 5,
                 "capital": 50000,
             },
         )
         assert resp.status_code == 200
         data = resp.json()
-        assert data["config"]["hold"] == 5
         assert data["config"]["capital"] == 50000
 
     def test_invalid_indicator(self, client):
         resp = client.post(
             "/api/backtest",
             json={
-                "tickers": ["AAPL"],
                 "conditions": [
                     {
                         "indicator": "FAKE",
@@ -280,7 +285,6 @@ class TestRunBacktest:
         resp = client.post(
             "/api/backtest",
             json={
-                "tickers": ["AAPL"],
                 "conditions": [
                     {
                         "indicator": "RSI",
@@ -293,51 +297,82 @@ class TestRunBacktest:
         )
         assert resp.status_code == 422
 
-    def test_invalid_ticker(self, client):
-        resp = client.post(
-            "/api/backtest",
-            json={
-                "tickers": ["12345"],
-                "conditions": [
-                    {
-                        "indicator": "RSI",
-                        "operator": "<",
-                        "value": 30,
-                        "interval": "1d",
-                    }
-                ],
-            },
-        )
-        assert resp.status_code == 422
-
-    def test_empty_tickers(self, client):
-        resp = client.post(
-            "/api/backtest",
-            json={
-                "tickers": [],
-                "conditions": [
-                    {
-                        "indicator": "RSI",
-                        "operator": "<",
-                        "value": 30,
-                        "interval": "1d",
-                    }
-                ],
-            },
-        )
-        assert resp.status_code == 422
-
     def test_empty_conditions(self, client):
         resp = client.post(
             "/api/backtest",
+            json={"conditions": []},
+        )
+        assert resp.status_code == 422
+
+    def test_invalid_years_zero(self, client):
+        resp = client.post(
+            "/api/backtest",
             json={
-                "tickers": ["AAPL"],
-                "conditions": [],
+                "conditions": [
+                    {
+                        "indicator": "RSI",
+                        "operator": "<",
+                        "value": 30,
+                        "interval": "1d",
+                    }
+                ],
+                "years": 0,
             },
         )
         assert resp.status_code == 422
 
-    @patch("api.routes.DataPipeline")
+    def test_invalid_years_negative(self, client):
+        resp = client.post(
+            "/api/backtest",
+            json={
+                "conditions": [
+                    {
+                        "indicator": "RSI",
+                        "operator": "<",
+                        "value": 30,
+                        "interval": "1d",
+                    }
+                ],
+                "years": -1,
+            },
+        )
+        assert resp.status_code == 422
+
+    def test_invalid_capital_zero(self, client):
+        resp = client.post(
+            "/api/backtest",
+            json={
+                "conditions": [
+                    {
+                        "indicator": "RSI",
+                        "operator": "<",
+                        "value": 30,
+                        "interval": "1d",
+                    }
+                ],
+                "capital": 0,
+            },
+        )
+        assert resp.status_code == 422
+
+    def test_invalid_capital_negative(self, client):
+        resp = client.post(
+            "/api/backtest",
+            json={
+                "conditions": [
+                    {
+                        "indicator": "RSI",
+                        "operator": "<",
+                        "value": 30,
+                        "interval": "1d",
+                    }
+                ],
+                "capital": -1000,
+            },
+        )
+        assert resp.status_code == 422
+
+    @patch("backtester.engine.DataPipeline")
     def test_equity_curve_dates_are_strings(self, MockPipeline, client):
         mock_pipeline = MockPipeline.return_value
         mock_pipeline.fetch.return_value = _mock_pipeline_fetch(
@@ -347,7 +382,6 @@ class TestRunBacktest:
         resp = client.post(
             "/api/backtest",
             json={
-                "tickers": ["AAPL"],
                 "conditions": [
                     {
                         "indicator": "RSI",

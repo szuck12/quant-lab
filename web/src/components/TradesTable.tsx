@@ -15,6 +15,20 @@ export function TradesTable({ trades, tickerResults }: Props) {
   const tickers = Object.keys(tickerResults);
   const showTickerCol = tickers.length > 1;
 
+  if (trades.length === 0) {
+    return (
+      <div>
+        <h3 className="mb-2 text-sm font-medium text-gray-700">
+          Trades (0)
+        </h3>
+        <p className="text-sm text-gray-400">
+          No trades generated. Try adjusting your conditions or
+          using a longer period.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div>
       <h3 className="mb-2 text-sm font-medium text-gray-700">

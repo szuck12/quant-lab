@@ -17,6 +17,7 @@ class ParamInfo(BaseModel):
     default: float
     min: float | None = None
     max: float | None = None
+    hint: str = ""  # human-readable description
 
 
 class IndicatorInfo(BaseModel):
@@ -25,6 +26,7 @@ class IndicatorInfo(BaseModel):
     name: str
     params: list[ParamInfo]
     components: list[str]
+    value_hint: str = ""  # suggested range for the comparison value
 
 
 # -- Request models --
@@ -42,16 +44,11 @@ class ConditionRequest(BaseModel):
 
 
 class BacktestRequest(BaseModel):
-    """Full backtest configuration."""
+    """Full backtest configuration. Tickers are always S&P 500."""
 
-    tickers: list[str] = Field(min_length=1)
     conditions: list[ConditionRequest] = Field(min_length=1)
-    hold: int = Field(default=10, ge=1, le=100)
-    capital: float = Field(default=10000, gt=0)
-    years: int = Field(default=2, ge=1, le=30)
-    benchmark: str = "SPY"
-    stop_loss: float | None = Field(default=None, gt=0, le=100)
-    max_tickers: int | None = Field(default=None, ge=1)
+    capital: float = Field(default=10000, gt=0, le=1_000_000_000)
+    years: int = Field(default=2, ge=1, le=100)
 
 
 # -- Response models --

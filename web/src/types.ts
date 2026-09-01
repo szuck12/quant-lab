@@ -4,12 +4,14 @@ export interface ParamInfo {
   default: number;
   min?: number;
   max?: number;
+  hint?: string;
 }
 
 export interface IndicatorInfo {
   name: string;
   params: ParamInfo[];
   components: string[];
+  value_hint?: string;
 }
 
 export interface ConditionRequest {
@@ -22,14 +24,9 @@ export interface ConditionRequest {
 }
 
 export interface BacktestRequest {
-  tickers: string[];
   conditions: ConditionRequest[];
-  hold: number;
   capital: number;
   years: number;
-  benchmark: string;
-  stop_loss?: number | null;
-  max_tickers?: number | null;
 }
 
 export interface TradeResponse {
@@ -70,10 +67,10 @@ export interface BacktestResponse {
   config: Record<string, unknown>;
 }
 
-export interface PeriodOption {
-  label: string;
-  value: string;
-  months: number;
+export interface AppConfig {
+  max_years: number;
+  default_years: number;
+  default_capital: number;
 }
 
 export const OPERATORS = [

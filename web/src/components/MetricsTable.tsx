@@ -6,10 +6,12 @@ interface Props {
 }
 
 function pct(v: number) {
+  if (!Number.isFinite(v)) return '—';
   return `${(v * 100).toFixed(2)}%`;
 }
 
 function num(v: number, dec = 2) {
+  if (!Number.isFinite(v)) return '—';
   return v.toFixed(dec);
 }
 

@@ -1,8 +1,8 @@
 import type {
+  AppConfig,
   BacktestRequest,
   BacktestResponse,
   IndicatorInfo,
-  PeriodOption,
 } from './types';
 
 const BASE = '';
@@ -33,8 +33,8 @@ export function fetchIndicators(): Promise<IndicatorInfo[]> {
   return get<IndicatorInfo[]>('/api/indicators');
 }
 
-export function fetchPeriods(): Promise<PeriodOption[]> {
-  return get<PeriodOption[]>('/api/periods');
+export function fetchConfig(): Promise<AppConfig> {
+  return get<AppConfig>('/api/config');
 }
 
 export function runBacktest(req: BacktestRequest): Promise<BacktestResponse> {
