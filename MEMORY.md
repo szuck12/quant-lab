@@ -47,6 +47,16 @@ Agents read this at session start and append at session end.
   indicator param hints and value range guidance. New `/api/config`
   endpoint. Engine handles universe internally. Added error banner for
   failed API fetches. 22 API tests, 669 total mock tests passing.
+- **2026-08-31**: v3.2.0 — UI/UX revamp. Complete visual redesign
+  with techy/finance theme. Color palette: navy (#0A1628), emerald
+  (#10B981), cyan (#06B6D4), slate grays. Typography: Inter for body,
+  JetBrains Mono for code/data. New navigation with Backtest and
+  Indicators tabs. Hero section with selling copy ("Backtest in
+  seconds", "14 indicators", "S&P 500 coverage", "Free & open source").
+  Gradient accents, glass morphism, subtle animations. Indicators
+  reference page with accordion design (14 indicators, alphabetical
+  order, descriptions + formulas + breakdowns). Updated all components
+  with rounded corners, proper spacing, and visual hierarchy.
 
 ## Corrections & Lessons Learned
 
@@ -77,8 +87,8 @@ Agents read this at session start and append at session end.
 
 <!-- Brief snapshot of where work left off. Updated at end of session. -->
 
-- Current version: 3.1.0
-- All 669 mock tests passing (22 API + 197 backtester + 25 universe +
+- Current version: 3.2.0
+- All 671 mock tests passing (24 API + 197 backtester + 25 universe +
   12 integration + 413 indicator tests).
 - 13 agents total (11 original + backtest-engineer + web-developer).
 - Web app: FastAPI backend on `:8000`, React/Vite frontend on `:5173`.
@@ -91,8 +101,11 @@ Agents read this at session start and append at session end.
 - Skills: `add-indicator/`, `release-cut/`, `security-audit/`,
   `backtester/`, `webapp/`.
 - All agent files updated with web app constraints.
-- README updated for v3.1.0: simplified UI, param hints.
+- README updated for v3.2.0: UI/UX revamp, indicators page.
 - docs/agents_overview.md: thirteen agents, updated roster.
 - docs/agent_workflows.md: Workflow I (web app), updated graph, web verify cmds.
 - agents/README.md: 13-agent roster.
 - Root `package.json` with `npm run dev` for concurrent startup.
+- New components: `IndicatorsPage.tsx` (accordion reference page).
+- Design system: navy/emerald/cyan palette, Inter + JetBrains Mono fonts.
+- Indicators page: 14 indicators with descriptions, formulas, breakdowns.

@@ -14,7 +14,11 @@ interface Props {
 }
 
 function formatDate(d: string) {
-  return d.length > 7 ? d.slice(5) : d; // MM-DD
+  return d.length > 7 ? d.slice(5) : d;
+}
+
+function formatCurrency(value: number) {
+  return `$${value.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
 }
 
 export function EquityChart({ data }: Props) {
@@ -27,44 +31,61 @@ export function EquityChart({ data }: Props) {
 
   return (
     <div className="w-full">
-      <h3 className="mb-2 text-sm font-medium text-gray-700">Equity Curve</h3>
+      <h3 className="mb-4 text-sm font-semibold text-slate-700">
+        Equity Curve
+      </h3>
       <ResponsiveContainer width="100%" height={350}>
         <LineChart data={formatted}>
           <XAxis
             dataKey="label"
-            tick={{ fontSize: 11 }}
+            tick={{ fontSize: 11, fill: '#64748B' }}
+            tickLine={false}
+            axisLine={{ stroke: '#E2E8F0' }}
             interval="preserveStartEnd"
             minTickGap={40}
           />
           <YAxis
-            tick={{ fontSize: 11 }}
+            tick={{ fontSize: 11, fill: '#64748B' }}
+            tickLine={false}
+            axisLine={false}
             tickFormatter={(v: number) =>
-              v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v.toFixed(0)
+              v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v.toFixed(0)
             }
           />
           <Tooltip
+            contentStyle={{
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #E2E8F0',
+              borderRadius: '12px',
+              boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+              padding: '12px 16px',
+            }}
             formatter={(value: unknown, name: unknown) => [
-              `$${Number(value).toLocaleString()}`,
+              formatCurrency(Number(value)),
               String(name),
             ]}
             labelFormatter={(label: unknown) => `Date: ${String(label)}`}
           />
-          <Legend />
+          <Legend
+            wrapperStyle={{ paddingTop: '16px' }}
+            iconType="circle"
+            iconSize={8}
+          />
           <Line
             type="monotone"
             dataKey="strategy"
-            stroke="#2563eb"
-            strokeWidth={2}
+            stroke="#10B981"
+            strokeWidth={2.5}
             dot={false}
             name="Strategy"
           />
           <Line
             type="monotone"
             dataKey="benchmark"
-            stroke="#9ca3af"
+            stroke="#94A3B8"
             strokeWidth={1.5}
             dot={false}
-            strokeDasharray="4 4"
+            strokeDasharray="6 4"
             name="Benchmark"
           />
         </LineChart>

@@ -6,9 +6,9 @@ interface Props {
 }
 
 function pnlColor(pct: number) {
-  if (pct > 0) return 'text-green-600';
-  if (pct < 0) return 'text-red-600';
-  return 'text-gray-500';
+  if (pct > 0) return 'text-emerald-600';
+  if (pct < 0) return 'text-red-500';
+  return 'text-slate-500';
 }
 
 export function TradesTable({ trades, tickerResults }: Props) {
@@ -18,60 +18,67 @@ export function TradesTable({ trades, tickerResults }: Props) {
   if (trades.length === 0) {
     return (
       <div>
-        <h3 className="mb-2 text-sm font-medium text-gray-700">
-          Trades (0)
+        <h3 className="mb-4 text-sm font-semibold text-slate-700">
+          Trade Log
         </h3>
-        <p className="text-sm text-gray-400">
-          No trades generated. Try adjusting your conditions or
-          using a longer period.
-        </p>
+        <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-8 text-center">
+          <p className="text-sm text-slate-500">
+            No trades generated. Try adjusting your conditions or
+            using a longer period.
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
     <div>
-      <h3 className="mb-2 text-sm font-medium text-gray-700">
-        Trades ({trades.length})
-      </h3>
-      <div className="max-h-[400px] overflow-auto rounded border border-gray-200">
+      <div className="mb-4 flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-slate-700">
+          Trade Log
+        </h3>
+        <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+          {trades.length} trades
+        </span>
+      </div>
+      <div className="max-h-[400px] overflow-auto rounded-xl border border-slate-200">
         <table className="w-full text-left text-sm">
-          <thead className="sticky top-0 bg-gray-50">
-            <tr className="text-xs text-gray-400">
-              {showTickerCol && <th className="px-3 py-2">Ticker</th>}
-              <th className="px-3 py-2">Entry</th>
-              <th className="px-3 py-2 text-right">Entry $</th>
-              <th className="px-3 py-2">Exit</th>
-              <th className="px-3 py-2 text-right">Exit $</th>
-              <th className="px-3 py-2 text-right">Bars</th>
-              <th className="px-3 py-2 text-right">Return</th>
+          <thead className="sticky top-0 bg-slate-50">
+            <tr className="text-xs font-medium text-slate-400">
+              {showTickerCol && <th className="px-3 py-2.5">Ticker</th>}
+              <th className="px-3 py-2.5">Entry</th>
+              <th className="px-3 py-2.5 text-right">Entry $</th>
+              <th className="px-3 py-2.5">Exit</th>
+              <th className="px-3 py-2.5 text-right">Exit $</th>
+              <th className="px-3 py-2.5 text-right">Bars</th>
+              <th className="px-3 py-2.5 text-right">Return</th>
             </tr>
           </thead>
           <tbody>
             {trades.map((t, i) => (
-              <tr key={i} className="border-t border-gray-100 hover:bg-gray-50">
+              <tr key={i} className="border-t border-slate-100 transition-colors hover:bg-slate-50/50">
                 {showTickerCol && (
-                  <td className="px-3 py-1.5 font-medium tabular-nums">
+                  <td className="px-3 py-2 font-medium tabular-nums text-slate-700">
                     {t.ticker}
                   </td>
                 )}
-                <td className="px-3 py-1.5 tabular-nums">{t.entry_date}</td>
-                <td className="px-3 py-1.5 text-right tabular-nums">
+                <td className="px-3 py-2 tabular-nums text-slate-600">{t.entry_date}</td>
+                <td className="px-3 py-2 text-right tabular-nums text-slate-600">
                   ${t.entry_price.toFixed(2)}
                 </td>
-                <td className="px-3 py-1.5 tabular-nums">{t.exit_date}</td>
-                <td className="px-3 py-1.5 text-right tabular-nums">
+                <td className="px-3 py-2 tabular-nums text-slate-600">{t.exit_date}</td>
+                <td className="px-3 py-2 text-right tabular-nums text-slate-600">
                   ${t.exit_price.toFixed(2)}
                 </td>
-                <td className="px-3 py-1.5 text-right tabular-nums">
+                <td className="px-3 py-2 text-right tabular-nums text-slate-500">
                   {t.hold_bars}
                 </td>
                 <td
-                  className={`px-3 py-1.5 text-right font-medium tabular-nums ${pnlColor(
+                  className={`px-3 py-2 text-right font-semibold tabular-nums ${pnlColor(
                     t.return_pct,
                   )}`}
                 >
-                  {(t.return_pct * 100).toFixed(2)}%
+                  {t.return_pct > 0 ? '+' : ''}{(t.return_pct * 100).toFixed(2)}%
                 </td>
               </tr>
             ))}

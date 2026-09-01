@@ -50,16 +50,18 @@ export function ConditionRow({
   };
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 space-y-3">
+    <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 space-y-4">
       {/* Row 1: Indicator + Component + Operator + Value */}
-      <div className="flex flex-wrap items-end gap-2">
+      <div className="flex flex-wrap items-end gap-3">
         {/* Indicator */}
-        <label className="flex flex-col text-xs text-gray-500">
-          Indicator
+        <label className="flex flex-1 min-w-[140px] flex-col">
+          <span className="mb-1.5 text-xs font-medium text-slate-500">
+            Indicator
+          </span>
           <select
             value={condition.indicator}
             onChange={(e) => update({ indicator: e.target.value })}
-            className="mt-1 rounded border border-gray-300 bg-white px-2 py-1.5 text-sm font-medium"
+            className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-800 transition-colors focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/20"
           >
             {indicators.map((ind) => (
               <option key={ind.name} value={ind.name}>
@@ -71,14 +73,16 @@ export function ConditionRow({
 
         {/* Component */}
         {components.length > 1 && (
-          <label className="flex flex-col text-xs text-gray-500">
-            Component
+          <label className="flex flex-col">
+            <span className="mb-1.5 text-xs font-medium text-slate-500">
+              Component
+            </span>
             <select
               value={condition.component ?? ''}
               onChange={(e) =>
                 update({ component: e.target.value || null })
               }
-              className="mt-1 rounded border border-gray-300 bg-white px-2 py-1.5 text-sm"
+              className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 transition-colors focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/20"
             >
               <option value="">value</option>
               {components.map((c) => (
@@ -91,12 +95,14 @@ export function ConditionRow({
         )}
 
         {/* Operator */}
-        <label className="flex flex-col text-xs text-gray-500">
-          Operator
+        <label className="flex flex-col">
+          <span className="mb-1.5 text-xs font-medium text-slate-500">
+            Operator
+          </span>
           <select
             value={condition.operator}
             onChange={(e) => update({ operator: e.target.value as Operator })}
-            className="mt-1 rounded border border-gray-300 bg-white px-2 py-1.5 text-sm"
+            className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 transition-colors focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/20"
           >
             {OPERATORS.map((op) => (
               <option key={op} value={op}>
@@ -107,24 +113,28 @@ export function ConditionRow({
         </label>
 
         {/* Value */}
-        <label className="flex flex-col text-xs text-gray-500">
-          Value
+        <label className="flex flex-col">
+          <span className="mb-1.5 text-xs font-medium text-slate-500">
+            Value
+          </span>
           <input
             type="number"
             step="any"
             value={condition.value}
             onChange={(e) => update({ value: parseFloat(e.target.value) || 0 })}
-            className="mt-1 w-24 rounded border border-gray-300 bg-white px-2 py-1.5 text-sm"
+            className="w-24 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm tabular-nums transition-colors focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/20"
           />
         </label>
 
         {/* Interval */}
-        <label className="flex flex-col text-xs text-gray-500">
-          Interval
+        <label className="flex flex-col">
+          <span className="mb-1.5 text-xs font-medium text-slate-500">
+            Interval
+          </span>
           <select
             value={condition.interval}
             onChange={(e) => update({ interval: e.target.value })}
-            className="mt-1 rounded border border-gray-300 bg-white px-2 py-1.5 text-sm"
+            className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 transition-colors focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/20"
           >
             <option value="1d">Daily</option>
             <option value="1wk">Weekly</option>
@@ -137,7 +147,7 @@ export function ConditionRow({
           <button
             type="button"
             onClick={() => onRemove(index)}
-            className="rounded bg-red-100 px-2 py-1.5 text-xs text-red-600 hover:bg-red-200"
+            className="rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-xs font-medium text-red-600 transition-colors hover:bg-red-100"
           >
             Remove
           </button>
@@ -145,19 +155,19 @@ export function ConditionRow({
       </div>
 
       {/* Row 2: Parameters + Value hint */}
-      <div className="flex flex-wrap items-end gap-2">
+      <div className="flex flex-wrap items-end gap-3 border-t border-slate-200/60 pt-3">
         {/* Params */}
         {selected?.params.map((p) => (
-          <label key={p.name} className="flex flex-col text-xs text-gray-500">
-            <span className="font-medium">
+          <label key={p.name} className="flex flex-col">
+            <span className="mb-1 text-xs font-medium text-slate-500">
               {p.name}
               {p.hint && (
-                <span className="ml-1 font-normal text-gray-400">
+                <span className="ml-1 font-normal text-slate-400">
                   ({p.hint})
                 </span>
               )}
             </span>
-            <div className="mt-1 flex items-center gap-1">
+            <div className="flex items-center gap-1.5">
               <input
                 type="number"
                 step={p.type === 'float' ? '0.1' : '1'}
@@ -165,10 +175,10 @@ export function ConditionRow({
                 max={p.max}
                 value={condition.params[p.name] ?? p.default}
                 onChange={(e) => setParam(p.name, e.target.value)}
-                className="w-20 rounded border border-gray-300 bg-white px-2 py-1.5 text-sm"
+                className="w-20 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm tabular-nums transition-colors focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/20"
               />
               {p.min !== undefined && p.max !== undefined && (
-                <span className="text-[10px] text-gray-400">
+                <span className="text-[10px] text-slate-400">
                   {p.min}–{p.max}
                 </span>
               )}
@@ -178,7 +188,7 @@ export function ConditionRow({
 
         {/* Value hint */}
         {selected?.value_hint && (
-          <span className="ml-auto text-[10px] text-gray-400 self-end pb-0.5">
+          <span className="ml-auto self-end pb-2 text-[10px] text-slate-400">
             {selected.value_hint}
           </span>
         )}

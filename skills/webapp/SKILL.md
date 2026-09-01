@@ -98,7 +98,21 @@ Bump version per conventions. Commit with descriptive message.
 | `web/src/types.ts` | TypeScript type definitions |
 | `web/src/api.ts` | API client functions |
 | `web/src/components/` | React components |
+| `web/src/components/IndicatorsPage.tsx` | Indicators reference page |
 | `mocktests/test_api.py` | API endpoint tests |
+
+## Adding New Indicators
+
+When adding a new indicator to QuantLab:
+
+1. Add indicator calculation in `backtester/batch_indicators.py`
+2. Add indicator metadata in `api/routes.py` (`INDICATOR_SCHEMA`)
+3. Add indicator to `web/src/components/IndicatorsPage.tsx` with:
+   - Description (1–2 sentences on what it measures and when to use)
+   - Formula with clear notation
+   - Formula breakdown explaining each component
+4. Add API test in `mocktests/test_api.py` for the indicator
+5. Verify with `python -m pytest mocktests/test_api.py -v`
 
 ## Conventions
 

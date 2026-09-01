@@ -7,7 +7,8 @@ interface Props {
 
 function pct(v: number) {
   if (!Number.isFinite(v)) return '—';
-  return `${(v * 100).toFixed(2)}%`;
+  const formatted = (v * 100).toFixed(2);
+  return v > 0 ? `+${formatted}%` : `${formatted}%`;
 }
 
 function num(v: number, dec = 2) {
@@ -26,14 +27,27 @@ function Row({
   bv: number;
   fmt: (v: number) => string;
 }) {
+  const svFmt = fmt(sv);
+  const bvFmt = fmt(bv);
+  const isPositive = sv > 0;
+  const isNegative = sv < 0;
+
   return (
-    <tr className="border-b border-gray-100 last:border-0">
-      <td className="py-1.5 pr-4 text-sm text-gray-500">{label}</td>
-      <td className="py-1.5 pr-4 text-right text-sm font-medium tabular-nums">
-        {fmt(sv)}
+    <tr className="border-b border-slate-100 last:border-0">
+      <td className="py-2.5 pr-4 text-sm text-slate-500">{label}</td>
+      <td
+        className={`py-2.5 pr-4 text-right text-sm font-semibold tabular-nums ${
+          isPositive
+            ? 'text-emerald-600'
+            : isNegative
+              ? 'text-red-500'
+              : 'text-slate-800'
+        }`}
+      >
+        {svFmt}
       </td>
-      <td className="py-1.5 text-right text-sm text-gray-500 tabular-nums">
-        {fmt(bv)}
+      <td className="py-2.5 text-right text-sm text-slate-500 tabular-nums">
+        {bvFmt}
       </td>
     </tr>
   );
@@ -42,13 +56,15 @@ function Row({
 export function MetricsTable({ strategy, benchmark }: Props) {
   return (
     <div>
-      <h3 className="mb-2 text-sm font-medium text-gray-700">Metrics</h3>
+      <h3 className="mb-4 text-sm font-semibold text-slate-700">
+        Performance Metrics
+      </h3>
       <table className="w-full text-left">
         <thead>
-          <tr className="border-b border-gray-200 text-xs text-gray-400">
-            <th className="pb-1 pr-4" />
-            <th className="pb-1 pr-4 text-right">Strategy</th>
-            <th className="pb-1 text-right">Benchmark</th>
+          <tr className="border-b border-slate-200 text-xs font-medium text-slate-400">
+            <th className="pb-2 pr-4" />
+            <th className="pb-2 pr-4 text-right">Strategy</th>
+            <th className="pb-2 text-right">Benchmark</th>
           </tr>
         </thead>
         <tbody>
