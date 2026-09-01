@@ -8,7 +8,7 @@ govern assignment. For *how to use* each agent in practice, see
 
 ## 1. The Model
 
-QuantLab is developed by a crew of eleven specialized agents coordinated
+QuantLab is developed by a crew of thirteen specialized agents coordinated
 by a Task Orchestrator. The core idea: **a single task is rarely one
 agent's job**. Every task, and every meaningful part of a task, is
 assigned to the agent or group of agents most specialized for it.
@@ -17,7 +17,7 @@ assigned to the agent or group of agents most specialized for it.
   work, decomposes it, and dispatches to specialist agents.
 - **Domain separation**: each agent owns a narrow slice (implementation,
   formulas, data, tests, reviews, conventions, docs, security,
-  releases) so expertise is not diluted.
+  releases, backtesting, web application) so expertise is not diluted.
 - **Gates, not vibes**: every handoff is verified. Some agents are
   *gates*: work cannot advance past them until they sign off.
 
@@ -36,6 +36,8 @@ assigned to the agent or group of agents most specialized for it.
 | Documentation Expert | Writing | README, docs, changelog wording |
 | Security Auditor | Trust | Security and dependency review (§9) |
 | Release Manager | Shipping | Versioning and release gate |
+| Backtest Engineer | Backtesting | Engine, batch pipeline, strategy simulation |
+| Web Developer | Web application | FastAPI backend, React/Vite/TypeScript frontend |
 
 ## 3. Assignment Rules
 

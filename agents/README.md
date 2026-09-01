@@ -52,6 +52,8 @@ as directives to the AI embodiment ("You MUST…"). Follow them exactly.
 | `documentation-expert.md` | Documentation Expert | README, docs, changelog wording |
 | `security-auditor.md` | Security Auditor | Security review and dependency audits |
 | `release-manager.md` | Release Manager | Versioning, changelog, release commits |
+| `backtest-engineer.md` | Backtest Engineer | Backtesting engine, batch pipeline, strategy simulation |
+| `web-developer.md` | Web Developer | FastAPI backend, React/Vite/TypeScript frontend |
 
 ## How the Agents Are Used
 

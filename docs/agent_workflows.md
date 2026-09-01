@@ -137,7 +137,7 @@ The Release Manager only cuts after every gate is green.
 | 1 | Backtest Engineer | Understands the requested backtester change or bug fix |
 | 2 | Backtest Engineer | Implements changes to `backtester/` package |
 | 3 | Backtest Engineer | Runs `ruff check backtester/` and `python3 run_mock_tests.py` |
-| 4 | Test Engineer | Verifies with mock suite (521+ tests) |
+| 4 | Test Engineer | Verifies with mock suite (664+ tests) |
 | 5 | Indicator Specialist | Validates batch indicator formulas if changed |
 | 6 | Consistency Guardian | Checks conventions and code style |
 | 7 | Documentation Expert | Updates CLI docs and examples if user-facing |
@@ -153,6 +153,42 @@ The Release Manager only cuts after every gate is green.
 
 ---
 
+## Workflow I — Web App Feature or Fix
+
+| Step | Owner | Output |
+|------|-------|--------|
+| 1 | Web Developer | Understands the requested feature or bug fix |
+| 2a | Web Developer (backend) | Add/update Pydantic schema in `api/schemas.py` |
+| 2b | Web Developer (backend) | Add/update endpoint in `api/routes.py` |
+| 2c | Web Developer (frontend) | Add/update TypeScript types in `web/src/types.ts` |
+| 2d | Web Developer (frontend) | Add/update React component in `web/src/components/` |
+| 2e | Web Developer | Update API client in `web/src/api.ts` if needed |
+| 3 | Test Engineer | API tests in `mocktests/test_api.py` |
+| 4 | Web Developer | `cd web && npm run build` (TypeScript compiles) |
+| 5 | Test Engineer | Full mock suite green (664+ tests) |
+| 6 | Consistency Guardian | Conventions, alphabetical order, style |
+| 7 | Documentation Expert | Update README/web docs if user-facing |
+| 8 | Release Manager | MINOR or MAJOR bump depending on scope |
+
+### Web App-Specific Notes
+
+- Backend: FastAPI with Pydantic v2 models in `api/schemas.py`.
+- Frontend: React + TypeScript + Tailwind CSS v4 + Recharts.
+- Use `import type` for TypeScript type-only imports.
+- Vite proxies `/api` to `http://127.0.0.1:8000` in dev.
+- NaN values must be sanitized before JSON serialization.
+- Legacy CLI still works: `python main.py backtest <args>`.
+
+Handoff chain:
+
+```
+web-developer → test-engineer → consistency-guardian
+  → documentation-expert → code-reviewer + security-auditor
+  → release-manager
+```
+
+---
+
 ## Interaction Graph
 
 ```
@@ -164,16 +200,20 @@ The Release Manager only cuts after every gate is green.
         ▼                  ▼      ▼      ▼      ▼                    ▼
    idea-generator    feature-  data-  test-  indicator-       documentation-
    (proposes)        implement- engine engineer specialist     expert (writes)
-                     er (codes)
-                                          │
-                    ┌─────────────────────┤
-                    ▼                     ▼
-        consistency-guardian      code-reviewer + security-auditor
-        (conventions audit)              (release gates)
-                    │                     │
-                    └──────────┬──────────┘
-                               ▼
-                      release-manager (ships)
+                     er (codes)                              │
+                                    │                       │
+                    ┌───────────────┤          ┌────────────┘
+                    ▼               ▼          ▼
+          backtest-engineer   web-developer   consistency-guardian
+          (backtesting)       (web app)       (conventions audit)
+                    │               │          │
+                    └───────┬───────┘          │
+                            ▼                  ▼
+              code-reviewer + security-auditor │
+                            (release gates)   │
+                            └──────────┬──────┘
+                                       ▼
+                              release-manager (ships)
 ```
 
 ---
@@ -183,8 +223,12 @@ The Release Manager only cuts after every gate is green.
 | Step | Command |
 |------|---------|
 | Quality gate #1 (mock) | `python3 run_mock_tests.py` |
+| API tests | `python -m pytest mocktests/test_api.py -v` |
 | Real suite | `python3 run_real_tests.py` |
 | Feature Implementer pre-handoff | `ruff check .` ; `python3 main.py` smoke test |
+| Web Developer pre-handoff | `cd web && npm run build` (TypeScript) |
+| Web Developer backend lint | `ruff check api/` |
 | Security scans | Commands in `docs/code_review_guide.md` §9c |
 | Consistency checks | `ruff check` / `mypy` when configured |
+| Full verification | `bash scripts/verify.sh` |
 | Release commit message | `Release X.Y.Z — <brief summary>` |

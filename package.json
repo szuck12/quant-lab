@@ -1,0 +1,13 @@
+{
+  "name": "quantlab",
+  "private": true,
+  "scripts": {
+    "dev": "python main.py & cd web && npm run dev",
+    "dev:backend": "python main.py",
+    "dev:frontend": "cd web && npm run dev",
+    "build": "cd web && npm run build",
+    "test:api": "python -m pytest mocktests/test_api.py -v",
+    "test:mock": "python3 run_mock_tests.py",
+    "verify": "bash scripts/verify.sh"
+  }
+}

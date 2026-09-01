@@ -5,6 +5,10 @@
 
 ## Done
 
+- [x] 2026-08-31 — v3.0.0 web application: FastAPI backend +
+      React/Vite/TypeScript frontend, 17 API tests, web-developer
+      agent, webapp skill, updated docs
+      (#feature, @web-developer @test-engineer @documentation-expert)
 - [x] 2026-08-31 — Universe/scanner feature: `--universe sp500` or
       CSV, `--max-tickers N`, chunked download, summary reporting
       (#feature, @backtest-engineer @data-engineer @test-engineer)
@@ -38,7 +42,7 @@
 - [ ] Test BB accuracy against known reference values
       (#indicator, #test, @test-engineer @indicator-specialist)
 - [ ] Improve structure of MACD and BB indicator output
-      (#cli, @feature-implementer)
+      (#indicator, @feature-implementer)
 
 ## Low Priority
 
@@ -48,5 +52,5 @@
 
 (Interesting ideas not yet committed to implementation.)
 
-- [ ] Allow multiple indicators to be calculated in a single command-line
-      input (#cli, @idea-generator)
+- [ ] Allow multiple indicators in a single backtest run (web + CLI)
+      (#feature, @idea-generator)

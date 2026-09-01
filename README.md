@@ -1,28 +1,80 @@
 # QuantLab
 
-Current version: **2.1.0** — [Changelog](CHANGELOG.md)
+Current version: **3.0.0** — [Changelog](CHANGELOG.md)
 
-A command-line tool that fetches stock price data via [yfinance](https://github.com/ranaroussi/yfinance) and computes one of fourteen technical indicators: Average Directional Index (ADX), Average True Range (ATR), Average Volume (AV), Bollinger Bands (BB), Commodity Channel Index (CCI), Exponential Moving Average (EMA), Moving Average Convergence Divergence (MACD), On-Balance Volume (OBV), Rate of Change (ROC), Relative Strength Index (RSI), Relative Volume (RVOL), Simple Moving Average (SMA), Stochastic Oscillator (STOCH), or Volume Weighted Average Price (VWAP). Input is provided through stdin and the result is printed to stdout. The tool is designed for quick terminal lookups — you type a ticker and an indicator, and you get back a number.
+A stock-data backtesting tool with a **web application** (FastAPI + React) and a
+**command-line interface**. Fetches stock price data via
+[yfinance](https://github.com/ranaroussi/yfinance), computes fourteen
+technical indicators, and runs multi-condition strategies across
+multiple tickers with batch data download, parquet caching, and
+universe scanning (S&P 500 or custom CSV).
 
-As of v2.1.0, QuantLab also includes a **backtester** that runs multi-condition strategies across multiple tickers with batch data download, parquet caching, and universe scanning (S&P 500 or custom CSV).
+The **web application** provides a form-based UI for configuring and
+running backtests, with interactive equity curve charts, metrics
+comparison, and trade tables. The **CLI** supports both single-ticker
+indicator lookups and full backtest runs from the terminal.
 
-yfinance provides access to Yahoo Finance market data. The tool does not require an API key or account.
+yfinance provides access to Yahoo Finance market data. The tool does
+not require an API key or account.
 
 ## Installation
 
-Requires Python 3.12+ (tested on 3.12; may work on 3.x).
+Requires Python 3.12+ and Node.js 18+.
 
 ```bash
 pip install -r requirements.txt
+cd web && npm install
 ```
 
-`requirements.txt` installs three packages:
+`requirements.txt` installs six packages:
 
 | Package | Purpose |
 |---------|---------|
 | `yfinance` | Fetches stock price history from Yahoo Finance |
 | `pandas` | Performs rolling window and exponential moving average calculations |
-| `pytest` | Test runner (not required for the CLI, required for running tests) |
+| `fastapi` | Web API framework for the backend |
+| `uvicorn` | ASGI server to run the FastAPI application |
+| `pydantic` | Request/response validation for API endpoints |
+| `pytest` | Test runner (required for running tests) |
+
+## Web Application
+
+The web application provides a form-based UI for running backtests
+with interactive charts and metrics.
+
+### Starting the Web App
+
+```bash
+# Option 1: One command (starts both backend + frontend)
+npm run dev
+
+# Option 2: Two terminals
+python main.py                    # Terminal 1 — backend on :8000
+cd web && npm run dev             # Terminal 2 — frontend on :5173
+```
+
+Open `http://localhost:5173` in your browser.
+
+### Web App Features
+
+- **Indicator selector** — choose from 14 indicators with dynamic
+  parameter inputs (window, num_std, fast/slow/signal, etc.)
+- **Condition builder** — add multiple conditions with AND logic
+- **Period selector** — 1 month to 20 years of historical data
+- **Equity curve chart** — strategy vs benchmark (buy-and-hold SPY)
+  rendered with Recharts
+- **Metrics table** — side-by-side comparison of strategy and
+  benchmark (return, Sharpe, Sortino, max drawdown, win rate, etc.)
+- **Trades table** — scrollable, color-coded P&L per trade
+
+### API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/indicators` | GET | Available indicators with parameter schemas |
+| `/api/periods` | GET | Analysis period options (1mo–20yr) |
+| `/api/backtest` | POST | Run backtest, return trades/metrics/equity curve |
+| `/health` | GET | Health check |
 
 ## Command-Line Usage
 
@@ -396,20 +448,46 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
 
 ```
 .
-├── main.py                        # CLI entry point: parse input, dispatch
-│                                  # to indicator via match/case, format
-│                                  # output.  Re-exports all calculate_*
-│                                  # from indicators/ for backward compat.
+├── main.py                        # Entry point: starts uvicorn web server
+│                                  # by default. Legacy CLI: python main.py
+│                                  # backtest <args>
+│
+├── cli.py                         # Legacy CLI indicator dispatch (imported
+│                                  # by test_main.py; standalone: python cli.py)
+│
+├── api/                           # FastAPI web backend.
+│   │
+│   ├── __init__.py
+│   ├── main.py                    # FastAPI app, CORS, router mount.
+│   ├── schemas.py                 # Pydantic request/response models.
+│   └── routes.py                  # Endpoints: /api/indicators, /api/periods,
+│                                  # /api/backtest.
+│
+├── web/                           # React + TypeScript frontend.
+│   │
+│   ├── package.json               # Vite, React, Recharts, Tailwind CSS.
+│   ├── vite.config.ts             # Vite config with Tailwind plugin and
+│   │                              # API proxy to backend.
+│   ├── index.html
+│   └── src/
+│       ├── main.tsx               # React entry point.
+│       ├── App.tsx                # Main app layout.
+│       ├── types.ts               # TypeScript types (mirrors api/schemas.py).
+│       ├── api.ts                 # API client functions.
+│       └── components/
+│           ├── BacktestForm.tsx   # Form: tickers, conditions, params.
+│           ├── ConditionRow.tsx   # Single condition editor.
+│           ├── EquityChart.tsx    # Recharts equity curve chart.
+│           ├── MetricsTable.tsx   # Strategy vs benchmark metrics.
+│           └── TradesTable.tsx    # Scrollable trade list.
 │
 ├── indicators/                    # Indicator calculation subpackage.
 │   │
 │   ├── __init__.py                # Re-exports all calculate_* functions.
-│   │
 │   ├── _data.py                   # Shared data layer: _DATA_PERIOD_MAP,
 │   │                              # _VALID_INTERVALS, _DEFAULT_WINDOWS,
 │   │                              # _data_period(), _fetch_close(),
 │   │                              # _fetch_ohlcv().
-│   │
 │   ├── adx.py                     # calculate_adx()
 │   ├── atr.py                     # calculate_atr()
 │   ├── av.py                      # calculate_av()
@@ -459,6 +537,9 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
 │
 ├── requirements.txt               # Python package dependencies.
 │
+├── package.json                   # Root npm scripts: dev, build, test:api,
+│                                  # test:mock, verify.
+│
 ├── LICENSE                        # MIT license.
 │
 ├── MEMORY.md                      # Persistent decision and learning
@@ -474,7 +555,7 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
 │                                  # (see docs/maintain_todo.md).
 │
 ├── .opencode/
-│   └── opencode.json              # Registers the agent personas for
+│   └── opencode.json              # Registers the 13 agent personas for
 │                                  # opencode (binds each to its file
 │                                  # in agents/).
 │
@@ -493,7 +574,9 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
 │   ├── consistency-guardian.md    # Conventions and structure.
 │   ├── documentation-expert.md    # README, docs, changelog wording.
 │   ├── security-auditor.md        # Security and dependency auditing.
-│   └── release-manager.md         # Versioning and release.
+│   ├── release-manager.md         # Versioning and release.
+│   ├── backtest-engineer.md       # Backtesting engine and simulation.
+│   └── web-developer.md           # FastAPI backend + React frontend.
 │
 ├── docs/
 │   ├── adding_indicator.md        # Step-by-step process for adding
@@ -512,6 +595,8 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
 │   ├── commenting_guidelines.md   # Code commenting conventions used
 │   │                              # throughout the project (docstring
 │   │                              # style, inline comment rules).
+│   │
+│   ├── conventions_reference.md   # Shared conventions reference (§1–§19).
 │   │
 │   ├── formulas.md                # Mathematical formulas and
 │   │                              # explanations for all indicators.
@@ -589,60 +674,64 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
 │   │                              # calculation, default window, count,
 │   │                              # parameter, zero volume, edge cases.
 │   │
+│   ├── test_api.py                # FastAPI endpoint tests: indicators,
+│   │                              # periods, backtest, validation,
+│   │                              # error handling (17 tests).
+│   │
 │   ├── test_backtester.py         # Backtester tests: CLI parsing,
 │   │                              # conditions, simulation, metrics,
 │   │                              # reporting, data pipeline errors,
-│   │                              # universe integration (192 tests).
+│   │                              # universe integration (197 tests).
 │   │
 │   ├── test_data_period.py        # Tests for _data_period(): validates
 │   │                              # every threshold in _DATA_PERIOD_MAP
 │   │                              # for every interval.
 │   │
-│   ├── test_main.py               # Tests for main(): parser dispatch,
-│   │                              # default windows, C<count> syntax,
-│   │                              # duplicate detection, multi-ticker
-│   │                              # handling, error cases.
+│   ├── test_main.py               # Tests for CLI indicator dispatch:
+│   │                              # parser dispatch, default windows,
+│   │                              # C<count> syntax, duplicate detection,
+│   │                              # multi-ticker handling, error cases.
 │   │
 │   └── test_universe.py           # Universe module tests: S&P 500
 │                                  # resolution, CSV loading, caching,
 │                                  # scraping fallback (25 tests).
 │
-└── realtests/                     # Integration tests using the live
-    │                              # yfinance API. These verify that the
-    │                              # tool works end-to-end with real
-    │                              # market data. Slower than mock tests
-    │                              # and dependent on network availability
-    │                              # and market hours.
-    │
-    ├── __init__.py                # Package marker.
-    │
-    ├── conftest.py                # Pytest hook that inserts 1-second
-    │                              # spacing between real tests to avoid
-    │                              # yfinance rate limits.
-    │
-    ├── test_calculate_adx.py      # End-to-end ADX tests with real
-    │                              # data (added in v1.6.0).
-    ├── test_calculate_atr.py      # End-to-end ATR tests with real data
-    │                              # (added in v1.3.0).
-    ├── test_calculate_av.py       # End-to-end AV tests with real data
-    │                              # (added in v1.2.0).
-    ├── test_calculate_bb.py       # End-to-end BB tests with real data.
-    ├── test_calculate_cci.py      # End-to-end CCI tests with real data
-    │                              # (added in v1.7.0).
-    ├── test_calculate_ema.py      # End-to-end EMA tests with real data.
-    ├── test_calculate_macd.py     # End-to-end MACD tests with real data.
-    ├── test_calculate_obv.py      # End-to-end OBV tests with real data
-    │                              # (added in v1.5.0).
-    ├── test_calculate_rsi.py      # End-to-end RSI tests with real data.
-    ├── test_calculate_roc.py      # End-to-end ROC tests with real data.
-    ├── test_calculate_rvol.py     # End-to-end RVOL tests with real data
-    │                              # (added in v1.2.0).
-    ├── test_calculate_sma.py      # End-to-end SMA tests with real data.
-    ├── test_calculate_stoch.py    # End-to-end STOCH tests with real data
-    │                              # (added in v1.3.0).
-    ├── test_calculate_vwap.py     # End-to-end VWAP tests with real data.
-    └── test_main.py               # End-to-end CLI tests including
-                                   # multi-ticker dispatch.
+├── realtests/                     # Integration tests using the live
+│   │                              # yfinance API. These verify that the
+│   │                              # tool works end-to-end with real
+│   │                              # market data. Slower than mock tests
+│   │                              # and dependent on network availability
+│   │                              # and market hours.
+│   │
+│   ├── __init__.py                # Package marker.
+│   │
+│   ├── conftest.py                # Pytest hook that inserts 1-second
+│   │                              # spacing between real tests to avoid
+│   │                              # yfinance rate limits.
+│   │
+│   ├── test_calculate_adx.py      # End-to-end ADX tests with real
+│   │                              # data (added in v1.6.0).
+│   ├── test_calculate_atr.py      # End-to-end ATR tests with real data
+│   │                              # (added in v1.3.0).
+│   ├── test_calculate_av.py       # End-to-end AV tests with real data
+│   │                              # (added in v1.2.0).
+│   ├── test_calculate_bb.py       # End-to-end BB tests with real data.
+│   ├── test_calculate_cci.py      # End-to-end CCI tests with real data
+│   │                              # (added in v1.7.0).
+│   ├── test_calculate_ema.py      # End-to-end EMA tests with real data.
+│   ├── test_calculate_macd.py     # End-to-end MACD tests with real data.
+│   ├── test_calculate_obv.py      # End-to-end OBV tests with real data
+│   │                              # (added in v1.5.0).
+│   ├── test_calculate_rsi.py      # End-to-end RSI tests with real data.
+│   ├── test_calculate_roc.py      # End-to-end ROC tests with real data.
+│   ├── test_calculate_rvol.py     # End-to-end RVOL tests with real data
+│   │                              # (added in v1.2.0).
+│   ├── test_calculate_sma.py      # End-to-end SMA tests with real data.
+│   ├── test_calculate_stoch.py    # End-to-end STOCH tests with real data
+│   │                              # (added in v1.3.0).
+│   ├── test_calculate_vwap.py     # End-to-end VWAP tests with real data.
+│   └── test_main.py               # End-to-end CLI tests including
+│                                  # multi-ticker dispatch.
 │
 ├── skills/                        # Load-on-demand skill playbooks
 │   │                              # for complex workflows.
@@ -659,12 +748,16 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
 │   ├── security-audit/
 │   │   └── SKILL.md               # Security scan commands.
 │   │
-│   └── backtester/
-│       └── SKILL.md               # Backtester workflow checklist.
+│   ├── backtester/
+│   │   └── SKILL.md               # Backtester workflow checklist.
+│   │
+│   └── webapp/
+│       └── SKILL.md               # Web app workflow checklist.
 │
 ├── scripts/
 │   └── verify.sh                  # Pre-handoff verification: lint,
-│                                  # smoke test, full mock suite.
+│                                  # smoke test, API tests, frontend
+│                                  # build, full mock suite.
 │
 └── TODO.md                        # Planned work, priorities, and ideas
                                    # (see docs/maintain_todo.md).
@@ -685,8 +778,8 @@ quality gate #1 for every change.
 Mock tests patch `yfinance.Ticker` so no real API calls are made. The `conftest.py` fixture creates a `MagicMock` that returns a predefined pandas DataFrame of `Close` prices. This means:
 
 - **Deterministic** — tests always produce the same results regardless of market conditions or network availability.
-- **Fast** — 644 tests run in under 1 second.
-- **Comprehensive** — covers calculation logic, edge cases, parser dispatch, count behaviour, multi-ticker input, duplicate detection, and error conditions.
+- **Fast** — 664 tests run in under 2 seconds.
+- **Comprehensive** — covers calculation logic, edge cases, parser dispatch, count behaviour, multi-ticker input, duplicate detection, error conditions, API endpoints, and universe scanning.
 
 ### Real Tests
 
@@ -748,11 +841,14 @@ for the interaction model.
 | Security Auditor | Security and dependency auditing | Release, dependency change | Security gate |
 | Release Manager | Versioning and release | All work is done | Final release gate |
 | Backtest Engineer | Backtesting engine and strategy simulation | Backtester features/fixes | Backtester correctness |
+| Web Developer | React frontend + FastAPI backend | Web app features/fixes | Web app correctness |
 
 Example routing: adding a new indicator runs
 `Indicator Specialist → Feature Implementer → Data Engineer → Test
 Engineer → Consistency Guardian → Documentation Expert → Release
 Manager`, with Code Reviewer and Security Auditor pre-release gates.
+Adding a web app feature runs `Web Developer → Test Engineer →
+Consistency Guardian → Documentation Expert → Release Manager`.
 Ask the Task Orchestrator ("have the orchestrator add a new indicator")
 to start any task.
 

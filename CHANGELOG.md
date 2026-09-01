@@ -42,12 +42,18 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Changed
 - **`main.py` simplified** — primary entry is now `python main.py`
   which starts uvicorn. CLI dispatch moved to legacy mode.
+- **`cli.py` extracted** — legacy indicator CLI moved to standalone
+  `cli.py` at repo root (backward-compatible import for tests).
 - **`requirements.txt`** — added `fastapi`, `uvicorn[standard]`,
   `pydantic`.
 - **`.gitignore`** — added `web/node_modules/` and `web/dist/`.
 - **`AGENTS.md`** — added Web Developer to roster, routing,
   file ownership, and skills index.
 - **`MEMORY.md`** — v3.0.0 web application decisions logged.
+- **Root `package.json`** — added `npm run dev` for concurrent
+  backend + frontend startup.
+- **Total mock tests** — 664 tests (17 API + 197 backtester +
+  25 universe + 12 integration + 413 indicator).
 
 ### Preserved
 - **`indicators/` package** — kept for internal use by backtester
