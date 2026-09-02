@@ -15,7 +15,7 @@ export function PageAtmosphere() {
   return (
     <div
       aria-hidden="true"
-      className="page-atmosphere pointer-events-none absolute inset-0 overflow-hidden"
+      className="page-atmosphere pointer-events-none absolute inset-0 min-h-screen overflow-hidden"
     >
       <div className="absolute top-10 left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-emerald-500/[0.04] blur-3xl animate-gradient-drift" />
       <svg

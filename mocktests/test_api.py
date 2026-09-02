@@ -443,3 +443,49 @@ class TestFrontendIntegration:
         assert "max_years" in data
         assert isinstance(data["max_years"], int)
         assert data["max_years"] > 0
+
+
+# -- CORS configuration tests --
+
+
+class TestCORS:
+    def test_cors_allows_github_pages(self, client):
+        """Verify GitHub Pages origin is in CORS allow list."""
+        resp = client.options(
+            "/api/indicators",
+            headers={
+                "Origin": "https://szuck12.github.io",
+                "Access-Control-Request-Method": "GET",
+            },
+        )
+        assert resp.status_code == 200
+        assert "access-control-allow-origin" in resp.headers
+        allowed = resp.headers["access-control-allow-origin"]
+        assert allowed == "https://szuck12.github.io"
+
+    def test_cors_allows_localhost(self, client):
+        """Verify localhost dev origin is in CORS allow list."""
+        resp = client.options(
+            "/api/indicators",
+            headers={
+                "Origin": "http://localhost:5173",
+                "Access-Control-Request-Method": "GET",
+            },
+        )
+        assert resp.status_code == 200
+        assert "access-control-allow-origin" in resp.headers
+        allowed = resp.headers["access-control-allow-origin"]
+        assert allowed == "http://localhost:5173"
+
+    def test_cors_rejects_unknown_origin(self, client):
+        """Verify unknown origins are not in CORS allow list."""
+        resp = client.options(
+            "/api/indicators",
+            headers={
+                "Origin": "https://evil.example.com",
+                "Access-Control-Request-Method": "GET",
+            },
+        )
+        # Should not include the unknown origin in allow-origin
+        if "access-control-allow-origin" in resp.headers:
+            assert resp.headers["access-control-allow-origin"] != "https://evil.example.com"

@@ -46,6 +46,12 @@ echo ""
 echo "Frontend build..."
 run_check "npm run build (web/)" bash -c 'cd web && npm run build'
 
+echo ""
+echo "Deployment files..."
+run_check "Dockerfile exists" test -f Dockerfile
+run_check "GitHub Actions deploy-frontend exists" test -f .github/workflows/deploy-frontend.yml
+run_check "GitHub Actions keep-alive exists" test -f .github/workflows/keep-alive.yml
+
 if [[ "${1:-}" == "--full" ]]; then
     echo ""
     echo "Real tests..."

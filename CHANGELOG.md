@@ -18,6 +18,15 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Backend Dockerfile** — containerized Python backend for Render
   deployment.
 - **Live demo link** — clickable link to the deployed website in README.
+- **CORS tests** — added tests verifying GitHub Pages and localhost
+  origins are allowed, and unknown origins are rejected.
+- **Deployment verification** — added Dockerfile and GitHub Actions
+  checks to the pre-handoff verification script.
+
+### Changed
+- **Page atmosphere** — fixed background stretching by constraining
+  constellation SVG to minimum viewport height instead of scaling
+  with page content length.
 
 ## [3.5.1] - 2026-09-01
 
