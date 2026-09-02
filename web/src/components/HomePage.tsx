@@ -224,10 +224,10 @@ export function HomePage({ onNavigate }: { onNavigate: (page: 'backtest' | 'indi
               <span className="block">{headlineText.slice(0, 18)}</span>
               <span className="block text-emerald-600">
                 {headlineText.slice(18)}
+                {showCursor && (
+                  <span className="animate-blink text-emerald-400">|</span>
+                )}
               </span>
-              {showCursor && (
-                <span className="animate-blink text-emerald-400">|</span>
-              )}
             </h1>
             <p className="mt-5 max-w-lg text-base leading-relaxed text-slate-500 md:text-lg">
               Test RSI, MACD, Bollinger Bands and more across S&P 500 stocks
