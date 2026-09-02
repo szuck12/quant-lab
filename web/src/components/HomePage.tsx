@@ -266,10 +266,8 @@ export function HomePage({ onNavigate }: { onNavigate: (page: 'backtest' | 'indi
       {/* Ticker Tape */}
       <TickerTape />
 
-      <SectionRule />
-
       {/* Stats Section */}
-      <section className="px-6 py-14" ref={statsRef}>
+      <section className="px-6 pt-10 pb-14" ref={statsRef}>
         <div className="mx-auto max-w-4xl">
           <div className="grid grid-cols-1 gap-8 text-center sm:grid-cols-3">
             <div className="stagger-child">
@@ -285,13 +283,13 @@ export function HomePage({ onNavigate }: { onNavigate: (page: 'backtest' | 'indi
             </div>
             <div className="stagger-child">
               <div className="display-number text-cyan-600">
-                <AnimatedCounter value={1} suffix="M+" />
+                <AnimatedCounter value={16} suffix="K+" />
               </div>
               <p className="mt-2 font-display text-sm font-medium text-slate-600">
-                Indicator Combinations
+                Combinations
               </p>
               <p className="mt-1 text-xs text-slate-400">
-                Parameters, thresholds, and intervals
+                A wealth of strategies to try
               </p>
             </div>
             <div className="stagger-child">
