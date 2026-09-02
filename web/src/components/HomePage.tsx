@@ -224,15 +224,17 @@ export function HomePage({ onNavigate }: { onNavigate: (page: 'backtest' | 'indi
               <span className="block">
                 {headlineText.slice(0, 18)}
                 {showCursor && headlineText.length <= 18 && (
-                  <span className="animate-blink text-emerald-400">|</span>
+                  <span className="animate-blink text-slate-800">|</span>
                 )}
               </span>
-              <span className="block text-emerald-600">
-                {headlineText.slice(18)}
-                {showCursor && headlineText.length > 18 && (
-                  <span className="animate-blink text-emerald-400">|</span>
-                )}
-              </span>
+              {headlineText.length > 18 && (
+                <span className="block text-emerald-600">
+                  {headlineText.slice(18)}
+                  {showCursor && (
+                    <span className="animate-blink text-emerald-400">|</span>
+                  )}
+                </span>
+              )}
             </h1>
             <p className="mt-5 max-w-lg text-base leading-relaxed text-slate-500 md:text-lg">
               Test RSI, MACD, Bollinger Bands and more across S&P 500 stocks
