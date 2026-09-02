@@ -5,7 +5,7 @@ import { EquityChart } from './components/EquityChart';
 import { HomePage } from './components/HomePage';
 import { IndicatorsPage } from './components/IndicatorsPage';
 import { MetricsTable } from './components/MetricsTable';
-import { PageAtmosphere, SectionRule } from './components/PageChrome';
+import { SectionRule } from './components/PageChrome';
 import { TradesTable } from './components/TradesTable';
 import type { BacktestRequest, BacktestResponse } from './types';
 
@@ -110,12 +110,7 @@ export function App() {
       </nav>
 
       {/* Main Content */}
-      <div
-        key={page}
-        className="relative isolate overflow-hidden animate-page-in"
-      >
-        <PageAtmosphere />
-        <div className="relative z-10">
+      <div key={page} className="animate-page-in">
           {page === 'home' && (
             <HomePage onNavigate={handleNavigate} />
           )}
@@ -130,7 +125,6 @@ export function App() {
           {page === 'indicators' && (
             <IndicatorsPage />
           )}
-        </div>
       </div>
 
       {/* Footer */}

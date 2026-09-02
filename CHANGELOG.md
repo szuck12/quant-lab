@@ -27,6 +27,9 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Page atmosphere** — fixed background stretching by constraining
   constellation SVG to minimum viewport height instead of scaling
   with page content length.
+- **Background replaced** — removed constellation dots, gradient blob,
+  and noise texture. Replaced with a subtle CSS dot grid pattern
+  (pure CSS, resolution-independent, zero HTTP requests).
 
 ## [3.5.1] - 2026-09-01
 
