@@ -29,22 +29,22 @@ function NodeGraphLogo({ className = '' }: { className?: string }) {
 
 export function App() {
   const [page, setPage] = useState<Page>(() => {
-    const path = window.location.pathname.replace(/^\/quant-lab\/?/, '').replace(/^\//, '');
-    return (['home', 'backtest', 'indicators'] as const).includes(path as Page) ? (path as Page) : 'home';
+    const hash = window.location.hash.replace(/^#\/?/, '');
+    return (['home', 'backtest', 'indicators'] as const).includes(hash as Page) ? (hash as Page) : 'home';
   });
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<BacktestResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const onPopState = () => {
-      const path = window.location.pathname.replace(/^\/quant-lab\/?/, '').replace(/^\//, '');
-      if (['home', 'backtest', 'indicators'].includes(path)) {
-        setPage(path as Page);
+    const onHashChange = () => {
+      const hash = window.location.hash.replace(/^#\/?/, '');
+      if (['home', 'backtest', 'indicators'].includes(hash)) {
+        setPage(hash as Page);
       }
     };
-    window.addEventListener('popstate', onPopState);
-    return () => window.removeEventListener('popstate', onPopState);
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
 
   const handleSubmit = async (req: BacktestRequest) => {
@@ -64,7 +64,7 @@ export function App() {
 
   const handleNavigate = (newPage: Page) => {
     setPage(newPage);
-    window.history.pushState({}, '', `/quant-lab/${newPage}`);
+    window.location.hash = `/${newPage}`;
     if (newPage !== 'backtest') {
       setResult(null);
       setError(null);
@@ -117,7 +117,7 @@ export function App() {
             href="https://github.com/szuck12/quant-lab"
             target="_blank"
             rel="noopener noreferrer"
-            className="px-4 py-2 text-sm font-medium text-slate-500 transition-colors hover:text-slate-800"
+            className="text-sm text-slate-400 transition-colors hover:text-slate-700"
           >
             GitHub
           </a>

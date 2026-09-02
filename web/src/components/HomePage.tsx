@@ -25,14 +25,14 @@ const MOCK_EQUITY = [
 ];
 const FULL_HEADLINE = 'Backtest Technical Indicators';
 
-function AnimatedCounter({ value, suffix = '' }: { value: number; suffix?: string }) {
+function AnimatedCounter({ value, suffix = '', start = true }: { value: number; suffix?: string; start?: boolean }) {
   const prefersReducedMotion =
     typeof window !== 'undefined' &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const [count, setCount] = useState(prefersReducedMotion ? value : 0);
+  const [count, setCount] = useState(prefersReducedMotion || !start ? value : 0);
 
   useEffect(() => {
-    if (prefersReducedMotion) return;
+    if (prefersReducedMotion || !start) return;
     const duration = 1500;
     const steps = 30;
     const increment = value / steps;
@@ -47,7 +47,7 @@ function AnimatedCounter({ value, suffix = '' }: { value: number; suffix?: strin
       }
     }, duration / steps);
     return () => clearInterval(timer);
-  }, [prefersReducedMotion, value]);
+  }, [prefersReducedMotion, start, value]);
 
   return (
     <span className="animate-count-up">
@@ -183,6 +183,32 @@ function useStagger() {
   return ref;
 }
 
+function useStatsInView() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [inView, setInView] = useState(false);
+  const hasAnimated = useRef(false);
+
+  useEffect(() => {
+    if (hasAnimated.current) return;
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !hasAnimated.current) {
+          hasAnimated.current = true;
+          setInView(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.3 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return { ref, inView };
+}
+
 export function HomePage({ onNavigate }: { onNavigate: (page: 'backtest' | 'indicators') => void }) {
   const prefersReducedMotion =
     typeof window !== 'undefined' &&
@@ -191,7 +217,7 @@ export function HomePage({ onNavigate }: { onNavigate: (page: 'backtest' | 'indi
     prefersReducedMotion ? FULL_HEADLINE : '',
   );
   const [showCursor, setShowCursor] = useState(!prefersReducedMotion);
-  const statsRef = useStagger();
+  const statsSection = useStatsInView();
   const howItWorksRef = useStagger();
   const whyRef = useStagger();
   const exploreRef = useStagger();
@@ -267,12 +293,12 @@ export function HomePage({ onNavigate }: { onNavigate: (page: 'backtest' | 'indi
       <TickerTape />
 
       {/* Stats Section */}
-      <section className="px-6 pt-10 pb-14" ref={statsRef}>
+      <section className="px-6 pt-10 pb-14" ref={statsSection.ref}>
         <div className="mx-auto max-w-4xl">
           <div className="grid grid-cols-1 gap-8 text-center sm:grid-cols-3">
             <div className="stagger-child">
               <div className="display-number text-emerald-600">
-                <AnimatedCounter value={14} />
+                <AnimatedCounter value={14} start={statsSection.inView} />
               </div>
               <p className="mt-2 font-display text-sm font-medium text-slate-600">
                 Indicators
@@ -283,7 +309,7 @@ export function HomePage({ onNavigate }: { onNavigate: (page: 'backtest' | 'indi
             </div>
             <div className="stagger-child">
               <div className="display-number text-cyan-600">
-                <AnimatedCounter value={16} suffix="K+" />
+                <AnimatedCounter value={16} suffix="K+" start={statsSection.inView} />
               </div>
               <p className="mt-2 font-display text-sm font-medium text-slate-600">
                 Combinations
@@ -294,7 +320,7 @@ export function HomePage({ onNavigate }: { onNavigate: (page: 'backtest' | 'indi
             </div>
             <div className="stagger-child">
               <div className="display-number text-purple-600">
-                <AnimatedCounter value={100} suffix="%" />
+                <AnimatedCounter value={100} suffix="%" start={statsSection.inView} />
               </div>
               <p className="mt-2 font-display text-sm font-medium text-slate-600">
                 Free
