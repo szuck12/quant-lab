@@ -221,10 +221,15 @@ export function HomePage({ onNavigate }: { onNavigate: (page: 'backtest' | 'indi
               Quantitative Research Platform
             </p>
             <h1 className="font-display text-4xl font-bold tracking-tight text-slate-800 md:text-5xl lg:text-[3.4rem]">
-              <span className="block">{headlineText.slice(0, 18)}</span>
+              <span className="block">
+                {headlineText.slice(0, 18)}
+                {showCursor && headlineText.length <= 18 && (
+                  <span className="animate-blink text-emerald-400">|</span>
+                )}
+              </span>
               <span className="block text-emerald-600">
                 {headlineText.slice(18)}
-                {showCursor && (
+                {showCursor && headlineText.length > 18 && (
                   <span className="animate-blink text-emerald-400">|</span>
                 )}
               </span>
