@@ -2,6 +2,8 @@
 
 Current version: **3.6.0** — [Changelog](CHANGELOG.md)
 
+**[Live Demo →](https://szuck12.github.io/quant-lab/)**
+
 A stock-data backtesting tool with a **web application** (FastAPI + React) and a
 **command-line interface**. Fetches stock price data via
 [yfinance](https://github.com/ranaroussi/yfinance), computes fourteen

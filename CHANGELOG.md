@@ -17,6 +17,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   base for correct asset paths.
 - **Backend Dockerfile** — containerized Python backend for Render
   deployment.
+- **Live demo link** — clickable link to the deployed website in README.
 
 ## [3.5.1] - 2026-09-01
 
