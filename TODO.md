@@ -33,6 +33,9 @@
       subpackage (#refactor)
 - [x] Fix realtest conftest 1s delay applying to mock tests when running
       `pytest mocktests/ realtests/` together (#test, #bug)
+- [x] 2026-09-01 — v3.6.0 — public deployment: Render.com backend,
+      GitHub Pages frontend, Dockerfile, env-based API URL, auto-deploy
+      workflows (#deploy, @web-developer)
 - [x] 2026-09-01 — v3.5.1 — shared page atmosphere, continuous ticker,
       compact labeled hero chart, footer disclaimer consolidation, stable
       headline wrapping, animated 100% counter, backtest dark accents,

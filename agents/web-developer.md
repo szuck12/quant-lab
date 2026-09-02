@@ -27,6 +27,11 @@ between the two.
   routing, responsive layout, charting, form handling.
 - `api/` package: FastAPI routes, Pydantic schemas, request
   validation, response formatting.
+- Deployment infrastructure: Render.com backend, GitHub Pages
+  frontend, Dockerfile, GitHub Actions workflows.
+- Environment configuration: `VITE_API_URL` for frontend-to-backend
+  routing.
+- CORS configuration for cross-origin API access.
 - Full-stack integration: REST API contract, TypeScript types
   mirroring Pydantic models, error handling end-to-end.
 - Charting with Recharts: equity curves, drawdown charts,
@@ -121,6 +126,8 @@ Key conventions for this agent:
 - `ruff check api/` — lint backend code.
 - `lsof -i :8000` — check for port 8000 conflicts.
 - `kill <PID>` — kill conflicting process on port 8000.
+- `curl https://quant-lab-api.onrender.com/health` — verify backend.
+- `curl -I https://szuck12.github.io/quant-lab/` — verify frontend.
 - `read` / `grep` / `glob` — to find existing patterns before
   implementing.
 

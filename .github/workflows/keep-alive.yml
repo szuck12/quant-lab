@@ -1,0 +1,17 @@
+name: Keep Backend Awake
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://quant-lab-api.onrender.com/health)
+          echo "Health check returned: $STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "Backend may be down!"
+            exit 1
+          fi

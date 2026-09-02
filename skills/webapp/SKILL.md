@@ -88,6 +88,13 @@ error handling is correct.
 ### Step 13 — Release Manager
 Bump version per conventions. Commit with descriptive message.
 
+### Step 14 — Deployment Verification
+
+1. Verify backend health: `curl https://quant-lab-api.onrender.com/health`
+2. Verify frontend: open `https://szuck12.github.io/quant-lab/`
+3. Verify backtest works end-to-end: navigate to Backtest → Quick Start
+4. Check browser console for CORS errors
+
 ## Key Files
 
 | File | Purpose |
@@ -99,6 +106,8 @@ Bump version per conventions. Commit with descriptive message.
 | `web/src/api.ts` | API client functions |
 | `web/src/components/` | React components |
 | `web/src/components/IndicatorsPage.tsx` | Indicators reference page |
+| `Dockerfile` | Backend container for Render deployment |
+| `.github/workflows/deploy-frontend.yml` | Auto-deploy frontend to GitHub Pages |
 | `mocktests/test_api.py` | API endpoint tests |
 
 ## Adding New Indicators

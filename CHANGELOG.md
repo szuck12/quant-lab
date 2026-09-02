@@ -5,6 +5,19 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com) and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.6.0] - 2026-09-01
+
+### Added
+- **Public deployment** — backend hosted on Render.com (free tier),
+  frontend on GitHub Pages. Fully functional backtest engine available
+  at https://szuck12.github.io/quant-lab/.
+- **Environment-based API URL** — frontend uses `VITE_API_URL` env var
+  to switch between local dev proxy and production backend.
+- **GitHub Pages base path** — Vite build configured with `/quant-lab/`
+  base for correct asset paths.
+- **Backend Dockerfile** — containerized Python backend for Render
+  deployment.
+
 ## [3.5.1] - 2026-09-01
 
 ### Changed

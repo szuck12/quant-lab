@@ -70,7 +70,7 @@ export function App() {
               QuantLab
             </span>
             <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">
-              v3.5.1
+              v3.6.0
             </span>
           </div>
 
@@ -137,7 +137,7 @@ export function App() {
       <footer className="border-t border-slate-200 bg-white/60 py-8">
         <div className="mx-auto max-w-6xl px-6 text-center">
           <p className="font-display text-sm font-medium text-slate-600">
-            QuantLab v3.5.1
+            QuantLab v3.6.0
           </p>
           <p className="mt-1 text-xs text-slate-400">
             Free & Open Source — Built for traders who want to understand

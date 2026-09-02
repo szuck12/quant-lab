@@ -92,6 +92,12 @@ Agents read this at session start and append at session end.
   in nav + footer. All em dashes removed from indicator data. All 14
   formulas expanded from docs/formulas.md with new formulaComponents
   field.
+- **2026-09-01**: v3.6.0 — public deployment. Backend on Render.com
+  (free tier, Python/FastAPI), frontend on GitHub Pages (React/Vite).
+  Backend uses Dockerfile for containerized deployment. Frontend uses
+  VITE_API_URL env var to switch between local proxy and production
+  backend. GitHub Pages base path set to /quant-lab/. Auto-deploy
+  workflows for both frontend and backend on push to main.
 - **2026-09-01**: v3.5.1 — visual patch release. Moved the atmospheric
   background into a shared routed-page layer so it covers Home, Backtest,
   and Indicators but not the footer. Made the ticker loop by translating
@@ -131,7 +137,11 @@ Agents read this at session start and append at session end.
 
 <!-- Brief snapshot of where work left off. Updated at end of session. -->
 
-- Current version: 3.5.1
+- Current version: 3.6.0
+- Public URL: https://szuck12.github.io/quant-lab/
+- Backend URL: https://quant-lab-api.onrender.com
+- Frontend: GitHub Pages, auto-deployed via GitHub Actions
+- Backend: Render.com free tier, auto-deployed on push to main
 - All 671 mock tests passing (24 API + 197 backtester + 25 universe +
   12 integration + 413 indicator tests).
 - 13 agents total (11 original + backtest-engineer + web-developer).

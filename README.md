@@ -1,6 +1,6 @@
 # QuantLab
 
-Current version: **3.5.1** — [Changelog](CHANGELOG.md)
+Current version: **3.6.0** — [Changelog](CHANGELOG.md)
 
 A stock-data backtesting tool with a **web application** (FastAPI + React) and a
 **command-line interface**. Fetches stock price data via
@@ -864,6 +864,36 @@ Adding a web app feature runs `Web Developer → Test Engineer →
 Consistency Guardian → Documentation Expert → Release Manager`.
 Ask the Task Orchestrator ("have the orchestrator add a new indicator")
 to start any task.
+
+## Deployment
+
+The web application is deployed as two services:
+
+| Service | Host | URL |
+|---------|------|-----|
+| Frontend | GitHub Pages | https://szuck12.github.io/quant-lab/ |
+| Backend | Render.com | https://quant-lab-api.onrender.com |
+
+### How It Works
+
+The frontend is a static React build served by GitHub Pages. The
+backend is a Python FastAPI service running on Render.com. The
+frontend calls the backend API over HTTPS for backtest execution
+and indicator metadata.
+
+### Environment Variables
+
+| Variable | Where | Purpose |
+|----------|-------|---------|
+| `VITE_API_URL` | Frontend build | Backend URL for API calls |
+
+In local development, `VITE_API_URL` is not set and the Vite proxy
+handles API routing. In production, it is set to the Render backend URL.
+
+### Backend Health Check
+
+The backend exposes `GET /health` which returns `{"status": "ok"}`.
+This is used by Render for health checks and availability monitoring.
 
 ## License
 
