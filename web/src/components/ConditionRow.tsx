@@ -116,8 +116,8 @@ export function ConditionRow({
             Value
           </span>
           <input
-            type="number"
-            step="any"
+            type="text"
+            inputMode="decimal"
             value={condition.value}
             onChange={(e) => update({ value: parseFloat(e.target.value) || 0 })}
             className="w-24 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm tabular-nums transition-colors focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/20"

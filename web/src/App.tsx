@@ -184,8 +184,6 @@ function BacktestPage({
   error: string | null;
   onSubmit: (req: BacktestRequest) => void;
 }) {
-  const [showQuickStart, setShowQuickStart] = useState(false);
-
   return (
     <main className="mx-auto max-w-6xl px-6 py-8">
       {/* Page Header */}
@@ -202,58 +200,8 @@ function BacktestPage({
 
       <SectionRule />
 
-      {/* Quick Start Toggle */}
-      <div className="mb-6 text-center">
-        <button
-          onClick={() => setShowQuickStart(!showQuickStart)}
-          className="text-sm font-medium text-emerald-600 hover:text-emerald-700"
-        >
-          {showQuickStart ? 'Hide quick start' : 'Show quick start example'}
-        </button>
-      </div>
-
-      {/* Quick Start Example */}
-      {showQuickStart && (
-        <div className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50/80 p-5 animate-fade-in">
-          <h3 className="mb-2 font-display text-sm font-semibold text-slate-800">
-            Quick Start: RSI Oversold Buy Signal
-          </h3>
-          <p className="mb-4 text-xs text-slate-600">
-            This example finds stocks where RSI drops below 30 (oversold), suggesting
-            a potential buying opportunity. The strategy enters when RSI is oversold
-            and exits after 10 days.
-          </p>
-          <button
-            onClick={() => {
-              onSubmit({
-                conditions: [
-                  {
-                    indicator: 'RSI',
-                    params: { window: 14 },
-                    component: null,
-                    operator: '<',
-                    value: 30,
-                    interval: '1d',
-                  },
-                ],
-                capital: 10000,
-                years: 2,
-                position_size: 100,
-                position_size_base: 'total',
-              });
-            }}
-            disabled={loading}
-            className="rounded-lg bg-emerald-600 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-emerald-700 disabled:opacity-50"
-          >
-            {loading ? 'Running...' : 'Try this example'}
-          </button>
-        </div>
-      )}
-
       {/* Form */}
-      <section
-        className="rounded-xl border border-slate-300 border-t-4 border-t-navy-800 bg-white/95 p-6 shadow-sm"
-      >
+      <section className="rounded-xl border border-slate-300 border-t-4 border-t-emerald-500 bg-white/95 p-6 shadow-sm">
         <BacktestForm loading={loading} onSubmit={onSubmit} />
       </section>
 

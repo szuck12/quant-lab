@@ -129,7 +129,7 @@ export function BacktestForm({ loading, onSubmit }: Props) {
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         <label className="flex flex-col">
           <span className="mb-1.5 font-display text-xs font-medium text-slate-500">
-            Last N years
+            Last N Years
           </span>
           <input
             type="number"
@@ -288,7 +288,7 @@ export function BacktestForm({ loading, onSubmit }: Props) {
         {loading ? (
           <span className="flex items-center justify-center gap-2">
             <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-            Running backtest...
+            Running Backtest...
           </span>
         ) : (
           'Run Backtest'
