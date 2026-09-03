@@ -143,6 +143,8 @@ Agents read this at session start and append at session end.
 - Frontend: GitHub Pages, auto-deployed via GitHub Actions
 - Backend: Render.com free tier, auto-deployed on push to main
 - Keep-alive: cron-job.org pinging /health every 10 minutes
+- Backtester: parallel chunk downloads (3 workers), vectorized signal
+  detection, no-signal ticker skipping. ~3-5x speedup over v3.6.x.
 - All 671 mock tests passing (24 API + 197 backtester + 25 universe +
   12 integration + 413 indicator tests).
 - 13 agents total (11 original + backtest-engineer + web-developer).

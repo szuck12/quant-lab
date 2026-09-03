@@ -221,9 +221,15 @@ class BacktestEngine:
         print("\nStep 2/5: Computing indicators...")
         all_trades: list[Trade] = []
         ticker_results: dict[str, list[Trade]] = {}
+        skipped = 0
 
         for ticker, df in all_data.items():
             enriched = self._compute_indicators(ticker, df)
+            # Vectorized: skip tickers with no entry signals
+            if not self._has_any_signal(enriched):
+                ticker_results[ticker] = []
+                skipped += 1
+                continue
             trades = self._simulate_ticker(
                 ticker, enriched, portfolio
             )
@@ -231,12 +237,12 @@ class BacktestEngine:
             all_trades.extend(trades)
 
         print("\nStep 3/5: Evaluating conditions...")
+        simulated = len(ticker_results) - skipped
+        print(f"  {simulated} tickers with signals, "
+              f"{skipped} skipped (no signals)")
         for ticker, trades in ticker_results.items():
-            n = len(trades)
-            if n:
-                print(f"  {ticker}: {n} entry signals")
-            else:
-                print(f"  {ticker}: no entry signals")
+            if trades:
+                print(f"    {ticker}: {len(trades)} entry signals")
 
         print("\nStep 4/5: Simulating portfolio...")
         total_trades = sum(len(t) for t in ticker_results.values())
@@ -325,6 +331,36 @@ class BacktestEngine:
             parts.append(cond.component)
         parts.append(cond.interval)
         return "_".join(parts)
+
+    def _has_any_signal(self, df: pd.DataFrame) -> bool:
+        """Vectorized check for any entry signal in the DataFrame.
+
+        Uses pandas boolean masking instead of row-by-row iteration.
+
+        Args:
+            df: DataFrame with indicator columns.
+
+        Returns:
+            True if at least one bar triggers all conditions.
+        """
+        mask = pd.Series(True, index=df.index)
+        for cond in self.conditions:
+            col = self._condition_col_name(cond)
+            if col not in df.columns:
+                return False
+            col_data = df[col]
+            mask &= col_data.notna()
+            if cond.operator == ">":
+                mask &= col_data > cond.value
+            elif cond.operator == "<":
+                mask &= col_data < cond.value
+            elif cond.operator == ">=":
+                mask &= col_data >= cond.value
+            elif cond.operator == "<=":
+                mask &= col_data <= cond.value
+            elif cond.operator == "==":
+                mask &= col_data == cond.value
+        return mask.any()
 
     def _evaluate_conditions(self, row: pd.Series) -> bool:
         """Check if all conditions are met for a single bar.

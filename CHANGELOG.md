@@ -18,6 +18,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   actual dollar gains per position instead of equal-weight model.
 - **Cash and positions in API response** — new `cash_remaining` and
   `positions_value` fields in metrics response.
+- **Backtester performance** — parallel chunk downloads, vectorized
+  signal detection, and no-signal ticker skipping for ~3–5x speedup.
 
 ### Changed
 - **Trade dataclass** — added `shares` and `invested` fields.

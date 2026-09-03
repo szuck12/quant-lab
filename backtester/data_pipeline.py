@@ -15,7 +15,7 @@ import pandas as pd
 import yfinance as yf
 
 CACHE_DIR = Path(__file__).parent / "cache"
-CHUNK_SIZE = 50  # yf.download works best in batches of ~50
+CHUNK_SIZE = 200  # yf.download handles larger batches efficiently
 
 
 class DataPipeline:
@@ -70,8 +70,8 @@ class DataPipeline:
     ) -> dict[str, pd.DataFrame]:
         """Use yf.download() for batch download.
 
-        For large ticker lists (>CHUNK_SIZE), downloads in chunks
-        to avoid API timeouts and memory issues.
+        For large ticker lists (>CHUNK_SIZE), downloads in parallel
+        chunks to avoid API timeouts and memory issues.
 
         Args:
             tickers: List of stock symbols.
@@ -81,6 +81,7 @@ class DataPipeline:
         Returns:
             Dict mapping ticker -> OHLCV DataFrame.
         """
+        from concurrent.futures import ThreadPoolExecutor, as_completed
         from datetime import timedelta
 
         end = datetime.now()
@@ -91,17 +92,33 @@ class DataPipeline:
                 tickers, start, end, interval
             )
 
-        # Chunked download with progress
+        # Parallel chunk download
+        chunks = [
+            tickers[i : i + CHUNK_SIZE]
+            for i in range(0, len(tickers), CHUNK_SIZE)
+        ]
         result: dict[str, pd.DataFrame] = {}
         total = len(tickers)
-        for i in range(0, total, CHUNK_SIZE):
-            chunk = tickers[i : i + CHUNK_SIZE]
-            n = min(i + CHUNK_SIZE, total)
-            print(f"  Downloading {i + 1}-{n} of {total}...")
-            chunk_result = self._download_chunk(
-                chunk, start, end, interval
-            )
-            result.update(chunk_result)
+
+        with ThreadPoolExecutor(max_workers=3) as pool:
+            futures = {
+                pool.submit(
+                    self._download_chunk, c, start, end, interval
+                ): c
+                for c in chunks
+            }
+            for future in as_completed(futures):
+                chunk_idx = chunks.index(futures[future])
+                start_idx = chunk_idx * CHUNK_SIZE + 1
+                end_idx = min(
+                    (chunk_idx + 1) * CHUNK_SIZE, total
+                )
+                print(
+                    f"  Downloaded batch {start_idx}-{end_idx}"
+                    f" of {total}"
+                )
+                result.update(future.result())
+
         return result
 
     def _download_chunk(
@@ -160,14 +177,10 @@ class DataPipeline:
         if len(tickers) == 1:
             df = raw.copy()
             df = df.dropna(how="all")
-            # yf.download returns MultiIndex columns even for a single
-            # ticker: ('AAPL', 'Close'). Flatten to just 'Close'.
             if isinstance(df.columns, pd.MultiIndex):
                 df.columns = df.columns.droplevel("Ticker")
             if not df.empty:
                 result[tickers[0]] = df
-                print(f"  Downloaded {len(df)} rows for "
-                      f"{tickers[0]}")
             else:
                 failed_tickers.append(tickers[0])
         else:
@@ -180,8 +193,6 @@ class DataPipeline:
                 df = df.dropna(how="all")
                 if not df.empty:
                     result[ticker] = df
-                    print(f"  Downloaded {len(df)} rows for "
-                          f"{ticker}")
                 else:
                     failed_tickers.append(ticker)
 
