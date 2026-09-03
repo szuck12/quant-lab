@@ -343,7 +343,7 @@ class BacktestEngine:
         Returns:
             True if at least one bar triggers all conditions.
         """
-        mask = pd.Series(True, index=df.index)
+        mask = pd.Series(True, index=df.index, dtype=bool)
         for cond in self.conditions:
             col = self._condition_col_name(cond)
             if col not in df.columns:
@@ -351,16 +351,16 @@ class BacktestEngine:
             col_data = df[col]
             mask &= col_data.notna()
             if cond.operator == ">":
-                mask &= col_data > cond.value
+                mask &= (col_data > cond.value).fillna(False)
             elif cond.operator == "<":
-                mask &= col_data < cond.value
+                mask &= (col_data < cond.value).fillna(False)
             elif cond.operator == ">=":
-                mask &= col_data >= cond.value
+                mask &= (col_data >= cond.value).fillna(False)
             elif cond.operator == "<=":
-                mask &= col_data <= cond.value
+                mask &= (col_data <= cond.value).fillna(False)
             elif cond.operator == "==":
-                mask &= col_data == cond.value
-        return mask.any()
+                mask &= (col_data == cond.value).fillna(False)
+        return bool(mask.any())
 
     def _evaluate_conditions(self, row: pd.Series) -> bool:
         """Check if all conditions are met for a single bar.
