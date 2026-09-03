@@ -27,8 +27,11 @@ export function BacktestForm({ loading, onSubmit }: Props) {
   const [conditions, setConditions] = useState<ConditionRequest[]>([EMPTY]);
   const [capital, setCapital] = useState('10000');
   const [years, setYears] = useState('2');
+  const [positionSize, setPositionSize] = useState('100');
+  const [positionSizeBase, setPositionSizeBase] = useState<'total' | 'unallocated'>('total');
   const [capitalError, setCapitalError] = useState('');
   const [yearsError, setYearsError] = useState('');
+  const [positionSizeError, setPositionSizeError] = useState('');
   const [fetchError, setFetchError] = useState('');
 
   useEffect(() => {
@@ -89,6 +92,14 @@ export function BacktestForm({ loading, onSubmit }: Props) {
       ok = false;
     }
 
+    const ps = parseFloat(positionSize);
+    if (isNaN(ps) || ps < 0 || ps > 100) {
+      setPositionSizeError('Must be between 0 and 100');
+      ok = false;
+    } else {
+      setPositionSizeError('');
+    }
+
     return ok;
   };
 
@@ -100,6 +111,8 @@ export function BacktestForm({ loading, onSubmit }: Props) {
       conditions,
       capital: parseFloat(capital) || 10000,
       years: parseInt(years, 10) || 2,
+      position_size: parseFloat(positionSize) || 100,
+      position_size_base: positionSizeBase,
     });
   };
 
@@ -112,8 +125,8 @@ export function BacktestForm({ loading, onSubmit }: Props) {
         </div>
       )}
 
-      {/* Period + Capital row */}
-      <div className="grid grid-cols-2 gap-4">
+      {/* Period + Capital + Position Size row */}
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         <label className="flex flex-col">
           <span className="mb-1.5 font-display text-xs font-medium text-slate-500">
             Last N years
@@ -166,6 +179,72 @@ export function BacktestForm({ loading, onSubmit }: Props) {
             </span>
           )}
         </label>
+
+        <label className="flex flex-col">
+          <span className="mb-1.5 font-display text-xs font-medium text-slate-500">
+            Position Size
+          </span>
+          <div className="relative">
+            <input
+              type="number"
+              min={0}
+              max={100}
+              value={positionSize}
+              onChange={(e) => setPositionSize(e.target.value)}
+              className={`w-full rounded-xl border bg-slate-50 px-4 py-2.5 text-sm font-medium tabular-nums transition-colors ${
+                positionSizeError
+                  ? 'border-red-300 focus:border-red-400 focus:ring-red-400/20'
+                  : 'border-slate-200 focus:border-emerald-400 focus:ring-emerald-400/20'
+              } focus:outline-none focus:ring-2`}
+            />
+            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-slate-400">
+              %
+            </span>
+          </div>
+          {positionSizeError ? (
+            <span className="mt-1 text-xs text-red-500">{positionSizeError}</span>
+          ) : (
+            <span className="mt-1 text-xs text-slate-400">
+              Percent of portfolio per buy
+            </span>
+          )}
+        </label>
+      </div>
+
+      {/* Position Size Base */}
+      <div>
+        <span className="mb-2 block font-display text-xs font-medium text-slate-500">
+          Position Size Base
+        </span>
+        <div className="flex gap-3">
+          <label className="flex flex-1 cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm transition-colors has-[:checked]:border-emerald-400 has-[:checked]:bg-emerald-50">
+            <input
+              type="radio"
+              name="positionSizeBase"
+              value="total"
+              checked={positionSizeBase === 'total'}
+              onChange={() => setPositionSizeBase('total')}
+              className="accent-emerald-600"
+            />
+            <span className="font-medium text-slate-700">Total Capital</span>
+          </label>
+          <label className="flex flex-1 cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm transition-colors has-[:checked]:border-emerald-400 has-[:checked]:bg-emerald-50">
+            <input
+              type="radio"
+              name="positionSizeBase"
+              value="unallocated"
+              checked={positionSizeBase === 'unallocated'}
+              onChange={() => setPositionSizeBase('unallocated')}
+              className="accent-emerald-600"
+            />
+            <span className="font-medium text-slate-700">Unallocated Capital</span>
+          </label>
+        </div>
+        <p className="mt-1.5 text-xs text-slate-400">
+          {positionSizeBase === 'total'
+            ? 'Position size calculated from total portfolio value'
+            : 'Position size calculated from available cash only'}
+        </p>
       </div>
 
       {/* Conditions */}

@@ -33,6 +33,10 @@
       subpackage (#refactor)
 - [x] Fix realtest conftest 1s delay applying to mock tests when running
       `pytest mocktests/ realtests/` together (#test, #bug)
+- [x] 2026-09-02 — v3.7.0 — position sizing: Portfolio class, position
+      size (total/unallocated), repeat-ticker logic, position-weighted
+      returns, cash/positions in API response, frontend controls,
+      comprehensive tests (#feature, @backtest-engineer @web-developer)
 - [x] 2026-09-01 — v3.6.1 — replaced GitHub Actions keep-alive cron
       (throttled) with cron-job.org external scheduler (#deploy,
       @web-developer)

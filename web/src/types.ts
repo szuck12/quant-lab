@@ -27,6 +27,8 @@ export interface BacktestRequest {
   conditions: ConditionRequest[];
   capital: number;
   years: number;
+  position_size: number;
+  position_size_base: 'total' | 'unallocated';
 }
 
 export interface TradeResponse {
@@ -49,6 +51,8 @@ export interface MetricsResponse {
   max_drawdown: number;
   profit_factor: number;
   avg_trade_return: number;
+  cash_remaining: number;
+  positions_value: number;
 }
 
 export interface EquityPoint {

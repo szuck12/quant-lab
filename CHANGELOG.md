@@ -5,6 +5,26 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com) and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.7.0] - 2026-09-02
+
+### Added
+- **Position sizing** — configurable investment size per trade with
+  two modes: "total capital" (fixed % of portfolio) or "unallocated
+  capital" (% of remaining cash). Tracks positions and cash across
+  all tickers. Repeats buys in same ticker only until target is met.
+- **Portfolio tracking** — new Portfolio class tracks cash, positions,
+  and enforces position sizing constraints across tickers.
+- **Position-weighted returns** — total return now calculated from
+  actual dollar gains per position instead of equal-weight model.
+- **Cash and positions in API response** — new `cash_remaining` and
+  `positions_value` fields in metrics response.
+
+### Changed
+- **Trade dataclass** — added `shares` and `invested` fields.
+- **BacktestRequest** — added `position_size` (0–100, default 100)
+  and `position_size_base` ("total" or "unallocated", default "total").
+- **MetricsResponse** — added `cash_remaining` and `positions_value`.
+
 ## [3.6.1] - 2026-09-01
 
 ### Changed

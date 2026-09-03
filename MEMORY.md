@@ -137,7 +137,7 @@ Agents read this at session start and append at session end.
 
 <!-- Brief snapshot of where work left off. Updated at end of session. -->
 
-- Current version: 3.6.1
+- Current version: 3.7.0
 - Public URL: https://szuck12.github.io/quant-lab/
 - Backend URL: https://quant-lab-api.onrender.com
 - Frontend: GitHub Pages, auto-deployed via GitHub Actions

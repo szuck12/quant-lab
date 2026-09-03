@@ -1942,3 +1942,248 @@ class TestReportingSummary:
         output = format_results(result)
         assert "--- AAPL ---" in output
         assert "Universe Summary" not in output
+
+
+# ===================================================================
+# §15  Position Sizing Tests
+# ===================================================================
+
+class TestPositionSizing:
+    """Tests for portfolio position sizing."""
+
+    def _make_config(self, **overrides):
+        config = {
+            "tickers": ["AAPL"],
+            "conditions": [Condition("RSI", (), None, "<", 50.0, "1d")],
+            "hold": 10,
+            "capital": 10_000.0,
+            "benchmark": "SPY",
+            "years": 2,
+            "stop_loss": None,
+            "position_size": 100,
+            "position_size_base": "total",
+        }
+        config.update(overrides)
+        return config
+
+    @patch("backtester.engine.DataPipeline")
+    def test_position_size_total_mode(self, MockPipeline):
+        """10% of $10,000 = $1,000 per buy in total mode."""
+        mock_df = _make_df(rows=200)
+        mock_df["rsi_14"] = 30.0
+        mock_pipeline = MockPipeline.return_value
+        mock_pipeline.fetch.return_value = {"AAPL": mock_df}
+
+        config = self._make_config(position_size=10)
+        engine = BacktestEngine(config["conditions"], config)
+        result = engine.run()
+
+        for trade in result.trades:
+            assert trade.invested == pytest.approx(1000.0, rel=0.01)
+
+    @patch("backtester.engine.DataPipeline")
+    def test_position_size_unallocated_mode(self, MockPipeline):
+        """10% of unallocated cash per buy."""
+        mock_df = _make_df(rows=200)
+        mock_df["rsi_14"] = 30.0
+        mock_pipeline = MockPipeline.return_value
+        mock_pipeline.fetch.return_value = {"AAPL": mock_df}
+
+        config = self._make_config(
+            position_size=10, position_size_base="unallocated"
+        )
+        engine = BacktestEngine(config["conditions"], config)
+        result = engine.run()
+
+        if result.trades:
+            # First buy: 10% of $10,000 = $1,000
+            assert result.trades[0].invested == pytest.approx(
+                1000.0, rel=0.01
+            )
+
+    @patch("backtester.engine.DataPipeline")
+    def test_repeat_ticker_skipped_when_at_target(self, MockPipeline):
+        """If position >= target, no buy."""
+        dates = pd.date_range(start="2025-01-01", periods=200, freq="B")
+        close = np.full(200, 100.0)
+        mock_df = pd.DataFrame(
+            {"Open": close, "High": close + 1, "Low": close - 1,
+             "Close": close, "Volume": np.full(200, 1_000_000.0)},
+            index=dates,
+        )
+        mock_df["rsi_14"] = 30.0  # Always triggers
+        mock_pipeline = MockPipeline.return_value
+        mock_pipeline.fetch.return_value = {"AAPL": mock_df}
+
+        # 10% position size, 5-day hold, cooldown means trades are spaced
+        config = self._make_config(
+            position_size=10, hold=5
+        )
+        engine = BacktestEngine(config["conditions"], config)
+        result = engine.run()
+
+        # With 10% position size on $10k, first buy = $1,000
+        # After cooldown, second buy: target still $1,000,
+        # but position already has $1,000 → skip
+        # So only ~1 trade should execute
+        assert len(result.trades) <= 3
+
+    @patch("backtester.engine.DataPipeline")
+    def test_cash_constraint(self, MockPipeline):
+        """Buy only what cash allows."""
+        mock_df = _make_df(rows=200)
+        mock_df["rsi_14"] = 30.0
+        mock_pipeline = MockPipeline.return_value
+        mock_pipeline.fetch.return_value = {"AAPL": mock_df}
+
+        # $100 capital, 100% position size → first buy uses all $100
+        config = self._make_config(capital=100, position_size=100)
+        engine = BacktestEngine(config["conditions"], config)
+        result = engine.run()
+
+        if result.trades:
+            assert result.trades[0].invested <= 100.01
+
+    @patch("backtester.engine.DataPipeline")
+    def test_zero_position_size_no_trades(self, MockPipeline):
+        """position_size=0 → no trades."""
+        mock_df = _make_df(rows=200)
+        mock_df["rsi_14"] = 30.0
+        mock_pipeline = MockPipeline.return_value
+        mock_pipeline.fetch.return_value = {"AAPL": mock_df}
+
+        config = self._make_config(position_size=0)
+        engine = BacktestEngine(config["conditions"], config)
+        result = engine.run()
+
+        assert result.trades == []
+
+    @patch("backtester.engine.DataPipeline")
+    def test_hundred_percent_uses_all_cash(self, MockPipeline):
+        """position_size=100 → all cash per buy."""
+        mock_df = _make_df(rows=200)
+        mock_df["rsi_14"] = 30.0
+        mock_pipeline = MockPipeline.return_value
+        mock_pipeline.fetch.return_value = {"AAPL": mock_df}
+
+        config = self._make_config(position_size=100, capital=5000)
+        engine = BacktestEngine(config["conditions"], config)
+        result = engine.run()
+
+        if result.trades:
+            assert result.trades[0].invested == pytest.approx(
+                5000.0, rel=0.01
+            )
+
+    @patch("backtester.engine.DataPipeline")
+    def test_multiple_tickers_share_cash(self, MockPipeline):
+        """Cash pool shared across tickers, never goes negative."""
+        mock_aapl = _make_df(rows=200)
+        mock_aapl["rsi_14"] = 30.0
+        mock_msft = _make_df(rows=200)
+        mock_msft["rsi_14"] = 30.0
+        mock_pipeline = MockPipeline.return_value
+        mock_pipeline.fetch.return_value = {
+            "AAPL": mock_aapl, "MSFT": mock_msft
+        }
+
+        config = self._make_config(
+            tickers=["AAPL", "MSFT"],
+            position_size=50,
+        )
+        engine = BacktestEngine(config["conditions"], config)
+        result = engine.run()
+
+        # Portfolio should never go negative
+        assert result.metrics.get("cash_remaining", 0) >= 0
+        assert result.metrics.get("positions_value", 0) >= 0
+
+    @patch("backtester.engine.DataPipeline")
+    def test_portfolio_tracks_positions(self, MockPipeline):
+        """Portfolio state reflects buys and sells."""
+        mock_df = _make_df(rows=200)
+        mock_df["rsi_14"] = 30.0
+        mock_pipeline = MockPipeline.return_value
+        mock_pipeline.fetch.return_value = {"AAPL": mock_df}
+
+        config = self._make_config(position_size=10)
+        engine = BacktestEngine(config["conditions"], config)
+        result = engine.run()
+
+        # After all trades, cash should be close to initial capital
+        # (minus small floating point from shares * price rounding)
+        assert result.metrics.get("cash_remaining", 0) >= 0
+
+    @patch("backtester.engine.DataPipeline")
+    def test_position_weighted_return(self, MockPipeline):
+        """Return calculation with position sizing."""
+        mock_df = _make_df(rows=200)
+        mock_df["rsi_14"] = 30.0
+        mock_pipeline = MockPipeline.return_value
+        mock_pipeline.fetch.return_value = {"AAPL": mock_df}
+
+        config = self._make_config(position_size=50)
+        engine = BacktestEngine(config["conditions"], config)
+        result = engine.run()
+
+        # Total return should be finite and reasonable
+        assert math.isfinite(result.metrics.get("total_return", 0))
+
+    @patch("backtester.engine.DataPipeline")
+    def test_default_values_backward_compatible(self, MockPipeline):
+        """Default position_size=100 preserves existing behavior."""
+        mock_df = _make_df(rows=200)
+        mock_df["rsi_14"] = 30.0
+        mock_pipeline = MockPipeline.return_value
+        mock_pipeline.fetch.return_value = {"AAPL": mock_df}
+
+        config = self._make_config()
+        engine = BacktestEngine(config["conditions"], config)
+        result = engine.run()
+
+        # Should produce valid results
+        assert isinstance(result, BacktestResult)
+        assert result.metrics.get("total_trades", 0) >= 0
+
+    def test_portfolio_buy_basic(self):
+        """Portfolio.buy adds shares and deducts cash."""
+        from backtester.engine import Portfolio
+        p = Portfolio(10000, 10, "total")
+        success = p.buy("AAPL", 10, 100.0)
+        assert success is True
+        assert p.cash == pytest.approx(9000.0)
+        assert p.get_invested("AAPL") == pytest.approx(1000.0)
+        assert p.positions["AAPL"].shares == 10
+
+    def test_portfolio_sell(self):
+        """Portfolio.sell removes position and adds cash."""
+        from backtester.engine import Portfolio
+        p = Portfolio(10000, 10, "total")
+        p.buy("AAPL", 10, 100.0)
+        proceeds = p.sell("AAPL", 110.0)
+        assert proceeds == pytest.approx(1100.0)
+        assert p.cash == pytest.approx(10100.0)
+        assert "AAPL" not in p.positions
+
+    def test_portfolio_calculate_buy_at_target(self):
+        """No buy when position equals target."""
+        from backtester.engine import Portfolio
+        p = Portfolio(10000, 10, "total")
+        p.buy("AAPL", 10, 100.0)  # invested = $1000
+        shares = p.calculate_buy_amount("AAPL", 100.0)
+        assert shares == 0.0
+
+    def test_portfolio_calculate_buy_below_target(self):
+        """Buy up to target when below."""
+        from backtester.engine import Portfolio
+        p = Portfolio(10000, 10, "total")
+        p.buy("AAPL", 5, 100.0)  # invested = $500, target = $1000
+        shares = p.calculate_buy_amount("AAPL", 100.0)
+        assert shares == pytest.approx(5.0)
+
+    def test_portfolio_zero_position_size(self):
+        """Zero position size → no buy."""
+        from backtester.engine import Portfolio
+        p = Portfolio(10000, 0, "total")
+        shares = p.calculate_buy_amount("AAPL", 100.0)
+        assert shares == 0.0

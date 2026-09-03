@@ -361,6 +361,8 @@ def run_backtest(req: BacktestRequest) -> BacktestResponse:
         "stop_loss": None,
         "universe": "sp500",
         "max_tickers": None,
+        "position_size": req.position_size,
+        "position_size_base": req.position_size_base,
     }
 
     # Run backtest
@@ -459,6 +461,8 @@ def _to_response(
             exit_price=round(t.exit_price, 2),
             hold_bars=t.hold_bars,
             return_pct=round(t.return_pct, 6),
+            shares=round(t.shares, 4),
+            invested=round(t.invested, 2),
         )
         for t in result.trades
     ]
@@ -474,6 +478,8 @@ def _to_response(
                 exit_price=round(t.exit_price, 2),
                 hold_bars=t.hold_bars,
                 return_pct=round(t.return_pct, 6),
+                shares=round(t.shares, 4),
+                invested=round(t.invested, 2),
             )
             for t in ticker_trades
         ]
@@ -489,6 +495,8 @@ def _to_response(
         max_drawdown=round(m.get("max_drawdown", 0), 6),
         profit_factor=round(m.get("profit_factor", 0), 4),
         avg_trade_return=round(m.get("avg_trade_return", 0), 6),
+        cash_remaining=round(m.get("cash_remaining", 0), 2),
+        positions_value=round(m.get("positions_value", 0), 2),
     )
 
     bm = result.benchmark_metrics

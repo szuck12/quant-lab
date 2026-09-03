@@ -24,6 +24,8 @@ class Trade:
     exit_price: float
     hold_bars: int
     return_pct: float
+    shares: float = 0.0
+    invested: float = 0.0
 
 
 def compute_metrics(
@@ -98,12 +100,14 @@ def compute_metrics(
     }
 
 
-def compute_total_return(trades: list[Trade], capital: float) -> float:
+def compute_total_return(
+    trades: list[Trade], capital: float
+) -> float:
     """Compute total return from a portfolio of trades.
 
-    Uses an equal-weight model: each trade uses 1/N of capital,
-    where N is the number of trades. This prevents unrealistic
-    compounding when there are many trades across multiple tickers.
+    Uses position-weighted model when trade.shares is available:
+    dollar return = shares * (exit - entry) for each trade.
+    Falls back to equal-weight model for legacy trades.
 
     Args:
         trades: List of completed trades.
@@ -114,6 +118,14 @@ def compute_total_return(trades: list[Trade], capital: float) -> float:
     """
     if not trades:
         return 0.0
+
+    has_position_data = any(t.shares > 0 for t in trades)
+    if has_position_data:
+        dollar_return = sum(
+            t.shares * (t.exit_price - t.entry_price) for t in trades
+        )
+        return dollar_return / capital if capital else 0.0
+
     n = len(trades)
     avg_return = sum(t.return_pct for t in trades) / n
     return avg_return * n

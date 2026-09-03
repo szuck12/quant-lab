@@ -489,3 +489,119 @@ class TestCORS:
         # Should not include the unknown origin in allow-origin
         if "access-control-allow-origin" in resp.headers:
             assert resp.headers["access-control-allow-origin"] != "https://evil.example.com"
+
+
+# -- Position sizing API tests --
+
+
+class TestPositionSizingAPI:
+    @patch("backtester.engine.DataPipeline")
+    def test_backtest_with_position_size(self, MockPipeline, client):
+        mock_pipeline = MockPipeline.return_value
+        mock_pipeline.fetch.return_value = _mock_pipeline_fetch(
+            ["AAPL"], "1d", 2
+        )
+        resp = client.post(
+            "/api/backtest",
+            json={
+                "conditions": [
+                    {
+                        "indicator": "RSI",
+                        "params": {"window": 14},
+                        "operator": "<",
+                        "value": 30,
+                        "interval": "1d",
+                    }
+                ],
+                "capital": 10000,
+                "years": 2,
+                "position_size": 10,
+                "position_size_base": "total",
+            },
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "cash_remaining" in data["metrics"]
+        assert "positions_value" in data["metrics"]
+
+    @patch("backtester.engine.DataPipeline")
+    def test_backtest_with_unallocated_base(self, MockPipeline, client):
+        mock_pipeline = MockPipeline.return_value
+        mock_pipeline.fetch.return_value = _mock_pipeline_fetch(
+            ["AAPL"], "1d", 2
+        )
+        resp = client.post(
+            "/api/backtest",
+            json={
+                "conditions": [
+                    {
+                        "indicator": "RSI",
+                        "params": {"window": 14},
+                        "operator": "<",
+                        "value": 30,
+                        "interval": "1d",
+                    }
+                ],
+                "capital": 10000,
+                "years": 2,
+                "position_size": 10,
+                "position_size_base": "unallocated",
+            },
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "cash_remaining" in data["metrics"]
+
+    def test_invalid_position_size_rejected(self, client):
+        resp = client.post(
+            "/api/backtest",
+            json={
+                "conditions": [
+                    {
+                        "indicator": "RSI",
+                        "operator": "<",
+                        "value": 30,
+                        "interval": "1d",
+                    }
+                ],
+                "position_size": 150,
+            },
+        )
+        assert resp.status_code == 422
+
+    def test_invalid_base_rejected(self, client):
+        resp = client.post(
+            "/api/backtest",
+            json={
+                "conditions": [
+                    {
+                        "indicator": "RSI",
+                        "operator": "<",
+                        "value": 30,
+                        "interval": "1d",
+                    }
+                ],
+                "position_size_base": "invalid",
+            },
+        )
+        assert resp.status_code == 422
+
+    def test_default_values_preserve_behavior(self, client):
+        """Backtest without position_size fields should still work."""
+        resp = client.post(
+            "/api/backtest",
+            json={
+                "conditions": [
+                    {
+                        "indicator": "RSI",
+                        "operator": "<",
+                        "value": 30,
+                        "interval": "1d",
+                    }
+                ],
+            },
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "cash_remaining" in data["metrics"]
+        assert "positions_value" in data["metrics"]

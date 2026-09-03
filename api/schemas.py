@@ -49,6 +49,10 @@ class BacktestRequest(BaseModel):
     conditions: list[ConditionRequest] = Field(min_length=1)
     capital: float = Field(default=10000, gt=0, le=1_000_000_000)
     years: int = Field(default=2, ge=1, le=100)
+    position_size: float = Field(default=100, ge=0, le=100)
+    position_size_base: str = Field(
+        default="total", pattern="^(total|unallocated)$"
+    )
 
 
 # -- Response models --
@@ -64,6 +68,8 @@ class TradeResponse(BaseModel):
     exit_price: float
     hold_bars: int
     return_pct: float
+    shares: float = 0.0
+    invested: float = 0.0
 
 
 class MetricsResponse(BaseModel):
@@ -78,6 +84,8 @@ class MetricsResponse(BaseModel):
     max_drawdown: float
     profit_factor: float
     avg_trade_return: float
+    cash_remaining: float = 0.0
+    positions_value: float = 0.0
 
 
 class EquityPoint(BaseModel):

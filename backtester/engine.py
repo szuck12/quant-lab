@@ -44,6 +44,100 @@ class BacktestResult:
     config: dict
 
 
+@dataclass
+class Position:
+    """A held position in a ticker."""
+
+    ticker: str
+    shares: float
+    avg_cost: float
+    invested: float
+
+
+class Portfolio:
+    """Tracks positions, cash, and enforces position sizing."""
+
+    def __init__(
+        self,
+        capital: float,
+        position_size: float,
+        position_size_base: str,
+    ) -> None:
+        self.initial_capital = capital
+        self.cash = capital
+        self.position_size = position_size
+        self.position_size_base = position_size_base
+        self.positions: dict[str, Position] = {}
+
+    def get_invested(self, ticker: str) -> float:
+        pos = self.positions.get(ticker)
+        return pos.invested if pos else 0.0
+
+    def calculate_buy_amount(self, ticker: str, price: float) -> float:
+        if self.position_size == 0 or price <= 0:
+            return 0.0
+
+        if self.position_size_base == "total":
+            target = self.initial_capital * (self.position_size / 100)
+        else:
+            target = self.cash * (self.position_size / 100)
+
+        current = self.get_invested(ticker)
+        if current >= target:
+            return 0.0
+
+        needed = target - current
+        available = min(needed, self.cash)
+        if available <= 0:
+            return 0.0
+
+        return available / price
+
+    def buy(
+        self, ticker: str, shares: float, price: float
+    ) -> bool:
+        cost = shares * price
+        if cost > self.cash or shares <= 0:
+            return False
+
+        self.cash -= cost
+
+        if ticker in self.positions:
+            pos = self.positions[ticker]
+            total_shares = pos.shares + shares
+            pos.avg_cost = (
+                (pos.avg_cost * pos.shares + price * shares)
+                / total_shares
+            )
+            pos.shares = total_shares
+            pos.invested += cost
+        else:
+            self.positions[ticker] = Position(
+                ticker=ticker,
+                shares=shares,
+                avg_cost=price,
+                invested=cost,
+            )
+        return True
+
+    def sell(self, ticker: str, price: float) -> float:
+        pos = self.positions.pop(ticker, None)
+        if pos is None:
+            return 0.0
+        proceeds = pos.shares * price
+        self.cash += proceeds
+        return proceeds
+
+    def get_total_value(
+        self, current_prices: dict[str, float]
+    ) -> float:
+        value = self.cash
+        for ticker, pos in self.positions.items():
+            price = current_prices.get(ticker, pos.avg_cost)
+            value += pos.shares * price
+        return value
+
+
 class BacktestEngine:
     """Core backtesting simulation."""
 
@@ -64,7 +158,7 @@ class BacktestEngine:
         2. Download data for all tickers at that interval.
         3. Compute indicators for each ticker.
         4. Evaluate conditions on each bar.
-        5. Simulate portfolio with fixed hold period.
+        5. Simulate portfolio with position sizing.
         6. Compute metrics and benchmark comparison.
 
         Returns:
@@ -74,6 +168,10 @@ class BacktestEngine:
         years = self.config["years"]
         capital = self.config["capital"]
         benchmark = self.config["benchmark"]
+        position_size = self.config.get("position_size", 100)
+        position_size_base = self.config.get(
+            "position_size_base", "total"
+        )
 
         # Resolve universe if specified
         universe = self.config.get("universe")
@@ -108,8 +206,17 @@ class BacktestEngine:
             )
 
         # Download benchmark data
-        bench_data = self.pipeline.fetch([benchmark], interval, years)
+        bench_data = self.pipeline.fetch(
+            [benchmark], interval, years
+        )
         bench_df = bench_data.get(benchmark, pd.DataFrame())
+
+        # Create portfolio
+        portfolio = Portfolio(
+            capital=capital,
+            position_size=position_size,
+            position_size_base=position_size_base,
+        )
 
         print("\nStep 2/5: Computing indicators...")
         all_trades: list[Trade] = []
@@ -117,7 +224,9 @@ class BacktestEngine:
 
         for ticker, df in all_data.items():
             enriched = self._compute_indicators(ticker, df)
-            trades = self._simulate_ticker(ticker, enriched)
+            trades = self._simulate_ticker(
+                ticker, enriched, portfolio
+            )
             ticker_results[ticker] = trades
             all_trades.extend(trades)
 
@@ -135,6 +244,15 @@ class BacktestEngine:
 
         print("\nStep 5/5: Computing metrics...")
         metrics = compute_metrics(all_trades, capital)
+        metrics["cash_remaining"] = round(portfolio.cash, 2)
+        metrics["positions_value"] = round(
+            portfolio.get_total_value(
+                {t: all_data[t]["Close"].iloc[-1]
+                 for t in portfolio.positions
+                 if t in all_data}
+            ),
+            2,
+        )
 
         benchmark_metrics = {}
         if not bench_df.empty and all_trades:
@@ -253,7 +371,10 @@ class BacktestEngine:
         raise ValueError(f"Unknown operator '{operator}'")
 
     def _simulate_ticker(
-        self, ticker: str, df: pd.DataFrame
+        self,
+        ticker: str,
+        df: pd.DataFrame,
+        portfolio: Portfolio | None = None,
     ) -> list[Trade]:
         """Simulate trades for a single ticker.
 
@@ -263,6 +384,7 @@ class BacktestEngine:
         Args:
             ticker: Stock symbol.
             df: DataFrame with indicator columns.
+            portfolio: Portfolio for position sizing (optional).
 
         Returns:
             List of completed trades.
@@ -285,13 +407,29 @@ class BacktestEngine:
                 if i + hold >= len(df):
                     break
 
+                # Position sizing via portfolio
+                shares = 0.0
+                invested = 0.0
+                if portfolio is not None:
+                    shares = portfolio.calculate_buy_amount(
+                        ticker, entry_price
+                    )
+                    if shares <= 0:
+                        i += 1
+                        continue
+                    portfolio.buy(ticker, shares, entry_price)
+                    invested = shares * entry_price
+
                 exit_idx = i + hold
 
                 # Check stop-loss during hold period
                 if stop_loss is not None:
                     for j in range(i + 1, min(exit_idx + 1, len(df))):
                         current_price = df.iloc[j]["Close"]
-                        ret = (current_price - entry_price) / entry_price
+                        ret = (
+                            (current_price - entry_price)
+                            / entry_price
+                        )
                         if ret <= -stop_loss / 100.0:
                             exit_idx = j
                             break
@@ -303,6 +441,10 @@ class BacktestEngine:
                 exit_price = df.iloc[exit_idx]["Close"]
                 ret = (exit_price - entry_price) / entry_price
 
+                # Sell from portfolio
+                if portfolio is not None and shares > 0:
+                    portfolio.sell(ticker, exit_price)
+
                 trades.append(
                     Trade(
                         ticker=ticker,
@@ -312,9 +454,11 @@ class BacktestEngine:
                         exit_price=exit_price,
                         hold_bars=exit_idx - i,
                         return_pct=ret,
+                        shares=shares,
+                        invested=invested,
                     )
                 )
-                i = exit_idx + 1 + hold  # cooldown: skip hold bars
+                i = exit_idx + 1 + hold  # cooldown
             else:
                 i += 1
 
