@@ -9,19 +9,17 @@ import {
 import { SectionRule } from './PageChrome';
 
 const MOCK_EQUITY = [
-  { period: 'W1', v: 10000 }, { period: 'W2', v: 10200 },
-  { period: 'W3', v: 10150 }, { period: 'W4', v: 10400 },
-  { period: 'W5', v: 10350 }, { period: 'W6', v: 10600 },
-  { period: 'W7', v: 10500 }, { period: 'W8', v: 10800 },
-  { period: 'W9', v: 10950 }, { period: 'W10', v: 10900 },
-  { period: 'W11', v: 11100 }, { period: 'W12', v: 11300 },
-  { period: 'W13', v: 11200 }, { period: 'W14', v: 11500 },
-  { period: 'W15', v: 11700 }, { period: 'W16', v: 11650 },
-  { period: 'W17', v: 11900 }, { period: 'W18', v: 12100 },
-  { period: 'W19', v: 12000 }, { period: 'W20', v: 12300 },
-  { period: 'W21', v: 12500 }, { period: 'W22', v: 12400 },
-  { period: 'W23', v: 12700 }, { period: 'W24', v: 12900 },
-  { period: 'W25', v: 12800 },
+  { period: 'Mar 1', v: 10000 }, { period: 'Mar 8', v: 10200 },
+  { period: 'Mar 15', v: 10150 }, { period: 'Mar 22', v: 10400 },
+  { period: 'Mar 29', v: 10350 }, { period: 'Apr 5', v: 10600 },
+  { period: 'Apr 12', v: 10500 }, { period: 'Apr 19', v: 10800 },
+  { period: 'Apr 26', v: 10950 }, { period: 'May 3', v: 10900 },
+  { period: 'May 10', v: 11100 }, { period: 'May 17', v: 11300 },
+  { period: 'May 24', v: 11200 }, { period: 'May 31', v: 11500 },
+  { period: 'Jun 7', v: 11700 }, { period: 'Jun 14', v: 11650 },
+  { period: 'Jun 21', v: 11900 }, { period: 'Jun 28', v: 12100 },
+  { period: 'Jul 5', v: 12000 }, { period: 'Jul 12', v: 12300 },
+  { period: 'Jul 19', v: 12500 }, { period: 'Jul 26', v: 12400 },
 ];
 const FULL_HEADLINE = 'Backtest Technical Indicators';
 
@@ -97,7 +95,7 @@ function ResultsPreview() {
         <span className="h-2.5 w-2.5 rounded-full bg-rose-500/60" />
         <span className="h-2.5 w-2.5 rounded-full bg-amber-500/60" />
         <span className="h-2.5 w-2.5 rounded-full bg-emerald-500/60" />
-        <span className="ml-2 text-[10px] text-slate-500">backtest results</span>
+        <span className="ml-2 text-[10px] text-slate-500">backtest rsi &lt; 30 &amp; av &gt; 100,000</span>
       </div>
       <div
         aria-label="Mock equity curve rising from ten thousand to twelve thousand eight hundred dollars"
@@ -120,7 +118,7 @@ function ResultsPreview() {
               tick={{ fontSize: 9, fill: '#64748B' }}
               tickLine={false}
               axisLine={{ stroke: '#334155' }}
-              interval={5}
+              interval={3}
             />
             <YAxis
               width={34}
@@ -238,7 +236,7 @@ export function HomePage({ onNavigate }: { onNavigate: (page: 'backtest' | 'indi
             </h1>
             <p className="mt-5 max-w-lg text-base leading-relaxed text-slate-500 md:text-lg">
               Test RSI, MACD, Bollinger Bands and more across S&P 500 stocks
-              in seconds. Free, open source, and no account required.
+              in minutes. Free, open source, and no account required.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <button
@@ -436,7 +434,7 @@ export function HomePage({ onNavigate }: { onNavigate: (page: 'backtest' | 'indi
                 </svg>
               </div>
               <h3 className="font-display text-sm font-semibold text-slate-800">
-                Full results in 3 seconds
+                Full simulated results in minutes
               </h3>
               <p className="mt-1 text-xs text-slate-500">
                 Backtest across 500+ S&P 500 stocks without breaking a sweat.
@@ -470,7 +468,7 @@ export function HomePage({ onNavigate }: { onNavigate: (page: 'backtest' | 'indi
             Explore
           </p>
           <h2 className="mb-10 text-center font-display text-2xl font-bold tracking-tight text-slate-800">
-            Two tools, one platform
+            Opportunity to both test and learn
           </h2>
           <div className="grid gap-5 md:grid-cols-2">
             <button

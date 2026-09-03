@@ -351,7 +351,7 @@ export function IndicatorsPage() {
       <SectionRule />
 
       {/* Indicators List */}
-      <section className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+      <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
         <div className="divide-y divide-slate-200/60">
           {filteredIndicators.map((ind) => (
             <IndicatorAccordion
