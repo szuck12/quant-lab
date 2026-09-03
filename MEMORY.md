@@ -137,11 +137,12 @@ Agents read this at session start and append at session end.
 
 <!-- Brief snapshot of where work left off. Updated at end of session. -->
 
-- Current version: 3.6.0
+- Current version: 3.6.1
 - Public URL: https://szuck12.github.io/quant-lab/
 - Backend URL: https://quant-lab-api.onrender.com
 - Frontend: GitHub Pages, auto-deployed via GitHub Actions
 - Backend: Render.com free tier, auto-deployed on push to main
+- Keep-alive: cron-job.org pinging /health every 10 minutes
 - All 671 mock tests passing (24 API + 197 backtester + 25 universe +
   12 integration + 413 indicator tests).
 - 13 agents total (11 original + backtest-engineer + web-developer).

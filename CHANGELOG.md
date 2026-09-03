@@ -5,6 +5,13 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com) and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.6.1] - 2026-09-01
+
+### Changed
+- **Backend keep-alive** — replaced GitHub Actions cron (throttled by
+  platform) with cron-job.org external scheduler for reliable Render
+  instance pinging. Removed `.github/workflows/keep-alive.yml`.
+
 ## [3.6.0] - 2026-09-01
 
 ### Added

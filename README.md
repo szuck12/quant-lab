@@ -1,6 +1,6 @@
 # QuantLab
 
-Current version: **3.6.0** — [Changelog](CHANGELOG.md)
+Current version: **3.6.1** — [Changelog](CHANGELOG.md)
 
 Try now: [https://szuck12.github.io/quant-lab/](https://szuck12.github.io/quant-lab/)
 
