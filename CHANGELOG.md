@@ -5,6 +5,13 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com) and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.7.1] - 2026-09-12
+
+### Fixed
+- **Homepage ribbon colors** — "Why QuantLab" feature cards now show
+  colored left-edge accents matching each card's theme (emerald, cyan,
+  purple) instead of a single shared gradient.
+
 ## [3.7.0] - 2026-09-02
 
 ### Added

@@ -401,7 +401,7 @@ export function HomePage({ onNavigate }: { onNavigate: (page: 'backtest' | 'indi
 
           <div className="grid gap-4 lg:grid-cols-3">
             {/* Large feature card */}
-            <div className="stagger-child card-accent-hover rounded-xl border border-emerald-200 bg-emerald-50/50 p-6 lg:col-span-2 lg:row-span-2 lg:flex lg:flex-col lg:justify-between">
+            <div style={{ '--accent-color': '#10B981' } as React.CSSProperties} className="stagger-child card-accent-hover rounded-xl border border-emerald-200 bg-emerald-50/50 p-6 lg:col-span-2 lg:row-span-2 lg:flex lg:flex-col lg:justify-between">
               <div>
                 <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100">
                   <svg className="h-5 w-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -427,7 +427,7 @@ export function HomePage({ onNavigate }: { onNavigate: (page: 'backtest' | 'indi
             </div>
 
             {/* Small card 1 */}
-            <div className="stagger-child card-accent-hover rounded-xl border border-cyan-200 bg-cyan-50/50 p-5">
+            <div style={{ '--accent-color': '#06B6D4' } as React.CSSProperties} className="stagger-child card-accent-hover rounded-xl border border-cyan-200 bg-cyan-50/50 p-5">
               <div className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-lg bg-cyan-100">
                 <svg className="h-4 w-4 text-cyan-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
@@ -442,7 +442,7 @@ export function HomePage({ onNavigate }: { onNavigate: (page: 'backtest' | 'indi
             </div>
 
             {/* Small card 2 */}
-            <div className="stagger-child card-accent-hover rounded-xl border border-purple-200 bg-purple-50/50 p-5">
+            <div style={{ '--accent-color': '#A855F7' } as React.CSSProperties} className="stagger-child card-accent-hover rounded-xl border border-purple-200 bg-purple-50/50 p-5">
               <div className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-lg bg-purple-100">
                 <svg className="h-4 w-4 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5" />
