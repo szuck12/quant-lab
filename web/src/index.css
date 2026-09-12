@@ -87,6 +87,16 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* Hide browser-native spinner arrows on number inputs */
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type='number'] {
+  -moz-appearance: textfield;
+}
+
 /* Uniform height for condition row form fields — overrides browser
    default height differences between <select> and <input> elements */
 .condition-field {

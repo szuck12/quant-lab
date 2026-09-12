@@ -16,6 +16,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Version badge** — navbar and footer now reflect current release.
 - **Condition row field heights** — indicator, operator, value, and
   interval inputs now render at identical heights across all browsers.
+- **Number input spinners** — removed browser-native up/down arrows
+  from all number inputs (years, position size, parameters).
 
 ### Added
 - **Frontend unit tests** — vitest setup with ConditionRow height

@@ -205,3 +205,9 @@ Agents read this at session start and append at session end.
   applying a shared CSS class (`.condition-field`) that sets explicit
   `height` and `line-height` to force uniform rendering. Never rely
   solely on padding for cross-element-type height alignment.
+- **2026-09-12**: Number input spinner removal — `<input type="number">`
+  renders browser-native up/down arrows (spinners) by default. Hide
+  them with CSS targeting `::-webkit-inner-spin-button`,
+  `::-webkit-outer-spin-button` (webkit/blink) and `-moz-appearance:
+  textfield` (firefox). Add this rule globally in `index.css` rather
+  than per-element.

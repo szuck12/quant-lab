@@ -87,6 +87,9 @@ between the two.
 - MUST NOT assume `<select>` and `<input>` render at the same height
   with identical padding — use explicit height classes or a shared CSS
   rule (e.g. `.condition-field`) when field-type mixing is required.
+- MUST NOT leave browser-native spinner arrows visible on number
+  inputs — the global CSS rule in `index.css` hides them; if adding
+  new number inputs elsewhere, ensure the rule applies.
 - MUST NOT use `import type` for value imports or regular imports
   for type-only references — `import type` for types, regular
   `import` for values.
