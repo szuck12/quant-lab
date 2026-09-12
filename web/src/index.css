@@ -87,6 +87,13 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* Uniform height for condition row form fields — overrides browser
+   default height differences between <select> and <input> elements */
+.condition-field {
+  height: 2.5rem;
+  line-height: 1;
+}
+
 /* ===== CARD HOVER: unique magnetic tilt instead of generic translateY ===== */
 .card-hover {
   transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94),

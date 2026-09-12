@@ -199,3 +199,9 @@ Agents read this at session start and append at session end.
   parent section class (e.g. `.why-quantlab .card-accent-hover svg`)
   to avoid breaking other sections. Never use unscoped `!important`
   on shared selectors.
+- **2026-09-12**: Form field height lesson — `<select>` and
+  `<input type="text">` elements render at different intrinsic heights
+  in browsers even with identical Tailwind padding classes. Fix by
+  applying a shared CSS class (`.condition-field`) that sets explicit
+  `height` and `line-height` to force uniform rendering. Never rely
+  solely on padding for cross-element-type height alignment.

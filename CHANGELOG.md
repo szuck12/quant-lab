@@ -14,6 +14,12 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Homepage hover states** — consistent title color transitions,
   stable icon rendering, and icon background darkening on feature cards.
 - **Version badge** — navbar and footer now reflect current release.
+- **Condition row field heights** — indicator, operator, value, and
+  interval inputs now render at identical heights across all browsers.
+
+### Added
+- **Frontend unit tests** — vitest setup with ConditionRow height
+  and class-consistency tests.
 
 ## [3.7.0] - 2026-09-02
 

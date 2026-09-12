@@ -84,6 +84,9 @@ between the two.
   commenting conventions in `docs/commenting_guidelines.md`.
 - MUST NOT use `any` type in TypeScript — use proper type
   annotations or `unknown` with type guards.
+- MUST NOT assume `<select>` and `<input>` render at the same height
+  with identical padding — use explicit height classes or a shared CSS
+  rule (e.g. `.condition-field`) when field-type mixing is required.
 - MUST NOT use `import type` for value imports or regular imports
   for type-only references — `import type` for types, regular
   `import` for values.

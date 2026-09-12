@@ -232,7 +232,9 @@ so the same class of bug cannot recur silently.
   Endpoints in `api/routes.py`, app setup in `api/main.py`.
 - **Frontend**: React + TypeScript + Vite. Tailwind CSS v4 for
   styling (utility classes, no custom CSS, no CSS modules).
-  Recharts for all charts.
+  Recharts for all charts. When mixing `<select>` and `<input>`
+  elements in the same row, apply a shared height class or CSS rule
+  (e.g. `.condition-field`) to prevent browser rendering differences.
 - **Type safety**: Use `import type` for TypeScript type-only
   imports (`verbatimModuleSyntax` is enabled).
 - **API client**: `web/src/api.ts` wraps fetch calls. Types in
