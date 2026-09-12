@@ -194,3 +194,8 @@ Agents read this at session start and append at session end.
 - **2026-09-12**: v3.7.1 — version locations are: `README.md` line 3,
   `web/src/App.tsx` navbar badge (~line 88), and `web/src/App.tsx`
   footer text (~line 149). Release Manager now checks all three.
+- **2026-09-12**: CSS scoping lesson — when fixing UI issues that use
+  shared classes (e.g. `.card-accent-hover`), scope overrides via a
+  parent section class (e.g. `.why-quantlab .card-accent-hover svg`)
+  to avoid breaking other sections. Never use unscoped `!important`
+  on shared selectors.

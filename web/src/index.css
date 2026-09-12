@@ -106,9 +106,15 @@ body {
   overflow: hidden;
 }
 
-.card-accent-hover svg {
+/* Prevent icon movement in Why QuantLab cards */
+.why-quantlab .card-accent-hover svg {
   transition: none !important;
   transform: none !important;
+}
+
+/* Icon background darkens on hover in Why QuantLab cards */
+.why-quantlab .card-accent-hover:hover .icon-bg {
+  filter: brightness(0.92);
 }
 
 .card-accent-hover::after {
