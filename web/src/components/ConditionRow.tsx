@@ -158,7 +158,7 @@ export function ConditionRow({
         {selected?.params.map((p) => (
           <label key={p.name} className="flex flex-col">
             <span className="mb-1 font-display text-xs font-medium text-slate-500">
-              {p.name}
+              {p.name.charAt(0).toUpperCase() + p.name.slice(1)}
               {p.hint && (
                 <span className="ml-1 font-normal text-slate-400">
                   ({p.hint})

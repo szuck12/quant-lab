@@ -189,6 +189,7 @@ export function BacktestForm({ loading, onSubmit }: Props) {
               type="number"
               min={0}
               max={100}
+              step="any"
               value={positionSize}
               onChange={(e) => setPositionSize(e.target.value)}
               className={`w-full rounded-xl border bg-slate-50 px-4 py-2.5 text-sm font-medium tabular-nums transition-colors ${

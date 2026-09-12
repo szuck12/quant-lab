@@ -210,4 +210,12 @@ Agents read this at session start and append at session end.
   them with CSS targeting `::-webkit-inner-spin-button`,
   `::-webkit-outer-spin-button` (webkit/blink) and `-moz-appearance:
   textfield` (firefox). Add this rule globally in `index.css` rather
-  than per-element.
+   than per-element.
+- **2026-09-12**: HTML number input `step` attribute —
+  `<input type="number">` defaults to `step="1"` (integers only).
+  Add `step="any"` to allow decimal values. The backend `float` type
+  already accepts decimals; the frontend HTML was the only blocker.
+- **2026-09-12**: Parameter name display — API parameter names (e.g.
+  "window") are code identifiers and should stay lowercase in the
+  indicator reference page. Capitalize only in form labels via
+  `charAt(0).toUpperCase() + slice(1)` at render time.

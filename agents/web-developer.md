@@ -90,6 +90,9 @@ between the two.
 - MUST NOT leave browser-native spinner arrows visible on number
   inputs — the global CSS rule in `index.css` hides them; if adding
   new number inputs elsewhere, ensure the rule applies.
+- MUST NOT default to integer-only number inputs — add `step="any"`
+  when decimal values are valid (check backend schema for `float`
+  fields).
 - MUST NOT use `import type` for value imports or regular imports
   for type-only references — `import type` for types, regular
   `import` for values.

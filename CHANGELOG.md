@@ -18,6 +18,10 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   interval inputs now render at identical heights across all browsers.
 - **Number input spinners** — removed browser-native up/down arrows
   from all number inputs (years, position size, parameters).
+- **Position size decimals** — position size now accepts fractional
+  percentages (e.g. 3.5%) in addition to whole numbers.
+- **Condition parameter labels** — parameter names are now
+  title-cased in the form (e.g. "Window" instead of "window").
 
 ### Added
 - **Frontend unit tests** — vitest setup with ConditionRow height
