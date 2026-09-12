@@ -11,6 +11,9 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Homepage ribbon colors** — feature cards and page-preview buttons now
   show colored left-edge accents matching each card's theme instead of
   a single shared gradient.
+- **Homepage hover states** — consistent title color transitions and
+  stable icon rendering across feature cards.
+- **Version badge** — navbar and footer now reflect current release.
 
 ## [3.7.0] - 2026-09-02
 

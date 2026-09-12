@@ -43,8 +43,10 @@ review, security, consistency), and cuts the single
    entries (`### Added/Changed/Fixed/Security`), omitting empty ones.
 3. Group related changes into a single version per
    `docs/update_changelog.md` §2.
-4. Ensure the README version badge is synchronized (with
-   `documentation-expert`).
+4. Ensure all version references are synchronized (with
+   `documentation-expert`): README badge (`README.md` line 3),
+   navbar badge (`web/src/App.tsx` line ~88), and footer text
+   (`web/src/App.tsx` line ~149).
 5. Confirm every gate is green: full test suite (`test-engineer`),
    architecture review (`code-reviewer`), security scan
    (`security-auditor`), conventions check (`consistency-guardian`).
@@ -64,7 +66,8 @@ review, security, consistency), and cuts the single
   details — use counts and classes only.
 - MUST NOT use a commit message format other than
   `Release X.Y.Z — <brief summary>`.
-- MUST NOT leave the README badge unsynchronized after release.
+- MUST NOT leave any version reference unsynchronized after release
+  (README badge, navbar badge, footer text).
 - MUST NOT include internal refactors, comment-only changes, or
   dependency bumps that do not change observable behaviour in the
   changelog.
@@ -161,7 +164,7 @@ This agent enforces the release standards:
 - [ ] All gates green and verified: tests, review, security, consistency.
 - [ ] Bump type justified by the semver table.
 - [ ] CHANGELOG sections populated only where entries exist.
-- [ ] README badge synchronized.
+- [ ] All version references synchronized (README, navbar, footer).
 - [ ] `### Security` entries state counts/classes only.
 - [ ] Release commit message matches
       `Release X.Y.Z — <brief summary>`.

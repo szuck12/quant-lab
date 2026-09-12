@@ -191,3 +191,6 @@ Agents read this at session start and append at session end.
   changed frontend surface; the requirements audit was clean. Existing
   lower-bound Python dependency constraints remain a Medium supply-chain
   posture item under §9c, not introduced by this patch. Verification passed.
+- **2026-09-12**: v3.7.1 — version locations are: `README.md` line 3,
+  `web/src/App.tsx` navbar badge (~line 88), and `web/src/App.tsx`
+  footer text (~line 149). Release Manager now checks all three.

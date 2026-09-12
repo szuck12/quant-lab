@@ -85,7 +85,7 @@ export function App() {
               QuantLab
             </span>
             <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">
-              v3.7.0
+              v3.7.1
             </span>
           </div>
 
