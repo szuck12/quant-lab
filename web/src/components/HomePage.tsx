@@ -475,6 +475,7 @@ export function HomePage({ onNavigate }: { onNavigate: (page: 'backtest' | 'indi
               type="button"
               onClick={() => onNavigate('backtest')}
               className="stagger-child card-accent-hover group w-full cursor-pointer rounded-xl border border-emerald-200 bg-white p-6 text-left transition-colors hover:border-emerald-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/50"
+              style={{ '--accent-color': '#10B981' } as React.CSSProperties}
             >
               <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-lg bg-emerald-100 transition-colors group-hover:bg-emerald-200">
                 <svg className="h-5 w-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -500,6 +501,7 @@ export function HomePage({ onNavigate }: { onNavigate: (page: 'backtest' | 'indi
               type="button"
               onClick={() => onNavigate('indicators')}
               className="stagger-child card-accent-hover group w-full cursor-pointer rounded-xl border border-cyan-200 bg-white p-6 text-left transition-colors hover:border-cyan-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50"
+              style={{ '--accent-color': '#06B6D4' } as React.CSSProperties}
             >
               <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-lg bg-cyan-100 transition-colors group-hover:bg-cyan-200">
                 <svg className="h-5 w-5 text-cyan-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
