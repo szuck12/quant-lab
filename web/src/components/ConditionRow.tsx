@@ -84,6 +84,18 @@ export function ConditionRow({
   const [paramErrors, setParamErrors] = useState<Record<string, string>>({});
   const [valueError, setValueError] = useState('');
 
+  // Initialize paramRaw when indicators first load (paramRaw is empty)
+  useEffect(() => {
+    if (selected && Object.keys(paramRaw).length === 0) {
+      const init: Record<string, string> = {};
+      selected.params.forEach((p) => {
+        init[p.name] = String(condition.params[p.name] ?? p.default);
+      });
+      setParamRaw(init);
+      setValueRaw(String(condition.value));
+    }
+  }, [selected]);
+
   // Reset local state when indicator changes
   useEffect(() => {
     const init: Record<string, string> = {};
