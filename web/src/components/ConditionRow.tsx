@@ -43,6 +43,23 @@ function formatParamName(name: string): string {
   return labels[name] ?? name.charAt(0).toUpperCase() + name.slice(1);
 }
 
+const DEFAULT_VALUES: Record<string, number> = {
+  ADX: 25,
+  ATR: 2.0,
+  AV: 5000000,
+  BB: 150,
+  CCI: 0,
+  EMA: 150,
+  MACD: 0,
+  OBV: 0,
+  ROC: 0,
+  RSI: 50,
+  RVOL: 1.0,
+  SMA: 150,
+  STOCH: 50,
+  VWAP: 150,
+};
+
 export function ConditionRow({
   index,
   condition,
@@ -63,7 +80,9 @@ export function ConditionRow({
         const params: Record<string, number> = {};
         ind.params.forEach((p) => (params[p.name] = p.default));
         next.params = params;
-        next.component = null;
+        next.value = DEFAULT_VALUES[ind.name] ?? 0;
+        const indComponents = ind.components ?? [];
+        next.component = indComponents.length > 1 ? indComponents[0] : null;
       }
     }
 
@@ -114,13 +133,12 @@ export function ConditionRow({
               Component
             </span>
             <select
-              value={condition.component ?? ''}
+              value={condition.component ?? components[0] ?? ''}
               onChange={(e) =>
                 update({ component: e.target.value || null })
               }
               className="condition-field rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 transition-colors focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/20"
             >
-              <option value="">value</option>
               {components.map((c) => (
                 <option key={c} value={c}>
                   {formatComponent(c)}
