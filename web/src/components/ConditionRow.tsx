@@ -119,7 +119,7 @@ export function ConditionRow({
               </option>
             ))}
           </select>
-          <span className="mt-1 h-3 text-[10px] text-slate-400">
+          <span className="h-3 text-[10px] text-slate-400">
             {selected?.description
               ? `${selected.description}${selected.value_hint ? `, ${selected.value_hint}` : ''}`
               : '\u00A0'}
@@ -178,7 +178,7 @@ export function ConditionRow({
             inputMode="decimal"
             value={condition.value}
             onChange={(e) => update({ value: parseFloat(e.target.value) || 0 })}
-            className="condition-field w-24 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm tabular-nums transition-colors focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/20"
+            className="condition-field w-32 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm tabular-nums transition-colors focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/20"
           />
           <span className="h-3" />
         </label>
@@ -202,7 +202,7 @@ export function ConditionRow({
             <option value="1mo">Monthly</option>
             <option value="3mo">Quarterly</option>
           </select>
-          <span className="mt-1 h-3 text-[10px] text-slate-400">
+          <span className="h-3 text-[10px] text-slate-400">
             {['5m', '15m', '30m', '1h'].includes(condition.interval)
               ? 'Intraday data limited to 60 days (1h: 2 years)'
               : '\u00A0'}
