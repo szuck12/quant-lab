@@ -298,10 +298,10 @@ def get_config() -> dict:
 def run_backtest(req: BacktestRequest) -> BacktestResponse:
     """Run a backtest across S&P 500 and return results."""
     # Validate years
-    if req.years < 1:
+    if req.years <= 0:
         raise HTTPException(
             status_code=422,
-            detail="Years must be at least 1.",
+            detail="Years must be greater than 0.",
         )
     if req.years > MAX_YEARS:
         # Clamp to max — don't error, just use what's available

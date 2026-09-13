@@ -238,7 +238,8 @@ so the same class of bug cannot recur silently.
 - **Type safety**: Use `import type` for TypeScript type-only
   imports (`verbatimModuleSyntax` is enabled).
 - **API client**: `web/src/api.ts` wraps fetch calls. Types in
-  `web/src/types.ts` mirror `api/schemas.py` exactly.
+  `web/src/types.ts` mirror `api/schemas.py` exactly. The `years`
+  field is `float` (supports decimals like 0.5).
 - **Components**: Named exports only. Each component in its own
   file under `web/src/components/`.
 - **NaN handling**: Always sanitize NaN/Inf values before JSON

@@ -74,12 +74,12 @@ export function BacktestForm({ loading, onSubmit }: Props) {
       setCapitalError('');
     }
 
-    const yr = parseInt(years, 10);
+    const yr = parseFloat(years);
     if (!years.trim()) {
       setYearsError('Years is required');
       ok = false;
-    } else if (isNaN(yr) || yr < 1) {
-      setYearsError('Must be at least 1 year');
+    } else if (isNaN(yr) || yr <= 0) {
+      setYearsError('Must be greater than 0');
       ok = false;
     } else if (yr > maxYears) {
       setYearsError(`Maximum is ${maxYears} years`);
@@ -110,7 +110,7 @@ export function BacktestForm({ loading, onSubmit }: Props) {
     onSubmit({
       conditions,
       capital: parseFloat(capital) || 10000,
-      years: parseInt(years, 10) || 2,
+      years: parseFloat(years) || 2,
       position_size: parseFloat(positionSize) || 100,
       position_size_base: positionSizeBase,
     });
@@ -133,8 +133,9 @@ export function BacktestForm({ loading, onSubmit }: Props) {
           </span>
           <input
             type="number"
-            min={1}
+            min={0}
             max={maxYears}
+            step="any"
             value={years}
             onChange={(e) => setYears(e.target.value)}
             className={`rounded-xl border bg-slate-50 px-4 py-2.5 text-sm font-medium tabular-nums transition-colors ${

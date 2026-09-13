@@ -89,6 +89,9 @@ evaluation.
 - MUST validate ticker format (1–10 chars, letters/dots/hyphens,
   at least one letter) before calling yfinance — reject invalid
   tickers early with a clear error message.
+- MUST treat `years` config value as `float` — it supports decimals
+  (e.g. 0.5 for 6 months). Type annotations in `data_pipeline.py`
+  and `api/schemas.py` are `float`, not `int`.
 
 ## Session Instructions
 

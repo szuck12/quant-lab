@@ -1,3 +1,4 @@
+import '@testing-library/jest-dom/vitest';
 import { render, screen } from '@testing-library/react';
 import { ConditionRow } from './ConditionRow';
 import type { IndicatorInfo, ConditionRequest } from '../types';
@@ -21,6 +22,9 @@ const condition: ConditionRequest = {
   value: 30,
   interval: '1d',
 };
+
+const ALL_INTERVALS = ['5m', '15m', '30m', '1h', '1d', '1wk', '1mo', '3mo'];
+const INTRADAY_INTERVALS = ['5m', '15m', '30m', '1h'];
 
 describe('ConditionRow field heights', () => {
   it('all Row 1 fields have the condition-field class', () => {
@@ -107,5 +111,87 @@ describe('ConditionRow field heights', () => {
       expect(label.className).toContain('font-display');
       expect(label.className).toContain('mb-1.5');
     });
+  });
+});
+
+describe('ConditionRow interval dropdown', () => {
+  it('renders all 8 interval options', () => {
+    render(
+      <ConditionRow
+        index={0}
+        condition={condition}
+        indicators={indicators}
+        onChange={() => {}}
+        onRemove={() => {}}
+        canRemove={false}
+      />,
+    );
+
+    const interval = screen.getByRole('combobox', { name: /interval/i });
+    const options = Array.from(interval.querySelectorAll('option'));
+    const values = options.map((o) => o.getAttribute('value'));
+
+    expect(values).toEqual(ALL_INTERVALS);
+  });
+
+  it('defaults to daily interval', () => {
+    render(
+      <ConditionRow
+        index={0}
+        condition={condition}
+        indicators={indicators}
+        onChange={() => {}}
+        onRemove={() => {}}
+        canRemove={false}
+      />,
+    );
+
+    const interval = screen.getByRole('combobox', { name: /interval/i });
+    expect(interval).toHaveValue('1d');
+  });
+
+  it('shows intraday hint for 5m interval', () => {
+    render(
+      <ConditionRow
+        index={0}
+        condition={{ ...condition, interval: '5m' }}
+        indicators={indicators}
+        onChange={() => {}}
+        onRemove={() => {}}
+        canRemove={false}
+      />,
+    );
+
+    expect(screen.getByText(/intraday data limited/i)).toBeInTheDocument();
+  });
+
+  it('does not show intraday hint for daily interval', () => {
+    render(
+      <ConditionRow
+        index={0}
+        condition={condition}
+        indicators={indicators}
+        onChange={() => {}}
+        onRemove={() => {}}
+        canRemove={false}
+      />,
+    );
+
+    expect(screen.queryByText(/intraday data limited/i)).not.toBeInTheDocument();
+  });
+
+  it.each(INTRADAY_INTERVALS)('shows hint for %s interval', (interval) => {
+    render(
+      <ConditionRow
+        index={0}
+        condition={{ ...condition, interval }}
+        indicators={indicators}
+        onChange={() => {}}
+        onRemove={() => {}}
+        canRemove={false}
+      />,
+    );
+
+    expect(screen.getByText(/intraday data limited/i)).toBeInTheDocument();
   });
 });

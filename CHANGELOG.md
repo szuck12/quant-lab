@@ -23,6 +23,13 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Condition parameter labels** — parameter names are now
   title-cased in the form (e.g. "Window" instead of "window").
 
+### Changed
+- **Backtest interval options** — expanded from 3 (Daily, Weekly,
+  Monthly) to 8 intervals (5m, 15m, 30m, 1h, Daily, Weekly,
+  Monthly, Quarterly). Intraday intervals show data-limit hints.
+- **Last N Years** — now accepts decimal values (e.g. 0.5 for
+  6 months) in addition to whole numbers.
+
 ### Added
 - **Frontend unit tests** — vitest setup with ConditionRow height
   and class-consistency tests.

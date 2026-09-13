@@ -150,8 +150,19 @@ def parse_backtest_command(tokens: list[str]) -> dict:
     }
     for key, default in _DEFAULTS.items():
         val = options.get(key, default)
-        if val is not None and key in (
-            "years", "hold", "capital", "max_tickers"
+        if val is not None and key == "years":
+            try:
+                val = float(val)
+            except (ValueError, TypeError):
+                raise ValueError(
+                    f"Option 'years' must be a number, got '{val}'"
+                )
+            if val <= 0:
+                raise ValueError(
+                    "Option 'years' must be greater than 0"
+                )
+        elif val is not None and key in (
+            "hold", "capital", "max_tickers"
         ):
             try:
                 val = int(val)

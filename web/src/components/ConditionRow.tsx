@@ -134,10 +134,20 @@ export function ConditionRow({
             onChange={(e) => update({ interval: e.target.value })}
             className="condition-field rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 transition-colors focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/20"
           >
+            <option value="5m">5 Minute</option>
+            <option value="15m">15 Minute</option>
+            <option value="30m">30 Minute</option>
+            <option value="1h">1 Hour</option>
             <option value="1d">Daily</option>
             <option value="1wk">Weekly</option>
             <option value="1mo">Monthly</option>
+            <option value="3mo">Quarterly</option>
           </select>
+          {['5m', '15m', '30m', '1h'].includes(condition.interval) && (
+            <span className="mt-1 text-[10px] text-slate-400">
+              Intraday data limited to 60 days (1h: 2 years)
+            </span>
+          )}
         </label>
 
         {/* Remove */}

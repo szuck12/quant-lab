@@ -80,6 +80,9 @@ between the two.
   v4 utility classes only.
 - MUST NOT use default exports — named exports only for all
   components and modules.
+- MUST NOT hardcode interval dropdown options; the source of truth
+  is `_VALID_INTERVALS` in `indicators/_data.py`. The frontend
+  exposes a curated subset (currently 8 of 13).
 - MUST NOT add comments that restate the obvious — follow the
   commenting conventions in `docs/commenting_guidelines.md`.
 - MUST NOT use `any` type in TypeScript — use proper type

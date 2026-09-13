@@ -146,7 +146,7 @@ Instead of symbol operators, use these word-based aliases (case-insensitive):
 | `--hold N` | Hold period in bars (default: 10) | `--hold 5` |
 | `--capital N` | Starting capital (default: 10000) | `--capital 50000` |
 | `--benchmark TICKER` | Benchmark ticker (default: SPY) | `--benchmark QQQ` |
-| `--years N` | Years of history (default: 2) | `--years 3` |
+| `--years N` | Years of history, supports decimals (default: 2) | `--years 0.5` |
 | `--stop-loss N` | Stop-loss percentage (default: disabled) | `--stop-loss 5` |
 | `--universe SOURCE` | Run strategy across a ticker universe (`sp500` or CSV path) | `--universe sp500` |
 | `--max-tickers N` | Limit universe to N tickers (default: all) | `--max-tickers 50` |

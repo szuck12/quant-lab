@@ -218,4 +218,14 @@ Agents read this at session start and append at session end.
 - **2026-09-12**: Parameter name display — API parameter names (e.g.
   "window") are code identifiers and should stay lowercase in the
   indicator reference page. Capitalize only in form labels via
-  `charAt(0).toUpperCase() + slice(1)` at render time.
+   `charAt(0).toUpperCase() + slice(1)` at render time.
+- **2026-09-12**: Interval dropdown — frontend originally exposed only
+  3 of 13 yfinance intervals. Expanded to 8: 5m, 15m, 30m, 1h, 1d,
+  1wk, 1mo, 3mo. Excluded: 1m (8-day limit), 2m (marginal), 60m
+  (identical to 1h), 90m (redundant), 5d (misleading resampled data).
+  Backend already supported all 13 via `_VALID_INTERVALS`.
+- **2026-09-12**: Decimal years — changed `years` from `int` to
+  `float` across the full pipeline: Pydantic schema, API route
+  validation, data pipeline type annotations, CLI parser, and
+  frontend validation. The date arithmetic `timedelta(days=years *
+  365)` already worked with floats natively.

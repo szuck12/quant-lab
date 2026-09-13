@@ -338,6 +338,52 @@ class TestRunBacktest:
         )
         assert resp.status_code == 422
 
+    @patch("backtester.engine.DataPipeline")
+    def test_valid_decimal_years(self, MockPipeline, client):
+        mock_pipeline = MockPipeline.return_value
+        mock_pipeline.fetch.return_value = _mock_pipeline_fetch(
+            ["AAPL"], "1d", 0.5
+        )
+
+        resp = client.post(
+            "/api/backtest",
+            json={
+                "conditions": [
+                    {
+                        "indicator": "RSI",
+                        "operator": "<",
+                        "value": 30,
+                        "interval": "1d",
+                    }
+                ],
+                "years": 0.5,
+            },
+        )
+        assert resp.status_code == 200
+
+    @patch("backtester.engine.DataPipeline")
+    def test_valid_fractional_years(self, MockPipeline, client):
+        mock_pipeline = MockPipeline.return_value
+        mock_pipeline.fetch.return_value = _mock_pipeline_fetch(
+            ["AAPL"], "1d", 2.5
+        )
+
+        resp = client.post(
+            "/api/backtest",
+            json={
+                "conditions": [
+                    {
+                        "indicator": "RSI",
+                        "operator": "<",
+                        "value": 30,
+                        "interval": "1d",
+                    }
+                ],
+                "years": 2.5,
+            },
+        )
+        assert resp.status_code == 200
+
     def test_invalid_capital_zero(self, client):
         resp = client.post(
             "/api/backtest",

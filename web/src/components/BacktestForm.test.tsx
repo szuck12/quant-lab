@@ -32,4 +32,18 @@ describe('BacktestForm number inputs', () => {
     expect(yearsInput.getAttribute('type')).toBe('number');
     expect(positionInput.getAttribute('type')).toBe('number');
   });
+
+  it('years input has step="any" for decimal support', async () => {
+    render(<BacktestForm loading={false} onSubmit={() => {}} />);
+
+    const yearsInput = await screen.findByRole('spinbutton', { name: /last n years/i });
+    expect(yearsInput.getAttribute('step')).toBe('any');
+  });
+
+  it('years input allows min of 0', async () => {
+    render(<BacktestForm loading={false} onSubmit={() => {}} />);
+
+    const yearsInput = await screen.findByRole('spinbutton', { name: /last n years/i });
+    expect(yearsInput.getAttribute('min')).toBe('0');
+  });
 });

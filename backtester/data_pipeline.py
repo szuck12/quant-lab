@@ -29,7 +29,7 @@ class DataPipeline:
         self,
         tickers: list[str],
         interval: str,
-        years: int,
+        years: float,
     ) -> dict[str, pd.DataFrame]:
         """Download data for all tickers at a given interval.
 
@@ -39,7 +39,7 @@ class DataPipeline:
         Args:
             tickers: List of stock symbols.
             interval: Bar size ("1d", "1wk", "1mo", etc.).
-            years: Years of historical data.
+            years: Years of historical data (supports decimals).
 
         Returns:
             Dict mapping ticker -> OHLCV DataFrame indexed by date.
@@ -66,7 +66,7 @@ class DataPipeline:
         self,
         tickers: list[str],
         interval: str,
-        years: int,
+        years: float,
     ) -> dict[str, pd.DataFrame]:
         """Use yf.download() for batch download.
 

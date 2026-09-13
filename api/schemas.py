@@ -48,7 +48,7 @@ class BacktestRequest(BaseModel):
 
     conditions: list[ConditionRequest] = Field(min_length=1)
     capital: float = Field(default=10000, gt=0, le=1_000_000_000)
-    years: int = Field(default=2, ge=1, le=100)
+    years: float = Field(default=2, gt=0, le=100)
     position_size: float = Field(default=100, ge=0, le=100)
     position_size_base: str = Field(
         default="total", pattern="^(total|unallocated)$"

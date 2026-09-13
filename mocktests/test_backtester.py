@@ -122,6 +122,14 @@ class TestParseBacktestCommand:
         config = parse_backtest_command(["AAPL", "RSI", "<", "30", "1d", "--years", "5"])
         assert config["years"] == 5
 
+    def test_decimal_years(self):
+        config = parse_backtest_command(["AAPL", "RSI", "<", "30", "1d", "--years", "0.5"])
+        assert config["years"] == 0.5
+
+    def test_fractional_years(self):
+        config = parse_backtest_command(["AAPL", "RSI", "<", "30", "1d", "--years", "2.5"])
+        assert config["years"] == 2.5
+
     def test_stop_loss(self):
         config = parse_backtest_command(["AAPL", "RSI", "<", "30", "1d", "--stop-loss", "5"])
         assert config["stop_loss"] == 5.0
