@@ -10,9 +10,10 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 - **Backtest progress indicator** — running a backtest now shows a
   live percentage (0–100%) in the submit button. Progress tracks
-  through data download (0–40%), indicator computation and
-  simulation (40–92%), and metrics (92–100%). Uses background
-  thread with polling; never goes backwards.
+  incrementally through data download (1–32%), benchmark fetch
+  (32–35%), per-ticker indicator computation and simulation
+  (35–65%), and metrics (65–100%). Uses background thread with
+  polling; never goes backwards; no jump exceeds 10%.
 
 ## [3.7.1] - 2026-09-12
 

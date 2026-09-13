@@ -8,6 +8,7 @@ available.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
 
@@ -30,6 +31,7 @@ class DataPipeline:
         tickers: list[str],
         interval: str,
         years: float,
+        on_progress: Callable[[int], None] | None = None,
     ) -> dict[str, pd.DataFrame]:
         """Download data for all tickers at a given interval.
 
@@ -40,25 +42,39 @@ class DataPipeline:
             tickers: List of stock symbols.
             interval: Bar size ("1d", "1wk", "1mo", etc.).
             years: Years of historical data (supports decimals).
+            on_progress: Optional callback receiving 0–100 within
+                the download phase (cache checks + batch download).
 
         Returns:
             Dict mapping ticker -> OHLCV DataFrame indexed by date.
         """
         result: dict[str, pd.DataFrame] = {}
         to_download: list[str] = []
+        total = len(tickers)
 
-        for ticker in tickers:
+        for i, ticker in enumerate(tickers):
             cached = self._load_cache(ticker, interval)
             if cached is not None and len(cached) > 0:
                 result[ticker] = cached
             else:
                 to_download.append(ticker)
+            # Report cache-check progress (0–5% of download phase)
+            if on_progress and total > 0:
+                on_progress(int(5 * (i + 1) / total))
 
         if to_download:
-            downloaded = self._download_batch(to_download, interval, years)
+            # Download phase: 5%–100% of download phase
+            downloaded = self._download_batch(
+                to_download, interval, years,
+                on_progress=on_progress,
+                progress_offset=5,
+                progress_range=95,
+            )
             for ticker, df in downloaded.items():
                 self._save_cache(ticker, interval, df)
                 result[ticker] = df
+        elif on_progress:
+            on_progress(100)
 
         return result
 
@@ -67,6 +83,9 @@ class DataPipeline:
         tickers: list[str],
         interval: str,
         years: float,
+        on_progress: Callable[[int], None] | None = None,
+        progress_offset: int = 0,
+        progress_range: int = 100,
     ) -> dict[str, pd.DataFrame]:
         """Use yf.download() for batch download.
 
@@ -77,6 +96,9 @@ class DataPipeline:
             tickers: List of stock symbols.
             interval: Bar size.
             years: Years of history.
+            on_progress: Optional callback receiving progress.
+            progress_offset: Starting percentage for this phase.
+            progress_range: Percentage range for this phase.
 
         Returns:
             Dict mapping ticker -> OHLCV DataFrame.
@@ -87,10 +109,16 @@ class DataPipeline:
         end = datetime.now()
         start = end - timedelta(days=years * 365)
 
+        def _report(pct: int) -> None:
+            if on_progress:
+                on_progress(progress_offset + int(progress_range * pct / 100))
+
         if len(tickers) <= CHUNK_SIZE:
-            return self._download_chunk(
+            result = self._download_chunk(
                 tickers, start, end, interval
             )
+            _report(100)
+            return result
 
         # Parallel chunk download
         chunks = [
@@ -99,6 +127,7 @@ class DataPipeline:
         ]
         result: dict[str, pd.DataFrame] = {}
         total = len(tickers)
+        completed_chunks = 0
 
         with ThreadPoolExecutor(max_workers=3) as pool:
             futures = {
@@ -118,6 +147,8 @@ class DataPipeline:
                     f" of {total}"
                 )
                 result.update(future.result())
+                completed_chunks += 1
+                _report(int(100 * completed_chunks / len(chunks)))
 
         return result
 

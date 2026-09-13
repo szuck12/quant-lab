@@ -198,9 +198,13 @@ class BacktestEngine:
 
         interval = self._smallest_interval()
         print("\nStep 1/5: Downloading data...")
-        _progress(3)
-        all_data = self.pipeline.fetch(tickers, interval, years)
-        _progress(38)
+        _progress(1)
+        _progress(2)
+        all_data = self.pipeline.fetch(
+            tickers, interval, years,
+            on_progress=lambda p: _progress(2 + int(30 * p / 100)),
+        )
+        _progress(32)
 
         if not all_data:
             missing = ", ".join(tickers)
@@ -220,12 +224,13 @@ class BacktestEngine:
             )
 
         # Download benchmark data
-        _progress(39)
+        _progress(32)
         bench_data = self.pipeline.fetch(
-            [benchmark], interval, years
+            [benchmark], interval, years,
+            on_progress=lambda p: _progress(32 + int(3 * p / 100)),
         )
         bench_df = bench_data.get(benchmark, pd.DataFrame())
-        _progress(42)
+        _progress(35)
 
         # Create portfolio
         portfolio = Portfolio(
@@ -240,8 +245,16 @@ class BacktestEngine:
         skipped = 0
 
         total_tickers = len(all_data)
+        # Ticker loop spans 35%–65% (30% range).
+        # Metrics spans 65%–100% (35% range with sub-steps).
+        ticker_start = 35
+        ticker_end = 65
+        ticker_step = (ticker_end - ticker_start) / max(total_tickers, 1)
+        _progress(ticker_start)
         for i, (ticker, df) in enumerate(all_data.items()):
+            base = ticker_start + int(ticker_step * i)
             enriched = self._compute_indicators(ticker, df)
+            _progress(base + int(ticker_step * 0.3))
             # Vectorized: skip tickers with no entry signals
             if not self._has_any_signal(enriched):
                 ticker_results[ticker] = []
@@ -252,9 +265,8 @@ class BacktestEngine:
                 )
                 ticker_results[ticker] = trades
                 all_trades.extend(trades)
-            # Progress: 42%–92% for ticker loop
-            if total_tickers > 0:
-                _progress(42 + int(50 * (i + 1) / total_tickers))
+            _progress(base + int(ticker_step * 0.9))
+        _progress(ticker_end)
 
         print("\nStep 3/5: Evaluating conditions...")
         simulated = len(ticker_results) - skipped
@@ -269,8 +281,9 @@ class BacktestEngine:
         print(f"  Total trades executed: {total_trades}")
 
         print("\nStep 5/5: Computing metrics...")
-        _progress(93)
+        _progress(66)
         metrics = compute_metrics(all_trades, capital)
+        _progress(72)
         metrics["cash_remaining"] = round(portfolio.cash, 2)
         metrics["positions_value"] = round(
             portfolio.get_total_value(
@@ -280,18 +293,23 @@ class BacktestEngine:
             ),
             2,
         )
+        _progress(78)
 
         benchmark_metrics = {}
         if not bench_df.empty and all_trades:
+            _progress(80)
             dates = [t.entry_date for t in all_trades]
             start_date = min(dates)
             end_date = max(t.exit_date for t in all_trades)
             benchmark_metrics = compute_benchmark_metrics(
                 bench_df, start_date, end_date
             )
+            _progress(86)
+        else:
+            _progress(84)
 
-        _progress(98)
-        return BacktestResult(
+        _progress(92)
+        result = BacktestResult(
             trades=all_trades,
             metrics=metrics,
             benchmark_metrics=benchmark_metrics,
@@ -299,6 +317,8 @@ class BacktestEngine:
             conditions=self.conditions,
             config=self.config,
         )
+        _progress(100)
+        return result
 
     def _smallest_interval(self) -> str:
         """Determine the smallest interval from conditions.

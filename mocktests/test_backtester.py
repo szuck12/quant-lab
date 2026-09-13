@@ -626,6 +626,62 @@ class TestBacktestEngine:
         assert result.metrics == {}
 
     @patch("backtester.engine.DataPipeline")
+    def test_on_progress_receives_monotonic_values(self, MockPipeline):
+        mock_df = _make_df(rows=200)
+        mock_df["rsi_14"] = 30.0
+        mock_pipeline = MockPipeline.return_value
+
+        def mock_fetch(tickers, interval, years, on_progress=None, **kwargs):
+            if on_progress:
+                for p in range(0, 101, 10):
+                    on_progress(p)
+            return {"AAPL": mock_df}
+
+        mock_pipeline.fetch.side_effect = mock_fetch
+
+        config = self._make_config()
+        engine = BacktestEngine(config["conditions"], config)
+
+        progress_values: list[int] = []
+        engine.run(on_progress=lambda p: progress_values.append(p))
+
+        assert len(progress_values) > 0
+        # Must be monotonically non-decreasing
+        for i in range(1, len(progress_values)):
+            assert progress_values[i] >= progress_values[i - 1]
+        # Must reach 100
+        assert progress_values[-1] == 100
+
+    @patch("backtester.engine.DataPipeline")
+    def test_on_progress_no_jumps_over_10(self, MockPipeline):
+        mock_df = _make_df(rows=200)
+        mock_df["rsi_14"] = 30.0
+        mock_pipeline = MockPipeline.return_value
+
+        def mock_fetch(tickers, interval, years, on_progress=None, **kwargs):
+            if on_progress:
+                for p in range(0, 101, 10):
+                    on_progress(p)
+            # Return enough tickers so each ticker is ≤5% of range
+            return {f"T{i}": mock_df for i in range(10)}
+
+        mock_pipeline.fetch.side_effect = mock_fetch
+
+        config = self._make_config()
+        engine = BacktestEngine(config["conditions"], config)
+
+        progress_values: list[int] = []
+        engine.run(on_progress=lambda p: progress_values.append(p))
+
+        # No single jump should exceed 10%
+        for i in range(1, len(progress_values)):
+            jump = progress_values[i] - progress_values[i - 1]
+            assert jump <= 10, (
+                f"Jump of {jump}% at index {i}: "
+                f"{progress_values[i-1]} -> {progress_values[i]}"
+            )
+
+    @patch("backtester.engine.DataPipeline")
     def test_hold_period(self, MockPipeline):
         mock_df = _make_df(rows=200)
         mock_df["rsi_14"] = 30.0
