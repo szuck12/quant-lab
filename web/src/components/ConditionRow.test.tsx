@@ -213,4 +213,22 @@ describe('ConditionRow interval dropdown', () => {
     expect(hintSpan).toBeInTheDocument();
     expect(hintSpan?.className).toContain('h-3');
   });
+
+  it('all Row 1 labels have h-3 spacer for consistent height', () => {
+    const { container } = render(
+      <ConditionRow
+        index={0}
+        condition={condition}
+        indicators={indicators}
+        onChange={() => {}}
+        onRemove={() => {}}
+        canRemove={false}
+      />,
+    );
+
+    const row1 = container.querySelector('.flex.flex-wrap.items-end');
+    const spacers = row1!.querySelectorAll('.condition-field ~ span.h-3');
+
+    expect(spacers.length).toBeGreaterThanOrEqual(4);
+  });
 });

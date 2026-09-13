@@ -227,5 +227,15 @@ Agents read this at session start and append at session end.
 - **2026-09-12**: Decimal years — changed `years` from `int` to
   `float` across the full pipeline: Pydantic schema, API route
   validation, data pipeline type annotations, CLI parser, and
-  frontend validation. The date arithmetic `timedelta(days=years *
-  365)` already worked with floats natively.
+   frontend validation. The date arithmetic `timedelta(days=years *
+   365)` already worked with floats natively.
+- **2026-09-12**: Frontend alignment lesson — when using `items-end`
+  flex alignment on a row of labels, if one label gains extra content
+  (e.g. hint text), ALL labels must have matching spacer elements to
+  maintain equal height. Never add a spacer to just one label; add
+  it to every label in the row so the layout stays consistent.
+- **2026-09-12**: Frontend rigor lesson — always evaluate the FULL
+  layout context when making CSS/spacing changes. Check sibling
+  elements, parent alignment (items-end vs items-center), and how
+  conditional content affects sibling heights. Test both states
+  (with and without the conditional content).

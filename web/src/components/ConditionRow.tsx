@@ -67,6 +67,7 @@ export function ConditionRow({
               </option>
             ))}
           </select>
+          <span className="h-3" />
         </label>
 
         {/* Component */}
@@ -89,6 +90,7 @@ export function ConditionRow({
                 </option>
               ))}
             </select>
+            <span className="h-3" />
           </label>
         )}
 
@@ -108,6 +110,7 @@ export function ConditionRow({
               </option>
             ))}
           </select>
+          <span className="h-3" />
         </label>
 
         {/* Value */}
@@ -122,6 +125,7 @@ export function ConditionRow({
             onChange={(e) => update({ value: parseFloat(e.target.value) || 0 })}
             className="condition-field w-24 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm tabular-nums transition-colors focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/20"
           />
+          <span className="h-3" />
         </label>
 
         {/* Interval */}
