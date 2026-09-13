@@ -5,6 +5,24 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com) and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.9.2] - 2026-09-12
+
+### Changed
+- **Performance metrics table** — removed the **Profit factor** row,
+  and the metrics table is now entirely neutral (no green/red coloring;
+  colors remain only in the trade log).
+- **Benchmark N/A cells** — Total trades, Win rate, and Avg trade
+  return now show **N/A** for the buy-and-hold benchmark (it has no
+  trades) instead of misleading zeros.
+- **Win rate formatting** — no longer prefixed with a `+` sign.
+
+### Verified
+- **Metric accuracy** — added 20 hand-computed tests covering total
+  return, win rate, average trade return, Sharpe, Sortino, max
+  drawdown, annualized return, and their benchmark equivalents across
+  conditions (all wins, all losses, flat, single trade, partial
+  allocation, window slicing).
+
 ## [3.9.1] - 2026-09-12
 
 ### Fixed

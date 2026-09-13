@@ -5,9 +5,12 @@ interface Props {
   benchmark: MetricsResponse;
 }
 
-function pct(v: number) {
+const NA = 'N/A';
+
+function pct(v: number, signed = true) {
   if (!Number.isFinite(v)) return '—';
   const formatted = (v * 100).toFixed(2);
+  if (!signed) return `${formatted}%`;
   return v > 0 ? `+${formatted}%` : `${formatted}%`;
 }
 
@@ -20,34 +23,19 @@ function Row({
   label,
   sv,
   bv,
-  fmt,
 }: {
   label: string;
-  sv: number;
-  bv: number;
-  fmt: (v: number) => string;
+  sv: string;
+  bv?: string;
 }) {
-  const svFmt = fmt(sv);
-  const bvFmt = fmt(bv);
-  const isPositive = sv > 0;
-  const isNegative = sv < 0;
-
   return (
     <tr className="border-b border-slate-100 last:border-0">
       <td className="py-2.5 pr-4 text-sm text-slate-500">{label}</td>
-      <td
-        className={`py-2.5 pr-4 text-right text-sm font-semibold tabular-nums ${
-          isPositive
-            ? 'text-emerald-600'
-            : isNegative
-              ? 'text-red-500'
-              : 'text-slate-800'
-        }`}
-      >
-        {svFmt}
+      <td className="py-2.5 pr-4 text-right text-sm font-semibold tabular-nums text-slate-700">
+        {sv}
       </td>
-      <td className="py-2.5 text-right text-sm text-slate-500 tabular-nums">
-        {bvFmt}
+      <td className="py-2.5 text-right text-sm tabular-nums text-slate-500">
+        {bv ?? NA}
       </td>
     </tr>
   );
@@ -68,15 +56,43 @@ export function MetricsTable({ strategy, benchmark }: Props) {
           </tr>
         </thead>
         <tbody>
-          <Row label="Total trades" sv={strategy.total_trades} bv={benchmark.total_trades} fmt={(v) => String(v)} />
-          <Row label="Win rate" sv={strategy.win_rate} bv={benchmark.win_rate} fmt={pct} />
-          <Row label="Total return" sv={strategy.total_return} bv={benchmark.total_return} fmt={pct} />
-          <Row label="Annualized" sv={strategy.annualized_return} bv={benchmark.annualized_return} fmt={pct} />
-          <Row label="Sharpe" sv={strategy.sharpe_ratio} bv={benchmark.sharpe_ratio} fmt={(v) => num(v)} />
-          <Row label="Sortino" sv={strategy.sortino_ratio} bv={benchmark.sortino_ratio} fmt={(v) => num(v)} />
-          <Row label="Max drawdown" sv={strategy.max_drawdown} bv={benchmark.max_drawdown} fmt={pct} />
-          <Row label="Profit factor" sv={strategy.profit_factor} bv={benchmark.profit_factor} fmt={(v) => num(v)} />
-          <Row label="Avg trade return" sv={strategy.avg_trade_return} bv={benchmark.avg_trade_return} fmt={pct} />
+          <Row
+            label="Total trades"
+            sv={String(strategy.total_trades)}
+          />
+          <Row
+            label="Win rate"
+            sv={pct(strategy.win_rate, false)}
+          />
+          <Row
+            label="Total return"
+            sv={pct(strategy.total_return)}
+            bv={pct(benchmark.total_return)}
+          />
+          <Row
+            label="Annualized"
+            sv={pct(strategy.annualized_return)}
+            bv={pct(benchmark.annualized_return)}
+          />
+          <Row
+            label="Sharpe"
+            sv={num(strategy.sharpe_ratio)}
+            bv={num(benchmark.sharpe_ratio)}
+          />
+          <Row
+            label="Sortino"
+            sv={num(strategy.sortino_ratio)}
+            bv={num(benchmark.sortino_ratio)}
+          />
+          <Row
+            label="Max drawdown"
+            sv={pct(strategy.max_drawdown)}
+            bv={pct(benchmark.max_drawdown)}
+          />
+          <Row
+            label="Avg trade return"
+            sv={pct(strategy.avg_trade_return)}
+          />
         </tbody>
       </table>
     </div>

@@ -311,3 +311,12 @@ Agents read this at session start and append at session end.
    string `detail` → shown, array `detail` → generic). Also fixed the
    duplicate-column crash in `_normalize_frame` (drop duplicate labels).
    Lesson: treat every externally visible string as public.
+- **2026-09-12**: v3.9.2 — performance-metrics presentation. The
+   metrics table is now neutral (no green/red; colors only in the trade
+   log). Buy-and-hold benchmark shows N/A for metrics that require
+   trades (Total trades, Win rate, Avg trade return). Removed the
+   Profit factor row (meaningless for the benchmark). Win rate is shown
+   without a `+` sign. Metric computations were audited and confirmed
+   correct (total return from mark-to-market equity, dollar profit
+   factor, textbook Sortino, negative max drawdown, floored
+   annualization); 20 hand-computed tests were added.

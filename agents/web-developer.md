@@ -111,6 +111,10 @@ between the two.
   must sanitize unhandled exceptions and validation errors, and the
   frontend `api.ts` must map network/5xx/array-detail responses to
   friendly strings.
+- MUST keep the performance-metrics table neutral (no red/green
+  coloring; color belongs in the trade log only) and must show `N/A`
+  for benchmark metrics that require trades (Total trades, Win rate,
+  Avg trade return). Do not render a Profit factor row.
 - MUST NOT modify test files, docs files, or security
   configuration.
 - MUST NOT introduce new dependencies without checking that they

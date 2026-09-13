@@ -2796,3 +2796,191 @@ class TestNormalizeFrameDuplicates:
         out = _normalize_frame(mi)
         assert out.columns.is_unique
         assert "Close" in out.columns
+
+
+# ===================================================================
+# §26  Performance-metric accuracy (strategy + benchmark)
+# ===================================================================
+
+
+def _equity(values, start="2023-01-02", freq="B", periods=None):
+    n = periods if periods is not None else len(values)
+    idx = pd.date_range(start=start, periods=n, freq=freq)
+    return pd.Series(values, index=idx, dtype=float)
+
+
+class TestStrategyMetricAccuracy:
+    """Hand-computed checks for every strategy metric."""
+
+    def test_total_return_from_equity(self):
+        m = compute_metrics([_mk_trade(100, 110)], 10_000.0,
+                            _equity([10_000.0, 12_000.0]))
+        assert m["total_return"] == pytest.approx(0.20)
+
+    def test_total_trades_count(self):
+        trades = [_mk_trade(100, 110) for _ in range(7)]
+        m = compute_metrics(trades, 10_000.0,
+                            _equity([10_000.0, 10_000.0]))
+        assert m["total_trades"] == 7
+
+    def test_win_rate_and_counts(self):
+        trades = [
+            _mk_trade(100, 110),                 # win
+            _mk_trade(100, 90),                  # loss
+            _mk_trade(100, 105),                 # win
+            _mk_trade(100, 100, ret=0.0),        # zero (not a loss)
+        ]
+        m = compute_metrics(trades, 10_000.0,
+                            _equity([10_000.0, 10_000.0]))
+        assert m["winning_trades"] == 2
+        assert m["losing_trades"] == 1
+        assert m["win_rate"] == pytest.approx(2 / 4)
+
+    def test_win_rate_all_wins(self):
+        trades = [_mk_trade(100, 110), _mk_trade(100, 120)]
+        m = compute_metrics(trades, 10_000.0,
+                            _equity([10_000.0, 10_000.0]))
+        assert m["win_rate"] == 1.0
+        assert m["losing_trades"] == 0
+
+    def test_win_rate_all_losses(self):
+        trades = [_mk_trade(100, 90), _mk_trade(100, 80)]
+        m = compute_metrics(trades, 10_000.0,
+                            _equity([10_000.0, 10_000.0]))
+        assert m["win_rate"] == 0.0
+        assert m["winning_trades"] == 0
+
+    def test_avg_trade_return_is_mean(self):
+        trades = [
+            _mk_trade(100, 110),   # +0.10
+            _mk_trade(100, 95),    # -0.05
+            _mk_trade(100, 102),   # +0.02
+            _mk_trade(100, 100, ret=0.0),
+        ]
+        m = compute_metrics(trades, 10_000.0,
+                            _equity([10_000.0, 10_000.0]))
+        assert m["avg_trade_return"] == pytest.approx(
+            (0.10 - 0.05 + 0.02) / 4
+        )
+
+    def test_max_drawdown_known_series(self):
+        m = compute_metrics([_mk_trade(100, 110)], 10_000.0,
+                            _equity([10_000.0, 11_000.0, 9_900.0, 10_500.0]))
+        assert m["max_drawdown"] == pytest.approx((9_900 - 11_000) / 11_000)
+
+    def test_max_drawdown_monotonic_is_zero(self):
+        m = compute_metrics([_mk_trade(100, 110)], 10_000.0,
+                            _equity([10_000.0, 10_500.0, 11_000.0]))
+        assert m["max_drawdown"] == 0.0
+
+    def test_annualized_one_year(self):
+        # ~1 year span, +10%
+        idx = pd.date_range("2023-01-02", "2024-01-02", freq="B")
+        equity = pd.Series(
+            np.linspace(10_000.0, 11_000.0, len(idx)), index=idx
+        )
+        m = compute_metrics([_mk_trade(100, 110)], 10_000.0, equity)
+        assert m["annualized_return"] == pytest.approx(0.10, abs=0.005)
+
+    def test_annualized_short_span_floored(self):
+        equity = _equity([10_000.0, 10_100.0], periods=2)
+        m = compute_metrics([_mk_trade(100, 101)], 10_000.0, equity)
+        assert m["annualized_return"] == pytest.approx(
+            1.01 ** 12 - 1.0, rel=1e-3
+        )
+
+    def test_empty_trades_all_zero(self):
+        m = compute_metrics([], 10_000.0)
+        for key in (
+            "total_return", "annualized_return", "sharpe_ratio",
+            "sortino_ratio", "max_drawdown", "avg_trade_return",
+            "profit_factor", "win_rate",
+        ):
+            assert m[key] == 0.0
+
+    def test_profit_factor_dollar_weighted(self):
+        trades = [
+            _mk_trade(100, 110, invested=1_000.0),  # +100
+            _mk_trade(100, 90, invested=100.0),     # -10
+        ]
+        m = compute_metrics(trades, 10_000.0,
+                            _equity([10_000.0, 10_000.0]))
+        assert m["profit_factor"] == pytest.approx(10.0)
+
+    def test_profit_factor_no_losses_zero(self):
+        m = compute_metrics([_mk_trade(100, 110)], 10_000.0,
+                            _equity([10_000.0, 10_000.0]))
+        assert m["profit_factor"] == 0.0
+
+
+class TestBenchmarkMetricAccuracy:
+    """Hand-computed checks for benchmark metrics."""
+
+    def _spy(self, prices, start="2023-01-02", freq="B"):
+        idx = pd.date_range(start=start, periods=len(prices), freq=freq)
+        return pd.DataFrame({"Close": np.asarray(prices, dtype=float)},
+                            index=idx)
+
+    def test_total_return(self):
+        from backtester.metrics import compute_benchmark_metrics
+        df = self._spy([100.0, 105.0, 110.0])
+        bm = compute_benchmark_metrics(df, df.index[0], df.index[-1])
+        assert bm["total_return"] == pytest.approx(0.10)
+
+    def test_max_drawdown_known(self):
+        from backtester.metrics import compute_benchmark_metrics
+        df = self._spy([100.0, 110.0, 99.0, 105.0])
+        bm = compute_benchmark_metrics(df, df.index[0], df.index[-1])
+        assert bm["max_drawdown"] == pytest.approx((99 - 110) / 110)
+
+    def test_annualized_one_year(self):
+        from backtester.metrics import compute_benchmark_metrics
+        idx = pd.date_range("2023-01-02", "2024-01-02", freq="B")
+        prices = np.linspace(100.0, 110.0, len(idx))
+        df = pd.DataFrame({"Close": prices}, index=idx)
+        bm = compute_benchmark_metrics(df, idx[0], idx[-1])
+        assert bm["annualized_return"] == pytest.approx(0.10, abs=0.005)
+
+    def test_sharpe_matches_formula(self):
+        from backtester.metrics import (
+            compute_benchmark_metrics, compute_sharpe_ratio,
+        )
+        prices = np.array([100.0, 101.0, 99.5, 100.8, 102.0, 101.2])
+        df = self._spy(prices)
+        close = pd.Series(prices, index=df.index)
+        expected = compute_sharpe_ratio(
+            close.pct_change(fill_method=None).dropna()
+        )
+        bm = compute_benchmark_metrics(df, df.index[0], df.index[-1])
+        assert bm["sharpe_ratio"] == pytest.approx(expected)
+
+    def test_sortino_matches_formula(self):
+        from backtester.metrics import (
+            compute_benchmark_metrics, compute_sortino_ratio,
+        )
+        prices = np.array([100.0, 101.0, 99.5, 100.8, 102.0, 101.2])
+        df = self._spy(prices)
+        close = pd.Series(prices, index=df.index)
+        expected = compute_sortino_ratio(
+            close.pct_change(fill_method=None).dropna()
+        )
+        bm = compute_benchmark_metrics(df, df.index[0], df.index[-1])
+        assert bm["sortino_ratio"] == pytest.approx(expected)
+
+    def test_constant_price_neutral(self):
+        from backtester.metrics import compute_benchmark_metrics
+        df = self._spy([100.0] * 30)
+        bm = compute_benchmark_metrics(df, df.index[0], df.index[-1])
+        assert bm["total_return"] == 0.0
+        assert bm["max_drawdown"] == 0.0
+        assert bm["sharpe_ratio"] == 0.0
+        assert bm["sortino_ratio"] == 0.0
+
+    def test_window_slice(self):
+        from backtester.metrics import compute_benchmark_metrics
+        # Flat before the window, +20% inside it
+        prices = [50.0] * 5 + [100.0, 110.0, 120.0] + [50.0] * 5
+        df = self._spy(prices)
+        bm = compute_benchmark_metrics(df, df.index[5], df.index[7])
+        assert bm["total_return"] == pytest.approx(0.20)
+        assert bm["max_drawdown"] == 0.0
