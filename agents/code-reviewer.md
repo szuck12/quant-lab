@@ -45,7 +45,7 @@ releases, after significant change, or whenever a design question arises.
    tests (§3).
 4. Audit real-test coverage, tickers, windows, intervals, and that every
    reasonableness assertion is mathematically sound (§4).
-5. Sweep every failure mode: indicator-level, CLI-level, data-layer (§5).
+5. Sweep every failure mode: indicator-level, API-level, data-layer (§5).
 6. Audit cross-cutting concerns: multi-ticker dispatch, interval
    handling, `_return_raw` pattern, print side-effects, runner health
    (§6).

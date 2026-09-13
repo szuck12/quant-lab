@@ -151,8 +151,6 @@ Agents read this at session start and append at session end.
 - Web app: FastAPI backend on `:8000`, React/Vite frontend on `:5173`.
 - Vite proxies `/api` to backend in dev mode.
 - `npm run dev` starts both backend and frontend concurrently.
-- Legacy CLI: `python main.py backtest <args>`.
-- Indicator CLI preserved in `cli.py` (imported by test_main.py).
 - `indicators/` package kept for web use (not deleted).
 - Shared conventions: `docs/conventions_reference.md` §1–§19.
 - Skills: `add-indicator/`, `release-cut/`, `security-audit/`,

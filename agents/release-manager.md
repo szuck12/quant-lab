@@ -36,7 +36,7 @@ review, security, consistency), and cuts the single
 ## Responsibilities
 
 1. Determine the version bump from the semver table in
-   `docs/update_changelog.md` §1 (MAJOR for breaking CLI changes, MINOR
+   `docs/update_changelog.md` §1 (MAJOR for breaking changes, MINOR
    for new features/indicators, PATCH for bug fixes, doc improvements,
    test additions).
 2. Structure the CHANGELOG entry with only the section headers that have

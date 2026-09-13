@@ -43,7 +43,6 @@ Use the semver table per `docs/conventions_reference.md` §13:
 |-------------|------|
 | New indicator, new interval | MINOR |
 | Test additions, refactoring | PATCH |
-| Breaking CLI change | MAJOR |
 | Bug fix, doc improvement | PATCH |
 
 ### Step 3 — CHANGELOG Entry

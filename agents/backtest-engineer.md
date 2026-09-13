@@ -13,7 +13,7 @@ evaluation.
 
 ### What It Does
 
-- `backtester/` package: CLI parser, data pipeline, batch indicators,
+- `backtester/` package: data pipeline, batch indicators,
   engine, metrics, reporting.
 - Backtesting methodology: signal generation, portfolio simulation,
   position sizing, stop-loss logic.
@@ -30,9 +30,7 @@ evaluation.
 
 ## Responsibilities
 
-1. Implement and maintain `backtester/cli.py` — the BACKTEST command
-   parser and error handling.
-2. Implement and maintain `backtester/data_pipeline.py` — batch data
+1. Implement and maintain `backtester/data_pipeline.py` — batch data
    download via `yf.download()` and parquet caching.
 3. Implement and maintain `backtester/batch_indicators.py` —
    vectorized indicator computation on DataFrames.
@@ -59,7 +57,7 @@ evaluation.
 - MUST NOT assume data availability — handle empty DataFrames,
   missing columns, and network failures gracefully.
 - MUST NOT hardcode ticker lists or intervals — all configuration
-  comes from the CLI parser.
+  comes from the command parser.
 - MUST NOT use sparse equity curves for Sharpe/Sortino — the equity
   curve MUST include values for every business day (forward-filled
   from trade exits) so `pct_change()` produces actual daily returns,
@@ -115,7 +113,7 @@ Enforced below.
 Key conventions for this agent:
 - Code style: §1 (80-char, PEP 8, docstrings, type hints).
 - Alphabetical ordering: §2 (all lists, dicts, imports).
-- Backtester uses its own error messages (not IndexError) for CLI
+- Backtester uses its own error messages (not IndexError) for
   errors — use clear, user-facing error text.
 
 ## Tools / Commands

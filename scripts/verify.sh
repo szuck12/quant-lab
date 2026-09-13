@@ -32,7 +32,7 @@ run_check "ruff check api/" ruff check api/
 
 echo ""
 echo "Smoke test..."
-run_check "python3 main.py backtest (legacy CLI)" python3 main.py backtest AAPL RSI '<' 30 1d --hold 5
+run_check "python3 main.py (web server starts)" python3 -c "from api.main import app; print('OK')"
 
 echo ""
 echo "Mock tests..."

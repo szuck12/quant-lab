@@ -140,7 +140,7 @@ The Release Manager only cuts after every gate is green.
 | 4 | Test Engineer | Verifies with mock suite (664+ tests) |
 | 5 | Indicator Specialist | Validates batch indicator formulas if changed |
 | 6 | Consistency Guardian | Checks conventions and code style |
-| 7 | Documentation Expert | Updates CLI docs and examples if user-facing |
+| 7 | Documentation Expert | Updates web docs and examples if user-facing |
 | 8 | Release Manager | Releases as MINOR or MAJOR bump depending on scope |
 
 ### Backtester-Specific Notes
@@ -177,7 +177,6 @@ The Release Manager only cuts after every gate is green.
 - Use `import type` for TypeScript type-only imports.
 - Vite proxies `/api` to `http://127.0.0.1:8000` in dev.
 - NaN values must be sanitized before JSON serialization.
-- Legacy CLI still works: `python main.py backtest <args>`.
 
 Handoff chain:
 

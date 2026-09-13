@@ -27,7 +27,6 @@ Primary: **Backtest Engineer** (`agents/backtest-engineer.md`).
 - [ ] Run `python3 run_mock_tests.py` — full suite must pass (521+)
 
 ### Verification
-- [ ] Verify CLI parsing works for all example inputs
 - [ ] Verify error messages are clear and helpful
 - [ ] Verify batch indicators match single-ticker results
 - [ ] Verify metrics match expected financial formulas
@@ -49,7 +48,6 @@ Primary: **Backtest Engineer** (`agents/backtest-engineer.md`).
 
 | File | Purpose |
 |------|---------|
-| `backtester/cli.py` | BACKTEST command parser |
 | `backtester/data_pipeline.py` | Batch download + parquet cache |
 | `backtester/batch_indicators.py` | Vectorized indicator computation |
 | `backtester/engine.py` | Core simulation loop |
@@ -89,7 +87,7 @@ Examples:
 
 When working on the backtester, always ensure:
 
-1. **CLI layer** (`cli.py`): validates ticker format (1-10 alphanumeric
+1. **API validation layer**: validates ticker format (1-10 alphanumeric
    chars, must contain at least one letter) before sending to engine.
 2. **Data pipeline** (`data_pipeline.py`): suppresses yfinance logging,
    tracks failed tickers, prints which tickers failed and why. Parquet

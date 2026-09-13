@@ -359,9 +359,8 @@ def compute_indicator(
         )
 
     # Convert whole-number float params to int (e.g. 50.0 → 50).
-    # CLI parser stores all params as float; pandas rolling() and
-    # other APIs require int windows. Defense in depth: the CLI
-    # parser also converts, but this catches any direct caller.
+    # Parameters may arrive as float; pandas rolling() and
+    # other APIs require int windows.
     params = tuple(
         int(p) if isinstance(p, float) and p == int(p) else p
         for p in params

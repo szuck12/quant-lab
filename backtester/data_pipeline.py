@@ -153,10 +153,6 @@ class DataPipeline:
                 end_idx = min(
                     (chunk_idx + 1) * CHUNK_SIZE, total
                 )
-                print(
-                    f"  Downloaded batch {start_idx}-{end_idx}"
-                    f" of {total}"
-                )
                 result.update(future.result())
                 completed_chunks += 1
                 _report(int(100 * completed_chunks / len(chunks)))
@@ -200,17 +196,12 @@ class DataPipeline:
                 threads=True,
             )
         except Exception as exc:
-            print(f"Error: batch download failed: {exc}")
             _yf_logger.setLevel(_prev_level)
             return {}
         finally:
             _yf_logger.setLevel(_prev_level)
 
         if raw.empty:
-            failed = ", ".join(tickers[:5])
-            if len(tickers) > 5:
-                failed += f" ... ({len(tickers)} total)"
-            print(f"  Warning: no data returned for {failed}")
             return {}
 
         result: dict[str, pd.DataFrame] = {}

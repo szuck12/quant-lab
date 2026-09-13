@@ -6,7 +6,7 @@ be run before releases, when a design question arises, or when
 cross-cutting structural issues are suspected.
 
 Cadence: before each release, or whenever the codebase undergoes
-significant change (new indicator, CLI redesign, etc.).
+significant change (new indicator, new web feature, etc.).
 
 ## Agent Ownership
 
@@ -71,7 +71,7 @@ other four documentation files.
       `- [ ]` for pending, `- [x]` for done.
 - [ ] Tags are lowercase, single word, prefixed with `#`, and match
       the approved list (`#indicator`, `#test`, `#bug`, `#docs`,
-      `#refactor`, `#cli`, `#infra`).
+      `#refactor`, `#infra`).
 - [ ] Items in **Done** that are already recorded in a CHANGELOG
       release have been pruned.
 - [ ] No item appears in two sections simultaneously.
@@ -86,7 +86,6 @@ other four documentation files.
       |-------------|------|---------|
       | New indicator, new interval | MINOR | 1.1.0 → 1.2.0 |
       | Test additions, refactoring | PATCH | 1.2.0 → 1.2.1 |
-      | Breaking CLI change | MAJOR | 1.x.x → 2.0.0 |
 
 - [ ] Changelog entries include only user-facing and test-infrastructure
       changes — no internal refactoring, comment-only changes, or
@@ -283,26 +282,7 @@ Systematic sweep of every failure mode across the codebase.
 - [ ] No bare `except:` or `except Exception:` blocks that could
       swallow real errors.
 
-### 5b. CLI-Level Errors
-
-Cross-reference the README error message table against actual code:
-
-- [ ] Fewer than 2 tokens: `sys.exit(1)` with expected message.
-- [ ] No valid tickers after comma split: exit.
-- [ ] Unrecognised indicator: exit with valid list.
-- [ ] Unrecognised argument: exit with name of bad arg.
-- [ ] Duplicate bar size / window / count: exit.
-- [ ] Invalid C-prefix (non-numeric): exit.
-- [ ] Non-positive window or count: exit.
-- [ ] MACD: comma-separated required, fast < slow enforced,
-      positive ints required.
-- [ ] BB: comma-separated required, positive numbers required.
-- [ ] STOCH: comma-separated required, positive ints required.
-- [ ] ADX: comma-separated required, positive ints required.
-- [ ] All error messages use `sys.exit(1)` (not `raise SystemExit`
-      directly, not `sys.exit(0)`).
-
-### 5c. Data Layer Errors
+### 5b. Data Layer Errors
 
 - [x] yfinance unreachable: does the program handle it gracefully
       (yfinance raises its own exceptions — are they caught)?
@@ -340,8 +320,7 @@ Issues that span multiple files or subsystems.
 
 - [ ] All six functions that have `_return_raw` return the correct
       raw data (close, typical, volume, True Range).
-- [ ] No function leaks `_return_raw` through the CLI dispatch
-      (no way to trigger it from stdin).
+- [ ] No function leaks `_return_raw` through any public interface.
 - [ ] The return type annotation is correct for both paths.
 - [ ] Existing callers (CLI, mock tests, dispatch tests) are
       unaffected — none pass `_return_raw=True`.
@@ -410,33 +389,23 @@ surface design drift.
 `main.py` is ~385 lines encompassing:
 
 - Imports (11 lines)
-- CLI parsing + validation (~205 lines)
+- Input parsing + validation (~205 lines)
 - Dispatch + output formatting (~135 lines)
 - Entry point (2 lines)
 
 Indicator functions and the data layer have been extracted into the
 `indicators/` subpackage (one file per indicator + shared `_data.py`),
 which was item 1 in the Section 8 action plan below.  main.py now
-focuses solely on CLI concerns.
+focuses solely on input handling and dispatch concerns.
 
 - If a fifteenth indicator were added (the fourteenth, CCI, was
   added in v1.7.0), a new file `indicators/<name>.py` would be
   created — no changes needed to the dispatch logic beyond a new
   `case` block.
-- Would extracting CLI parsing into a separate function reduce the
+- Would extracting input parsing into a separate function reduce the
   cognitive load of the ~205-line parser block?
 
-### 8b. CLI Design
-
-- Stdin-only input is unusual. What would it take to add argv support
-  (`python3 main.py AAPL SMA 50`), and would that break the multi-token
-  parsing?
-- The comma-parameter syntax (e.g. `12,26,9`) is compact but makes
-  argument classification fragile. Is there a cleaner alternative?
-- Error messages are printed and the program exits. Would structured
-  error output (JSON, exit codes) be useful for scripting?
-
-### 8c. Data Period Accuracy
+### 8b. Data Period Accuracy
 
 - `_DATA_PERIOD_MAP` has not changed since v1.0.0. Have yfinance's
   data availability guarantees changed? Are the thresholds still
@@ -503,11 +472,10 @@ Each entry must be one of two forms:
 
 | # | Type | Action |
 |---|------|--------|
-| 1 | DONE | Indicator functions + data-layer helpers extracted from main.py into `indicators/` subpackage (v1.2.3). main.py is now ~260 lines focused on CLI concerns. |
+| 1 | DONE | Indicator functions + data-layer helpers extracted from main.py into `indicators/` subpackage (v1.2.3). main.py is now ~260 lines focused on input handling. |
 | 2 | Take | Add `pandas-stubs` and run `mypy main.py --strict` in CI. The codebase already has full type hints; stubs are the only missing piece (8 false-positive errors, all from missing stubs + None tracking). |
 | 3 | Take | Run `ruff check main.py` to catch the one pre-existing style issue (`l` variable name) and add ruff to `requirements.txt` / CI. |
-| 4 | Ask | Should `_fetch_ohlcv`'s `print(f"Fetched {len(hist)} rows ...")` be routed through `logging.debug` instead of `print`? It appears in test output and during CLI use, which may be distracting. |
-| 5 | DONE | `sys.argv` support added alongside stdin (`python3 main.py AAPL SMA 50`). Both stdin and argv work — main() accepts optional `argv` parameter, if __name__ passes sys.argv[1:] (v1.2.3). |
+| 4 | Ask | Should `_fetch_ohlcv`'s `print(f"Fetched {len(hist)} rows ...")` be routed through `logging.debug` instead of `print`? It appears in test output and during use, which may be distracting. |
 
 ---
 
@@ -527,7 +495,7 @@ Four trust boundaries carry data onto your machine:
 
 | Boundary | Enters via | Risk if hostile |
 |----------|-----------|-----------------|
-| CLI input | stdin / sys.argv | Crafted strings reach printed output and outbound request URLs |
+| User input | stdin / web form | Crafted strings reach printed output and outbound request URLs |
 | Third-party packages | `pip install -r requirements.txt` | Arbitrary code runs at install/import time |
 | yfinance responses | Yahoo Finance over HTTPS | Wrong numbers mislead users; malformed frames hit parsing |
 | Repository surface | GitHub issues, PRs, settings | Leaked secrets, tampered history, malicious workflow edits |
@@ -609,7 +577,7 @@ Reporting protocol:
 
 #### 3. Input Handling and Injection Surfaces
 
-- What: how stdin/argv strings flow into sinks (terminal output,
+- What: how user input strings flow into sinks (terminal output,
   outbound URLs).
 - Check:
   - Indicator names validated against the hardcoded whitelist

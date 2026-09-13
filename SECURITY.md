@@ -40,7 +40,7 @@ reporter and the maintainer until a fix is available.
 
 ## Scope Notes
 
-QuantLab is a local command-line tool. It reads ticker input from
-stdin or argv, fetches market data from Yahoo Finance through
-yfinance over HTTPS, and prints results to stdout. It stores no
-credentials, runs no servers, and executes no downloaded code.
+QuantLab is a web application with a FastAPI backend and React frontend.
+It fetches market data from Yahoo Finance through yfinance over HTTPS,
+computes technical indicators, and runs backtests. It stores no
+credentials, executes no downloaded code, and runs as a local server.

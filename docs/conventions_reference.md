@@ -84,7 +84,7 @@ raise IndexError(
 
 - Checkbox syntax: `- [ ]` pending, `- [x]` done.
 - Tags: lowercase, single word, prefixed with `#` (e.g. `#indicator`,
-  `#test`, `#docs`, `#cli`, `#infra`, `#bug`, `#refactor`).
+  `#test`, `#docs`, `#infra`, `#bug`, `#refactor`).
 - Owner tags: `@agent-name` format (e.g. `@feature-implementer`).
 - New entries appended at the bottom of their section, never inserted
   at the top.
@@ -138,7 +138,6 @@ Release X.Y.Z — <brief summary>
 |-------------|------|---------|
 | New indicator, new interval | MINOR | 2.0.0 → 2.1.0 |
 | Test additions, refactoring | PATCH | 2.1.0 → 2.1.1 |
-| Breaking CLI change | MAJOR | 1.x.x → 2.0.0 |
 | Bug fix, doc improvement | PATCH | 2.0.0 → 2.0.1 |
 
 ## 14. README Structure
@@ -255,5 +254,4 @@ so the same class of bug cannot recur silently.
   from `INDICATOR_SCHEMA` in `api/routes.py`.
 - **Error handling**: API returns `{ "detail": "..." }` on errors.
   Frontend displays error messages in a red banner.
-- **Startup**: `python main.py` starts uvicorn. Legacy CLI mode:
-  `python main.py backtest <args>` still works.
+- **Startup**: `python main.py` starts uvicorn.

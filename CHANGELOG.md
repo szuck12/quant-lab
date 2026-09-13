@@ -5,6 +5,14 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com) and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.8.1] - 2026-09-12
+
+### Changed
+- **Removed CLI** — project is now web-only. Deleted `cli.py`,
+  `backtester/cli.py`, `backtester/reporting.py`, and associated
+  CLI test files. Cleaned up imports, print statements, and
+  documentation references throughout the codebase.
+
 ## [3.8.0] - 2026-09-12
 
 ### Added

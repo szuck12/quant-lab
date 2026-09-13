@@ -1,20 +1,19 @@
 # QuantLab
 
-Current version: **3.8.0** — [Changelog](CHANGELOG.md)
+Current version: **3.8.1** — [Changelog](CHANGELOG.md)
 
 Try now: [https://szuck12.github.io/quant-lab/](https://szuck12.github.io/quant-lab/)
 
-A stock-data backtesting tool with a **web application** (FastAPI + React) and a
-**command-line interface**. Fetches stock price data via
+A stock-data backtesting **web application** built with FastAPI and React.
+Fetches stock price data via
 [yfinance](https://github.com/ranaroussi/yfinance), computes fourteen
 technical indicators, and runs multi-condition strategies across
 multiple tickers with batch data download, parquet caching, and
 universe scanning (S&P 500 or custom CSV).
 
-The **web application** provides a form-based UI for configuring and
+The web application provides a form-based UI for configuring and
 running backtests, with interactive equity curve charts, metrics
-comparison, and trade tables. The **CLI** supports both single-ticker
-indicator lookups and full backtest runs from the terminal.
+comparison, and trade tables.
 
 yfinance provides access to Yahoo Finance market data. The tool does
 not require an API key or account.
@@ -87,324 +86,6 @@ Open `http://localhost:5173` in your browser.
 | `/api/backtest` | POST | Run backtest, return trades/metrics/equity curve |
 | `/health` | GET | Health check |
 
-## Command-Line Usage
-
-Input is read from stdin. The parser accepts a line of space-separated tokens.
-
-### Syntax
-
-```
-ticker(s) indicator [bar_size] [window] [C<count>]
-```
-
-| Token | Meaning | Allowed Values | Default |
-|-------|---------|----------------|---------|
-| `ticker(s)` | Stock symbol(s), comma-separated | Any symbol yfinance recognises (e.g. AAPL, MSFT, GOOG, SPY, BTC-USD, EURUSD=X) | Required |
-| `indicator` | Indicator to compute | `ADX`, `ATR`, `AV`, `BB`, `CCI`, `EMA`, `MACD`, `OBV`, `ROC`, `RSI`, `RVOL`, `SMA`, `STOCH`, `VWAP` (case-insensitive) | Required |
-| `bar_size` | Width of each price bar | `1m`, `2m`, `5m`, `15m`, `30m`, `90m`, `60m`, `1h`, `1d`, `5d`, `1wk`, `1mo`, `3mo` | `1d` |
-| `window` | Lookback period in bars (for MACD: comma-separated fast,slow,signal, e.g. `12,26,9`; for BB: comma-separated window,num_std, e.g. `20,2.5`; for STOCH: comma-separated window,smooth_k,smooth_d, e.g. `14,3,3`; for ADX: comma-separated window,adx_window, e.g. `14,14`) | Any positive integer, or comma-separated values for MACD/BB/STOCH/ADX | ADX=(14,14), ATR=14, AV=20, BB=(20,2.0), CCI=20, EMA=20, MACD=(12,26,9), OBV=30, ROC=9, RSI=14, RVOL=10, SMA=50, STOCH=(14,3,3), VWAP=20 |
-| `C<count>` | Number of recent values to return | `C` followed by any positive integer (e.g. `C1`, `C10`, `C100`) | `1` |
-
-### Backtester Syntax
-
-```
-python3 main.py BACKTEST ticker(s) <INDICATOR [params] [component] OP VALUE INTERVAL> [options]
-```
-
-**Shell quoting**: The `<` and `>` characters are shell operators. You **must** either quote them or use word-based aliases (see below):
-
-```bash
-# These all work:
-python3 main.py BACKTEST AAPL RSI below 30 1d        # word-based aliases
-python3 main.py BACKTEST AAPL RSI '<' 30 1d           # single quotes
-python3 main.py BACKTEST AAPL RSI "<" 30 1d           # double quotes
-python3 main.py BACKTEST AAPL RSI \\< 30 1d           # escaped
-
-# This will fail in zsh/bash:
-python3 main.py BACKTEST AAPL RSI < 30 1d             # ERROR: shell interprets <
-```
-
-#### Operator Aliases
-
-Instead of symbol operators, use these word-based aliases (case-insensitive):
-
-| Symbol | Alias(es) |
-|--------|-----------|
-| `<` | `below`, `under`, `less_than`, `lt` |
-| `>` | `above`, `over`, `greater_than`, `gt` |
-| `<=` | `at_or_below`, `at_most`, `lte` |
-| `>=` | `at_or_above`, `at_least`, `gte` |
-| `=` | `equals`, `equal_to`, `eq` |
-
-#### Token Reference
-
-| Token | Meaning | Example |
-|-------|---------|---------|
-| `BACKTEST` | Command keyword | `BACKTEST` |
-| `ticker(s)` | Stock symbol(s), comma-separated | `AAPL,MSFT` |
-| `<INDICATOR ...>` | One or more conditions (each must end with interval) | `RSI below 30 1d` |
-| `--hold N` | Hold period in bars (default: 10) | `--hold 5` |
-| `--capital N` | Starting capital (default: 10000) | `--capital 50000` |
-| `--benchmark TICKER` | Benchmark ticker (default: SPY) | `--benchmark QQQ` |
-| `--years N` | Years of history, supports decimals (default: 2) | `--years 0.5` |
-| `--stop-loss N` | Stop-loss percentage (default: disabled) | `--stop-loss 5` |
-| `--universe SOURCE` | Run strategy across a ticker universe (`sp500` or CSV path) | `--universe sp500` |
-| `--max-tickers N` | Limit universe to N tickers (default: all) | `--max-tickers 50` |
-
-#### Condition Format
-
-```
-INDICATOR [params] [component] OP VALUE INTERVAL
-```
-
-- **Simple**: `RSI below 30 1d`, `SMA 50 above 200 1d`
-- **With params**: `STOCH 14,5,5 k above 80 1d`, `BB 20,2 upper above 150 1d`
-- **With component**: `MACD 12,26,9 signal above 0 1d`
-- **Multiple conditions (AND logic)**: `RSI below 30 1d SMA 50 above 200 1d`
-
-### Backtester Examples
-
-```bash
-# Basic RSI oversold strategy (word-based aliases, no quoting needed)
-python3 main.py BACKTEST AAPL RSI below 30 1d
-
-# Multi-condition strategy
-python3 main.py BACKTEST AAPL,MSFT RSI below 30 1d SMA 50 above 200 1d
-
-# Custom hold period and capital
-python3 main.py BACKTEST AAPL RSI below 30 1d --hold 5 --capital 50000
-
-# With stop-loss
-python3 main.py BACKTEST AAPL RSI below 30 1d --stop-loss 5
-
-# Using escaped shell operators
-python3 main.py BACKTEST AAPL RSI \< 30 1d
-
-# Bollinger Bands breakout
-python3 main.py BACKTEST AAPL BB 20,2 upper above 150 1d
-
-# MACD signal crossover
-python3 main.py BACKTEST AAPL MACD 12,26,9 signal above 0 1d
-
-# Stochastic overbought
-python3 main.py BACKTEST AAPL STOCH 14,5,5 k above 80 1d
-
-# Universe scan: run RSI oversold strategy across all S&P 500 stocks
-python3 main.py BACKTEST --universe sp500 RSI below 30 1d
-
-# Universe with ticker limit
-python3 main.py BACKTEST --universe sp500 --max-tickers 50 RSI below 30 1d
-
-# Universe from CSV file
-python3 main.py BACKTEST --universe my_tickers.csv RSI below 30 1d
-
-# Weekly timeframe
-python3 main.py BACKTEST AAPL RSI below 30 1wk
-
-# 3 years of data, custom benchmark
-python3 main.py BACKTEST AAPL,MSFT RSI below 30 1d --years 3 --benchmark QQQ
-```
-
-### Supported Indicators
-
-| Indicator | Parameters | Components | Default Window |
-|-----------|-----------|------------|----------------|
-| ADX | `di_len,adx_len` | — | `14,14` |
-| ATR | `window` | — | `14` |
-| AV | `window` | — | `20` |
-| BB | `window,num_std` | `upper`, `middle`, `lower` | `20,2.0` |
-| CCI | `window` | — | `20` |
-| EMA | `window` | — | `20` |
-| MACD | `fast,slow,signal` | `macd`, `signal`, `hist` | `12,26,9` |
-| OBV | `window` | — | `30` |
-| ROC | `window` | — | `9` |
-| RSI | `window` | — | `14` |
-| RVOL | `window` | — | `10` |
-| SMA | `window` | — | `50` |
-| STOCH | `window,smooth_k,smooth_d` | `k`, `d` | `14,3,3` |
-| VWAP | — | — | — |
-
-### Valid Intervals
-
-| Interval | Description |
-|----------|-------------|
-| `1m`, `2m`, `5m`, `15m`, `30m`, `60m`, `90m`, `1h` | Intraday |
-| `1d` | Daily |
-| `1wk` | Weekly |
-| `1mo`, `3mo` | Monthly |
-
-**Intraday limits**: 1m data is limited to 7 days, 2m–15m to 60 days, 30m–90m to 60 days.
-
-### How the Backtester Works
-
-1. **Data download**: Uses `yfinance` to batch-download OHLCV data for all tickers and the benchmark. Data is cached as Parquet files (requires `pyarrow` or `fastparquet`).
-2. **Indicator computation**: Computes all requested indicators on each ticker's data.
-3. **Condition evaluation**: Scans each bar for entry signals where ALL conditions match simultaneously.
-4. **Trade simulation**: For each entry signal, enters a long position and holds for exactly N bars (configurable via `--hold`). Stop-loss exits early if price drops below the threshold.
-5. **Performance metrics**: Computes total return, annualized return, Sharpe ratio, Sortino ratio, max drawdown, win rate, and risk-reward ratio.
-6. **Benchmark comparison**: Runs a simple buy-and-hold strategy on the benchmark ticker for comparison.
-
-### Known Limitations
-
-- **Long-only**: No short selling support.
-- **No transaction costs**: Assumes zero commissions or slippage.
-- **Survivorship bias**: Only includes currently listed tickers.
-- **Fixed hold period**: Every trade exits after exactly N bars (or earlier if stop-loss triggers).
-- **AND logic only**: All conditions must match on the same bar to enter a trade.
-- **Intraday data limits**: Yahoo Finance limits intraday data to 7–60 days depending on interval.
-
-### Argument Parsing Rules
-
-The parser expects at least two tokens: one or more tickers and an indicator name.
-
-Optional arguments (bar_size, window, C\<count\>) can appear in any order after the indicator. The parser identifies each argument's type as follows:
-
-1. **Bar size**: If the token (lowercased) matches one of the 13 valid intervals listed above, it is treated as the bar interval.
-2. **Count**: If the lowercased token starts with `c`, it is treated as a count (`C<number>`). The part after `c` must be a positive integer.
-3. **Window**: If the token is a plain positive integer, it is treated as the window.
-
-Only one value of each type is accepted. If the input contains two bar sizes, two windows, or two count arguments, the tool prints an error and exits.
-
-Multiple tickers are separated by commas in the first token (e.g. `AAPL,MSFT`). Spaces around commas are handled automatically — `AAPL , MSFT` is treated the same as `AAPL,MSFT`.
-
-### Error Messages
-
-| Condition | Message |
-|-----------|---------|
-| Fewer than 2 tokens | `Error: expected at least 2 values (ticker(s) indicator [bar_size] [window] [C<count>])` |
-| No valid tickers after parsing | `Error: no valid tickers provided` |
-| Indicator not recognised | `Error: indicator must be ADX, ATR, AV, BB, CCI, EMA, MACD, OBV, ROC, RSI, RVOL, SMA, STOCH, or VWAP` |
-| Unrecognised argument (not an interval, not C-prefixed, not an integer) | `Error: unrecognised argument '<arg>'` |
-| Duplicate bar size | `Error: duplicate bar size '<arg>'` |
-| Duplicate window | `Error: duplicate window '<arg>'` |
-| Duplicate count | `Error: duplicate count '<arg>'` |
-| Invalid C-prefix (non-numeric) | `Error: invalid count '<arg>' (use C<number>, e.g. C10)` |
-| Non-positive count | `Error: count must be positive` |
-| Non-positive window | `Error: window must be positive` |
-| Insufficient historical data for the requested window + count | `IndexError: Insufficient data for <INDICATOR>(<window>) with count=<count>` |
-| Plain integer given for MACD window (not comma-separated) | `Error: MACD requires comma-separated parameters (e.g. 12,26,9)` |
-| Invalid MACD params (wrong number of values, non-integer) | `Error: invalid MACD parameters '...' (use fast,slow,signal, e.g. 12,26,9)` |
-| MACD fast period >= slow period | `Error: fast period (X) must be less than slow period (Y)` |
-| MACD param not a positive integer | `Error: MACD parameters must be positive` |
-| Plain integer given for BB (not comma-separated) | `Error: BB requires comma-separated parameters (e.g. 20,2.5)` |
-| Invalid BB params (wrong number of values, non-numeric) | `Error: invalid BB parameters '...' (use window,num_std, e.g. 20,2.5)` |
-| Duplicate BB parameters | `Error: duplicate BB parameters '...'` |
-| BB param not a positive number | `Error: BB parameters must be positive` |
-| Plain integer given for STOCH window (not comma-separated) | `Error: STOCH requires comma-separated parameters (e.g. 14,3,3)` |
-| Invalid STOCH params (wrong number of values, non-integer) | `Error: invalid STOCH parameters '...' (use window,smooth_k,smooth_d, e.g. 14,3,3)` |
-| Duplicate STOCH parameters | `Error: duplicate STOCH parameters '...'` |
-| STOCH param not a positive integer | `Error: STOCH parameters must be positive` |
-| Plain integer given for ADX window (not comma-separated) | `Error: ADX requires comma-separated parameters (e.g. 14,14)` |
-| Invalid ADX params (wrong number of values, non-integer) | `Error: invalid ADX parameters '...' (use window,adx_window, e.g. 14,14)` |
-| Duplicate ADX parameters | `Error: duplicate ADX parameters '...'` |
-| ADX param not a positive integer | `Error: ADX parameters must be positive` |
-
-### Examples
-
-```bash
-# Average Directional Index with default parameters (14,14)
-echo "AAPL ADX" | python3 main.py
-
-# Average Directional Index with custom DI and ADX smoothing lengths
-echo "MSFT ADX 10,20 C3 1wk" | python3 main.py
-
-# Average True Range with default window (14-day)
-echo "AAPL ATR" | python3 main.py
-
-# Average True Range with custom window and weekly bars
-echo "MSFT ATR 14 1wk" | python3 main.py
-
-# Average True Range with multiple values
-echo "GOOG ATR 14 C5" | python3 main.py
-
-# Average Volume with default window (20-day)
-echo "AAPL AV" | python3 main.py
-
-# Average Volume with custom window and weekly bars
-echo "MSFT AV 10 1wk" | python3 main.py
-
-# Bollinger Bands with default parameters (20,2.0)
-echo "AAPL BB" | python3 main.py
-
-# Bollinger Bands with custom window and standard deviations
-echo "MSFT BB 20,2.5" | python3 main.py
-
-# Bollinger Bands with count and weekly bars
-echo "GOOG BB 20,2.0 C5 1wk" | python3 main.py
-
-# Commodity Channel Index with default window (20-day)
-echo "AAPL CCI" | python3 main.py
-
-# Commodity Channel Index with custom window and weekly bars
-echo "MSFT CCI 10 C5 1wk" | python3 main.py
-
-# Custom window (50-day EMA instead of default 20)
-echo "MSFT EMA 50" | python3 main.py
-
-# MACD with default parameters (12,26,9)
-echo "AAPL MACD" | python3 main.py
-
-# MACD with custom fast, slow, and signal periods
-echo "MSFT MACD 5,13,4" | python3 main.py
-
-# MACD with count and custom bar size
-echo "AAPL MACD 12,26,9 C3 1wk" | python3 main.py
-
-# On-Balance Volume with default window (30-day history)
-echo "AAPL OBV" | python3 main.py
-
-# On-Balance Volume with custom window and weekly bars
-echo "MSFT OBV 60 1wk" | python3 main.py
-
-# Rate of Change with default window (9-day)
-echo "AAPL ROC" | python3 main.py
-
-# Rate of Change with custom window and weekly bars
-echo "MSFT ROC 14 1wk" | python3 main.py
-
-# Custom count (last 10 RSI values)
-echo "AAPL RSI C10" | python3 main.py
-
-# Multiple tickers, default values
-echo "AAPL,MSFT RSI" | python3 main.py
-
-# All optional arguments together (order does not matter)
-echo "AAPL RSI 14 1mo C5" | python3 main.py
-
-# Relative Volume with default window (10-day)
-echo "AAPL RVOL" | python3 main.py
-
-# Relative Volume with custom window and weekly bars
-echo "GOOG RVOL 20 1wk" | python3 main.py
-
-# Single ticker with default window (50-day SMA)
-echo "AAPL SMA" | python3 main.py
-
-# Custom bar size (weekly bars with 20-week SMA)
-echo "GOOG SMA 20 1wk" | python3 main.py
-
-# Intradata with a short window
-echo "SPY SMA 20 5m" | python3 main.py
-
-# Three tickers with custom window, count, and bar size
-echo "AAPL,GOOG,TSLA EMA 50 C3 1wk" | python3 main.py
-
-# Stochastic Oscillator with default parameters (14,3,3)
-echo "AAPL STOCH" | python3 main.py
-
-# Stochastic Oscillator with custom parameters
-echo "MSFT STOCH 14,5,5" | python3 main.py
-
-# Stochastic Oscillator with count and weekly bars
-echo "GOOG STOCH 14,3,3 C5 1wk" | python3 main.py
-
-# VWAP with default window (20-day)
-echo "AAPL VWAP" | python3 main.py
-
-# VWAP with custom window and weekly bars
-echo "MSFT VWAP 10 1wk" | python3 main.py
-```
-
 ## How It Works
 
 The tool follows a five-step pipeline:
@@ -460,11 +141,6 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
 ```
 .
 ├── main.py                        # Entry point: starts uvicorn web server
-│                                  # by default. Legacy CLI: python main.py
-│                                  # backtest <args>
-│
-├── cli.py                         # Legacy CLI indicator dispatch (imported
-│                                  # by test_main.py; standalone: python cli.py)
 │
 ├── api/                           # FastAPI web backend.
 │   │
@@ -518,19 +194,16 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
 │   ├── stoch.py                   # calculate_stoch()
 │   └── vwap.py                    # calculate_vwap()
 │
-├── backtester/                     # Backtesting engine: CLI parser,
-│   │                              # batch data pipeline, vectorized
-│   │                              # indicators, strategy simulation,
-│   │                              # financial metrics, reporting,
-│   │                              # and universe scanning.
+├── backtester/                     # Backtesting engine: batch data
+│   │                              # pipeline, vectorized indicators,
+│   │                              # strategy simulation, financial
+│   │                              # metrics, and universe scanning.
 │   │
 │   ├── __init__.py
-│   ├── cli.py                     # BACKTEST command parser.
 │   ├── data_pipeline.py           # Batch download + parquet cache.
 │   ├── batch_indicators.py        # Vectorized indicator computation.
 │   ├── engine.py                  # Core simulation loop.
 │   ├── metrics.py                 # Financial metrics (Sharpe, etc.).
-│   ├── reporting.py               # Console output formatting.
 │   ├── universe.py                # Universe resolution (S&P 500, CSV).
 │   └── cache/                     # Parquet cache directory.
 │
@@ -693,19 +366,13 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
 │   │                              # periods, backtest, validation,
 │   │                              # error handling (17 tests).
 │   │
-│   ├── test_backtester.py         # Backtester tests: CLI parsing,
-│   │                              # conditions, simulation, metrics,
-│   │                              # reporting, data pipeline errors,
-│   │                              # universe integration (197 tests).
+│   ├── test_backtester.py         # Backtester tests: conditions,
+│   │                              # simulation, metrics, data pipeline,
+│   │                              # errors, universe integration.
 │   │
 │   ├── test_data_period.py        # Tests for _data_period(): validates
 │   │                              # every threshold in _DATA_PERIOD_MAP
 │   │                              # for every interval.
-│   │
-│   ├── test_main.py               # Tests for CLI indicator dispatch:
-│   │                              # parser dispatch, default windows,
-│   │                              # C<count> syntax, duplicate detection,
-│   │                              # multi-ticker handling, error cases.
 │   │
 │   └── test_universe.py           # Universe module tests: S&P 500
 │                                  # resolution, CSV loading, caching,
@@ -744,9 +411,7 @@ Because the EWM seed is set to the first value and `adjust=False`, the first row
 │   ├── test_calculate_sma.py      # End-to-end SMA tests with real data.
 │   ├── test_calculate_stoch.py    # End-to-end STOCH tests with real data
 │   │                              # (added in v1.3.0).
-│   ├── test_calculate_vwap.py     # End-to-end VWAP tests with real data.
-│   └── test_main.py               # End-to-end CLI tests including
-│                                  # multi-ticker dispatch.
+│   └── test_calculate_vwap.py     # End-to-end VWAP tests with real data.
 │
 ├── skills/                        # Load-on-demand skill playbooks
 │   │                              # for complex workflows.

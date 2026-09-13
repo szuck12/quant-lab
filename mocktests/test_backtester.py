@@ -1,6 +1,6 @@
 """Comprehensive tests for the backtester package.
 
-Covers CLI parsing, batch indicator computation, condition evaluation,
+Covers batch indicator computation, condition evaluation,
 simulation engine, metrics, and reporting. All yfinance calls are
 mocked so no network access is required.
 """
@@ -36,11 +36,6 @@ from backtester.batch_indicators import (
     compute_stoch,
     compute_vwap,
 )
-from backtester.cli import (
-    _parse_indicator_args,
-    _parse_single_condition,
-    parse_backtest_command,
-)
 from backtester.data_pipeline import DataPipeline
 from backtester.engine import BacktestEngine, BacktestResult, Condition
 from backtester.metrics import (
@@ -52,7 +47,6 @@ from backtester.metrics import (
     compute_sortino_ratio,
     compute_total_return,
 )
-from backtester.reporting import format_results
 
 
 # ---------------------------------------------------------------------------
@@ -88,198 +82,6 @@ def _make_ticker_data(
 
 # ===================================================================
 # §1  CLI Parser Tests
-# ===================================================================
-
-class TestParseBacktestCommand:
-    """Tests for parse_backtest_command."""
-
-    def test_minimal_command(self):
-        config = parse_backtest_command(["AAPL", "RSI", "<", "30", "1d"])
-        assert config["tickers"] == ["AAPL"]
-        assert len(config["conditions"]) == 1
-        assert config["hold"] == 10
-        assert config["capital"] == 10_000.0
-        assert config["benchmark"] == "SPY"
-        assert config["years"] == 2
-
-    def test_multi_ticker(self):
-        config = parse_backtest_command(["AAPL,MSFT", "SMA", "50", ">", "200", "1d"])
-        assert config["tickers"] == ["AAPL", "MSFT"]
-
-    def test_custom_hold(self):
-        config = parse_backtest_command(["AAPL", "RSI", "<", "30", "1d", "--hold", "10"])
-        assert config["hold"] == 10
-
-    def test_custom_capital(self):
-        config = parse_backtest_command(["AAPL", "RSI", "<", "30", "1d", "--capital", "50000"])
-        assert config["capital"] == 50_000.0
-
-    def test_custom_benchmark(self):
-        config = parse_backtest_command(["AAPL", "RSI", "<", "30", "1d", "--benchmark", "QQQ"])
-        assert config["benchmark"] == "QQQ"
-
-    def test_custom_years(self):
-        config = parse_backtest_command(["AAPL", "RSI", "<", "30", "1d", "--years", "5"])
-        assert config["years"] == 5
-
-    def test_decimal_years(self):
-        config = parse_backtest_command(["AAPL", "RSI", "<", "30", "1d", "--years", "0.5"])
-        assert config["years"] == 0.5
-
-    def test_fractional_years(self):
-        config = parse_backtest_command(["AAPL", "RSI", "<", "30", "1d", "--years", "2.5"])
-        assert config["years"] == 2.5
-
-    def test_stop_loss(self):
-        config = parse_backtest_command(["AAPL", "RSI", "<", "30", "1d", "--stop-loss", "5"])
-        assert config["stop_loss"] == 5.0
-
-    def test_no_stop_loss(self):
-        config = parse_backtest_command(["AAPL", "RSI", "<", "30", "1d"])
-        assert config["stop_loss"] is None
-
-    def test_multiple_conditions(self):
-        config = parse_backtest_command(
-            ["AAPL", "RSI", "<", "30", "1d", "SMA", "50", ">", "200", "1d"]
-        )
-        assert len(config["conditions"]) == 2
-
-    def test_condition_with_params(self):
-        config = parse_backtest_command(
-            ["AAPL", "STOCH", "14,5,5", "k", ">", "80", "1d"]
-        )
-        assert config["conditions"][0].indicator == "STOCH"
-        assert config["conditions"][0].params == (14.0, 5.0, 5.0)
-        assert config["conditions"][0].component == "k"
-        assert config["conditions"][0].operator == ">"
-        assert config["conditions"][0].value == 80.0
-
-    def test_bb_condition_with_params(self):
-        config = parse_backtest_command(
-            ["AAPL", "BB", "20,2", "upper", ">", "150", "1d"]
-        )
-        cond = config["conditions"][0]
-        assert cond.indicator == "BB"
-        assert cond.params == (20.0, 2.0)
-        assert cond.component == "upper"
-        assert cond.operator == ">"
-        assert cond.value == 150.0
-
-    def test_macd_condition(self):
-        config = parse_backtest_command(
-            ["AAPL", "MACD", "12,26,9", "signal", ">", "0", "1d"]
-        )
-        cond = config["conditions"][0]
-        assert cond.indicator == "MACD"
-        assert cond.params == (12.0, 26.0, 9.0)
-        assert cond.component == "signal"
-        assert cond.operator == ">"
-        assert cond.value == 0.0
-
-    def test_interval_parsing(self):
-        config = parse_backtest_command(["AAPL", "RSI", "<", "30", "1h"])
-        assert config["conditions"][0].interval == "1h"
-
-    def test_no_args_error(self):
-        with pytest.raises(ValueError, match="No arguments"):
-            parse_backtest_command([])
-
-    def test_no_conditions_error(self):
-        with pytest.raises(ValueError, match="No conditions"):
-            parse_backtest_command(["AAPL"])
-
-    def test_unknown_indicator_error(self):
-        with pytest.raises(ValueError, match="Unknown indicator"):
-            parse_backtest_command(["AAPL", "FOO", "<", "30", "1d"])
-
-    def test_missing_interval_error(self):
-        with pytest.raises(ValueError, match="interval"):
-            parse_backtest_command(["AAPL", "RSI", "<", "30"])
-
-    def test_bad_hold_value(self):
-        with pytest.raises(ValueError, match="integer"):
-            parse_backtest_command(["AAPL", "RSI", "<", "30", "1d", "--hold", "abc"])
-
-    def test_malformed_condition_error(self):
-        with pytest.raises(ValueError, match="interval"):
-            parse_backtest_command(["AAPL", "RSI"])
-
-
-class TestParseSingleCondition:
-    """Tests for _parse_single_condition."""
-
-    def test_basic_condition(self):
-        c = _parse_single_condition(["RSI", "<", "30", "1d"])
-        assert c.indicator == "RSI"
-        assert c.params == ()
-        assert c.component is None
-        assert c.operator == "<"
-        assert c.value == 30.0
-        assert c.interval == "1d"
-
-    def test_with_params(self):
-        c = _parse_single_condition(["SMA", "50", ">", "200", "1d"])
-        assert c.indicator == "SMA"
-        assert c.params == (50.0,)
-        assert c.component is None
-        assert c.operator == ">"
-        assert c.value == 200.0
-
-    def test_with_component(self):
-        c = _parse_single_condition(["BB", "20,2", "upper", ">", "150", "1d"])
-        assert c.indicator == "BB"
-        assert c.params == (20.0, 2.0)
-        assert c.component == "upper"
-
-    def test_equal_op(self):
-        c = _parse_single_condition(["RSI", "==", "50", "1d"])
-        assert c.operator == "=="
-        assert c.value == 50.0
-
-    def test_unsupported_op(self):
-        with pytest.raises(ValueError, match="operator"):
-            _parse_single_condition(["RSI", "!=", "50", "1d"])
-
-    def test_too_short(self):
-        with pytest.raises(ValueError, match="too short"):
-            _parse_single_condition(["RSI", "<", "30"])
-
-    def test_bad_value(self):
-        with pytest.raises(ValueError, match="number"):
-            _parse_single_condition(["RSI", "<", "abc", "1d"])
-
-    def test_bad_operator(self):
-        with pytest.raises(ValueError, match="operator"):
-            _parse_single_condition(["RSI", "~", "30", "1d"])
-
-
-class TestParseIndicatorArgs:
-    """Tests for _parse_indicator_args."""
-
-    def test_no_args(self):
-        assert _parse_indicator_args("RSI", []) == ((), None)
-
-    def test_single_arg(self):
-        assert _parse_indicator_args("SMA", ["50"]) == ((50.0,), None)
-
-    def test_comma_separated(self):
-        assert _parse_indicator_args("STOCH", ["14,5,5"]) == ((14.0, 5.0, 5.0), None)
-
-    def test_with_spaces(self):
-        assert _parse_indicator_args("STOCH", ["14, 5, 5"]) == ((14.0, 5.0, 5.0), None)
-
-    def test_invalid_arg(self):
-        with pytest.raises(ValueError, match="numeric"):
-            _parse_indicator_args("RSI", ["abc"])
-
-    def test_with_component(self):
-        params, comp = _parse_indicator_args("BB", ["20,2", "upper"])
-        assert params == (20.0, 2.0)
-        assert comp == "upper"
-
-
-# ===================================================================
-# §2  Batch Indicator Tests
 # ===================================================================
 
 class TestBatchIndicators:
@@ -856,56 +658,6 @@ class TestMetrics:
 # §7  Reporting Tests
 # ===================================================================
 
-class TestReporting:
-    """Tests for format_results output."""
-
-    def test_format_results_basic(self):
-        result = BacktestResult(
-            trades=[],
-            metrics={"total_trades": 0, "total_return": 0.0},
-            benchmark_metrics={},
-            ticker_results={},
-            conditions=[],
-            config={"tickers": ["AAPL"], "hold": 10, "capital": 10_000.0,
-                    "benchmark": "SPY", "years": 2, "stop_loss": None},
-        )
-        output = format_results(result)
-        assert "QuantLab" in output
-        assert "0" in output
-
-    def test_format_results_with_trades(self):
-        trades = [
-            Trade("AAPL", pd.Timestamp("2025-01-01"), 100.0,
-                  pd.Timestamp("2025-01-06"), 110.0, 5, 10.0),
-        ]
-        metrics = {
-            "total_trades": 1,
-            "total_return": 10.0,
-            "annualized_return": 50.0,
-            "sharpe_ratio": 1.5,
-            "sortino_ratio": 2.0,
-            "max_drawdown": 5.0,
-            "win_rate": 1.0,
-            "profit_factor": float("inf"),
-        }
-        result = BacktestResult(
-            trades=trades,
-            metrics=metrics,
-            benchmark_metrics={},
-            ticker_results={"AAPL": trades},
-            conditions=[],
-            config={"tickers": ["AAPL"], "hold": 10, "capital": 10_000.0,
-                    "benchmark": "SPY", "years": 2, "stop_loss": None},
-        )
-        output = format_results(result)
-        assert "AAPL" in output
-        assert "1" in output
-
-
-# ===================================================================
-# §8  Multi-Ticker Tests
-# ===================================================================
-
 class TestMultiTicker:
     """Tests for multi-ticker backtesting."""
 
@@ -963,38 +715,6 @@ class TestMultiTicker:
 # §9  Error Handling Tests
 # ===================================================================
 
-class TestErrorHandling:
-    """Tests for graceful error handling."""
-
-    def test_empty_input(self):
-        with pytest.raises(ValueError, match="No arguments"):
-            parse_backtest_command([])
-
-    def test_single_word(self):
-        with pytest.raises(ValueError, match="No conditions"):
-            parse_backtest_command(["AAPL"])
-
-    def test_unknown_indicator(self):
-        with pytest.raises(ValueError, match="Unknown indicator"):
-            parse_backtest_command(["AAPL", "INVALID", "<", "30", "1d"])
-
-    def test_bad_hold_value(self):
-        with pytest.raises(ValueError, match="integer"):
-            parse_backtest_command(["AAPL", "RSI", "<", "30", "1d", "--hold", "abc"])
-
-    def test_missing_interval(self):
-        with pytest.raises(ValueError, match="interval"):
-            parse_backtest_command(["AAPL", "RSI", "<", "30"])
-
-    def test_unknown_component(self):
-        with pytest.raises(ValueError, match="numeric"):
-            parse_backtest_command(["AAPL", "BB", "20,2", "foo", ">", "150", "1d"])
-
-
-# ===================================================================
-# §10  Cache Directory Tests
-# ===================================================================
-
 class TestCacheDirectory:
     """Tests for parquet cache directory behavior."""
 
@@ -1011,142 +731,6 @@ class TestCacheDirectory:
 
 # ===================================================================
 # §11  Operator Alias Tests (shell-safe syntax)
-# ===================================================================
-
-class TestOperatorAliases:
-    """Tests for word-based operator aliases that avoid shell redirection."""
-
-    def test_below_alias(self):
-        c = _parse_single_condition(["RSI", "below", "30", "1d"])
-        assert c.operator == "<"
-        assert c.value == 30.0
-
-    def test_above_alias(self):
-        c = _parse_single_condition(["SMA", "50", "above", "200", "1d"])
-        assert c.operator == ">"
-
-    def test_at_or_below_alias(self):
-        c = _parse_single_condition(["RSI", "at_or_below", "30", "1d"])
-        assert c.operator == "<="
-
-    def test_at_or_above_alias(self):
-        c = _parse_single_condition(["RSI", "at_or_above", "70", "1d"])
-        assert c.operator == ">="
-
-    def test_equals_alias(self):
-        c = _parse_single_condition(["RSI", "equals", "50", "1d"])
-        assert c.operator == "=="
-
-    def test_less_than_alias(self):
-        c = _parse_single_condition(["RSI", "less_than", "30", "1d"])
-        assert c.operator == "<"
-
-    def test_greater_than_alias(self):
-        c = _parse_single_condition(["SMA", "greater_than", "200", "1d"])
-        assert c.operator == ">"
-
-    def test_under_alias(self):
-        c = _parse_single_condition(["RSI", "under", "30", "1d"])
-        assert c.operator == "<"
-
-    def test_over_alias(self):
-        c = _parse_single_condition(["RSI", "over", "70", "1d"])
-        assert c.operator == ">"
-
-    def test_at_most_alias(self):
-        c = _parse_single_condition(["RSI", "at_most", "30", "1d"])
-        assert c.operator == "<="
-
-    def test_at_least_alias(self):
-        c = _parse_single_condition(["RSI", "at_least", "70", "1d"])
-        assert c.operator == ">="
-
-    def test_eq_alias(self):
-        c = _parse_single_condition(["RSI", "eq", "50", "1d"])
-        assert c.operator == "=="
-
-    def test_equal_to_alias(self):
-        c = _parse_single_condition(["RSI", "equal_to", "50", "1d"])
-        assert c.operator == "=="
-
-    def test_case_insensitive_alias(self):
-        c = _parse_single_condition(["RSI", "Below", "30", "1d"])
-        assert c.operator == "<"
-
-    def test_full_backtest_with_alias(self):
-        config = parse_backtest_command(
-            ["AAPL", "RSI", "below", "30", "1d"]
-        )
-        assert config["conditions"][0].operator == "<"
-
-    def test_multiple_conditions_with_aliases(self):
-        config = parse_backtest_command(
-            ["AAPL", "RSI", "below", "30", "1d",
-             "SMA", "50", "above", "200", "1d"]
-        )
-        assert len(config["conditions"]) == 2
-        assert config["conditions"][0].operator == "<"
-        assert config["conditions"][1].operator == ">"
-
-
-# ===================================================================
-# §12  CLI Edge Case Tests
-# ===================================================================
-
-class TestCLIClientCases:
-    """Additional CLI edge case coverage."""
-
-    def test_trailing_comma_ticker(self):
-        config = parse_backtest_command(["AAPL,", "RSI", "<", "30", "1d"])
-        assert config["tickers"] == ["AAPL"]
-
-    def test_spaces_around_comma(self):
-        config = parse_backtest_command(["AAPL , MSFT", "RSI", "<", "30", "1d"])
-        assert config["tickers"] == ["AAPL", "MSFT"]
-
-    def test_mixed_case_interval(self):
-        config = parse_backtest_command(["AAPL", "RSI", "<", "30", "1D"])
-        assert config["conditions"][0].interval == "1d"
-
-    def test_mixed_case_indicator(self):
-        config = parse_backtest_command(["AAPL", "rsi", "<", "30", "1d"])
-        assert config["conditions"][0].indicator == "RSI"
-
-    def test_option_missing_value(self):
-        with pytest.raises(ValueError, match="requires a value"):
-            parse_backtest_command(["AAPL", "RSI", "<", "30", "1d", "--hold"])
-
-    def test_stop_loss_option(self):
-        config = parse_backtest_command(
-            ["AAPL", "RSI", "<", "30", "1d", "--stop-loss", "5"]
-        )
-        assert config["stop_loss"] == 5.0
-
-    def test_rsi_with_custom_window(self):
-        config = parse_backtest_command(["AAPL", "RSI", "14", "<", "30", "1d"])
-        assert config["conditions"][0].params == (14.0,)
-
-    def test_rsi_too_many_params(self):
-        with pytest.raises(ValueError, match="at most 1"):
-            parse_backtest_command(
-                ["AAPL", "RSI", "14,20", "<", "30", "1d"]
-            )
-
-    def test_sma_no_params_uses_default(self):
-        config = parse_backtest_command(["AAPL", "SMA", ">", "200", "1d"])
-        assert config["conditions"][0].params == ()
-
-    def test_weekly_interval(self):
-        config = parse_backtest_command(["AAPL", "RSI", "<", "30", "1wk"])
-        assert config["conditions"][0].interval == "1wk"
-
-    def test_monthly_interval(self):
-        config = parse_backtest_command(["AAPL", "RSI", "<", "30", "1mo"])
-        assert config["conditions"][0].interval == "1mo"
-
-
-# ===================================================================
-# §13  Engine Edge Case Tests
 # ===================================================================
 
 class TestEngineEdgeCases:
@@ -1466,110 +1050,6 @@ class TestMetricsEdgeCases:
 # §15  Reporting Edge Case Tests
 # ===================================================================
 
-class TestReportingEdgeCases:
-    """Additional reporting edge case coverage."""
-
-    def test_format_results_no_trades_per_ticker(self):
-        result = BacktestResult(
-            trades=[],
-            metrics={"total_trades": 0, "total_return": 0.0},
-            benchmark_metrics={},
-            ticker_results={"AAPL": [], "MSFT": []},
-            conditions=[],
-            config={"tickers": ["AAPL", "MSFT"], "hold": 10,
-                    "capital": 10_000.0, "benchmark": "SPY",
-                    "years": 2, "stop_loss": None},
-        )
-        output = format_results(result)
-        assert "AAPL" in output
-        assert "MSFT" in output
-        assert "No trades" in output
-
-    def test_format_results_with_benchmark(self):
-        result = BacktestResult(
-            trades=[
-                Trade("AAPL", pd.Timestamp("2025-01-01"), 100.0,
-                      pd.Timestamp("2025-01-06"), 110.0, 5, 0.10),
-            ],
-            metrics={
-                "total_trades": 1, "total_return": 0.10,
-                "annualized_return": 0.50, "sharpe_ratio": 1.5,
-                "sortino_ratio": 2.0, "max_drawdown": 0.05,
-                "win_rate": 1.0, "profit_factor": float("inf"),
-            },
-            benchmark_metrics={
-                "total_return": 0.05, "annualized_return": 0.25,
-                "sharpe_ratio": 1.0, "max_drawdown": 0.03,
-            },
-            ticker_results={"AAPL": [
-                Trade("AAPL", pd.Timestamp("2025-01-01"), 100.0,
-                      pd.Timestamp("2025-01-06"), 110.0, 5, 0.10),
-            ]},
-            conditions=[Condition("RSI", (), None, "<", 30.0, "1d")],
-            config={"tickers": ["AAPL"], "hold": 10, "capital": 10_000.0,
-                    "benchmark": "SPY", "years": 2, "stop_loss": None},
-        )
-        output = format_results(result)
-        assert "Benchmark" in output
-        assert "vs Benchmark" in output
-        assert "Return delta" in output
-        assert "Sharpe delta" in output
-
-    def test_sharpe_delta_sign_independent(self):
-        """Sharpe delta sign should not depend on return delta sign."""
-        result = BacktestResult(
-            trades=[
-                Trade("AAPL", pd.Timestamp("2025-01-01"), 100.0,
-                      pd.Timestamp("2025-01-06"), 110.0, 5, 0.10),
-            ],
-            metrics={
-                "total_trades": 1, "total_return": 0.10,
-                "annualized_return": 0.50, "sharpe_ratio": 0.5,
-                "sortino_ratio": 2.0, "max_drawdown": 0.05,
-                "win_rate": 1.0, "profit_factor": float("inf"),
-            },
-            benchmark_metrics={
-                "total_return": 0.05, "annualized_return": 0.25,
-                "sharpe_ratio": 1.5, "max_drawdown": 0.03,
-            },
-            ticker_results={"AAPL": [
-                Trade("AAPL", pd.Timestamp("2025-01-01"), 100.0,
-                      pd.Timestamp("2025-01-06"), 110.0, 5, 0.10),
-            ]},
-            conditions=[],
-            config={"tickers": ["AAPL"], "hold": 10, "capital": 10_000.0,
-                    "benchmark": "SPY", "years": 2, "stop_loss": None},
-        )
-        output = format_results(result)
-        # Return delta is positive (+5.0%) but Sharpe delta is negative (-1.00)
-        assert "Return delta: +5.0%" in output
-        assert "Sharpe delta: -1.00" in output
-
-    def test_fmt_val_integer(self):
-        from backtester.reporting import _fmt_val
-        assert _fmt_val(100.0) == "100"
-
-    def test_fmt_val_decimal(self):
-        from backtester.reporting import _fmt_val
-        assert _fmt_val(1.5) == "1.50"
-
-    def test_ticker_total_return(self):
-        from backtester.reporting import _ticker_total_return
-        trades = [
-            Trade("AAPL", pd.Timestamp("2025-01-01"), 100.0,
-                  pd.Timestamp("2025-01-06"), 110.0, 5, 0.10),
-            Trade("AAPL", pd.Timestamp("2025-01-07"), 110.0,
-                  pd.Timestamp("2025-01-12"), 121.0, 5, 0.10),
-        ]
-        result = _ticker_total_return(trades)
-        # 1.10 * 1.10 = 1.21 → 21%
-        assert result == pytest.approx(0.21, abs=1e-3)
-
-
-# ===================================================================
-# §16  Data Pipeline Edge Case Tests
-# ===================================================================
-
 class TestDataPipelineEdgeCases:
     """Additional data pipeline edge case coverage."""
 
@@ -1612,74 +1092,11 @@ class TestDataPipelineEdgeCases:
 # ==========================================================================
 
 
-class TestTickerValidation:
-    """Tests for ticker format validation in parse_backtest_command."""
-
-    def test_valid_single_ticker(self):
-        cfg = parse_backtest_command(["AAPL", "RSI", "below", "30", "1d"])
-        assert cfg["tickers"] == ["AAPL"]
-
-    def test_valid_multi_ticker(self):
-        cfg = parse_backtest_command(
-            ["AAPL,MSFT,GOOG", "RSI", "below", "30", "1d"]
-        )
-        assert cfg["tickers"] == ["AAPL", "MSFT", "GOOG"]
-
-    def test_valid_ticker_with_dot(self):
-        """BRK.B is a valid ticker with a dot."""
-        cfg = parse_backtest_command(
-            ["BRK.B", "RSI", "below", "30", "1d"]
-        )
-        assert cfg["tickers"] == ["BRK.B"]
-
-    def test_valid_ticker_with_hyphen(self):
-        """BF-B is a valid ticker with a hyphen."""
-        cfg = parse_backtest_command(
-            ["BF-B", "RSI", "below", "30", "1d"]
-        )
-        assert cfg["tickers"] == ["BF-B"]
-
-    def test_invalid_ticker_all_digits(self):
-        with pytest.raises(ValueError, match="at least one letter"):
-            parse_backtest_command(["123", "RSI", "below", "30", "1d"])
-
-    def test_invalid_ticker_too_long(self):
-        with pytest.raises(ValueError, match="Invalid ticker format"):
-            parse_backtest_command(
-                ["TOOLONGTICKER", "RSI", "below", "30", "1d"]
-            )
-
-    def test_invalid_ticker_special_chars(self):
-        with pytest.raises(ValueError, match="Invalid ticker format"):
-            parse_backtest_command(
-                ["AA@L", "RSI", "below", "30", "1d"]
-            )
-
-    def test_invalid_ticker_empty_segment(self):
-        """Trailing comma should be stripped, not create empty ticker."""
-        cfg = parse_backtest_command(
-            ["AAPL,", "RSI", "below", "30", "1d"]
-        )
-        assert cfg["tickers"] == ["AAPL"]
-
-    def test_ticker_uppercased(self):
-        """Tickers are uppercased automatically."""
-        cfg = parse_backtest_command(
-            ["aapl", "RSI", "below", "30", "1d"]
-        )
-        assert cfg["tickers"] == ["AAPL"]
-
-
-# ==========================================================================
-# §18 — Engine error handling
-# ==========================================================================
-
-
 class TestEngineErrorHandling:
     """Tests for engine error paths when tickers fail."""
 
     def _make_config(self, **overrides):
-        from backtester.cli import Condition
+        from backtester.engine import Condition
         cond = Condition("RSI", (), None, "<", 30.0, "1d")
         cfg = {
             "conditions": [cond],
@@ -1729,8 +1146,8 @@ class TestEngineErrorHandling:
         assert "INVALID" not in result.ticker_results
 
     @patch("backtester.engine.DataPipeline")
-    def test_all_tickers_fail_shows_error(self, MockPipeline, capsys):
-        """All tickers fail → error message is printed."""
+    def test_all_tickers_fail_shows_error(self, MockPipeline):
+        """All tickers fail → returns empty BacktestResult."""
         mock_pipeline = MockPipeline.return_value
         mock_pipeline.fetch.return_value = {}
 
@@ -1738,10 +1155,9 @@ class TestEngineErrorHandling:
         engine = BacktestEngine(config["conditions"], config)
         result = engine.run()
 
-        captured = capsys.readouterr()
-        assert "APPL" in captured.out
-        assert "MSFTT" in captured.out
-        assert "misspelled" in captured.out.lower()
+        assert result.trades == []
+        assert result.metrics == {}
+        assert result.ticker_results == {}
 
 
 # ==========================================================================
@@ -1836,56 +1252,11 @@ class TestDataPipelineErrors:
 # ==========================================================================
 
 
-class TestUniverseCLI:
-    """Tests for --universe and --max-tickers CLI parsing."""
-
-    def test_universe_option(self):
-        cfg = parse_backtest_command(
-            ["--universe", "sp500", "RSI", "below", "30", "1d"]
-        )
-        assert cfg["universe"] == "sp500"
-        assert cfg["tickers"] == []
-
-    def test_max_tickers_option(self):
-        cfg = parse_backtest_command(
-            ["--universe", "sp500", "--max-tickers", "50",
-             "RSI", "below", "30", "1d"]
-        )
-        assert cfg["universe"] == "sp500"
-        assert cfg["max_tickers"] == 50
-
-    def test_universe_with_conditions_only(self):
-        """--universe allows omitting explicit tickers."""
-        cfg = parse_backtest_command(
-            ["--universe", "sp500", "SMA", "50", "above",
-             "200", "1d"]
-        )
-        assert cfg["universe"] == "sp500"
-        assert cfg["tickers"] == []
-        assert len(cfg["conditions"]) == 1
-
-    def test_max_tickers_must_be_positive(self):
-        with pytest.raises(ValueError, match="at least 1"):
-            parse_backtest_command(
-                ["--universe", "sp500", "--max-tickers", "0",
-                 "RSI", "below", "30", "1d"]
-            )
-
-    def test_max_tickers_without_universe_still_parses(self):
-        """max-tickers is stored but only used when --universe is set."""
-        cfg = parse_backtest_command(
-            ["AAPL", "RSI", "below", "30", "1d",
-             "--max-tickers", "50"]
-        )
-        assert cfg["max_tickers"] == 50
-        assert cfg["tickers"] == ["AAPL"]
-
-
 class TestUniverseEngine:
     """Tests for universe resolution in the engine."""
 
     def _make_config(self, **overrides):
-        from backtester.cli import Condition
+        from backtester.engine import Condition
         cond = Condition("RSI", (), None, "<", 30.0, "1d")
         cfg = {
             "conditions": [cond],
@@ -1954,69 +1325,6 @@ class TestUniverseEngine:
         call_args = mock_pipeline.fetch.call_args
         assert call_args[0][0] == ["AAPL", "MSFT"]
 
-
-class TestReportingSummary:
-    """Tests for summary mode in reporting."""
-
-    def test_summary_mode_for_many_tickers(self):
-        """20+ tickers with trades triggers summary mode."""
-        from backtester.reporting import format_results
-        trades = [
-            Trade("AAPL", pd.Timestamp("2025-01-01"), 100.0,
-                  pd.Timestamp("2025-01-10"), 110.0, 10, 0.10),
-        ]
-        # Build 25 tickers with trades
-        ticker_results = {}
-        for i in range(25):
-            ticker = f"T{i:03d}"
-            ticker_results[ticker] = trades
-
-        result = BacktestResult(
-            trades=trades * 25,
-            metrics={
-                "total_trades": 25, "win_rate": 0.6,
-                "total_return": 0.15, "annualized_return": 0.10,
-                "sharpe_ratio": 1.2, "sortino_ratio": 1.8,
-                "max_drawdown": 0.05, "profit_factor": 2.0,
-            },
-            benchmark_metrics={},
-            ticker_results=ticker_results,
-            conditions=[Condition("RSI", (), None, "<", 30.0, "1d")],
-            config={"tickers": [], "hold": 10, "capital": 10_000.0,
-                    "benchmark": "SPY", "years": 2,
-                    "stop_loss": None, "universe": "sp500"},
-        )
-        output = format_results(result)
-        assert "Universe Summary" in output
-        assert "Top 5" in output
-        assert "Bottom 5" in output
-
-    def test_detail_mode_for_few_tickers(self):
-        """< 20 tickers uses detail mode."""
-        from backtester.reporting import format_results
-        trades = [
-            Trade("AAPL", pd.Timestamp("2025-01-01"), 100.0,
-                  pd.Timestamp("2025-01-10"), 110.0, 10, 0.10),
-        ]
-        result = BacktestResult(
-            trades=trades,
-            metrics={"total_trades": 1, "win_rate": 1.0,
-                     "total_return": 0.10, "total_trades": 1},
-            benchmark_metrics={},
-            ticker_results={"AAPL": trades},
-            conditions=[Condition("RSI", (), None, "<", 30.0, "1d")],
-            config={"tickers": ["AAPL"], "hold": 10,
-                    "capital": 10_000.0, "benchmark": "SPY",
-                    "years": 2, "stop_loss": None},
-        )
-        output = format_results(result)
-        assert "--- AAPL ---" in output
-        assert "Universe Summary" not in output
-
-
-# ===================================================================
-# §15  Position Sizing Tests
-# ===================================================================
 
 class TestPositionSizing:
     """Tests for portfolio position sizing."""

@@ -81,11 +81,8 @@ _ANSI_ESCAPE_RE = re.compile(
 def _sanitize_display(text: str) -> str:
     """Strip ANSI escape sequences and control characters.
 
-    Prevents terminal escape-sequence injection through strings
-    echoed from user input (e.g. colour codes embedded in a
-    ticker symbol).  Complete escape sequences are removed first;
-    any leftover non-printable characters are then dropped so
-    output never alters terminal state.
+    Removes escape sequences and non-printable characters from
+    strings that will be logged or displayed.
 
     Args:
         text: Raw string that will be printed or logged.
@@ -136,9 +133,5 @@ def _fetch_ohlcv(ticker: str, period: str,
     try:
         hist = stock.history(period=period, interval=interval)
     except Exception:
-        print(f"Error: failed to fetch data for "
-              f"{_sanitize_display(ticker)}")
         return pd.DataFrame()
-    print(f"Fetched {len(hist)} rows for "
-          f"{_sanitize_display(ticker)}")
     return hist

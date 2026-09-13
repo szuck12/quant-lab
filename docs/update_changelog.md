@@ -28,7 +28,7 @@ Follow [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html):
 
 | Bump | Rule | Example |
 |------|------|---------|
-| MAJOR | Backward-incompatible changes (breaking CLI syntax, removing features) | 1.0.0 → 2.0.0 |
+| MAJOR | Backward-incompatible changes (breaking API changes, removing features) | 1.0.0 → 2.0.0 |
 | MINOR | New backward-compatible functionality (new indicator, new interval) | 1.0.0 → 1.1.0 |
 | PATCH | Bug fixes, test additions, doc improvements, refactoring | 1.0.0 → 1.0.1 |
 
@@ -64,7 +64,7 @@ content.
 
 ### What to include
 
-- ✅ **User-facing changes** — new CLI behaviour, indicators, error messages,
+- ✅ **User-facing changes** — new web behaviour, indicators, error messages,
     interval support.
 - ✅ **Test infrastructure changes** — new test suites, runners, fixtures
     that affect how developers validate the project.
@@ -96,7 +96,7 @@ multiple changes rather than one per version.
 2. **Project structure** — if files were added or removed, update the
    directory tree to match.
 
-3. **Feature documentation** — if the CLI syntax, indicator list, or usage
+3. **Feature documentation** — if the API syntax, indicator list, or usage
    examples changed, update the relevant sections.
 
 ## Step 4 — Commit

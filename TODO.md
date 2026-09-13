@@ -10,7 +10,7 @@
       constellation dots, gradient blob, typing animation, pulse badge,
       section dividers, scroll-stagger animations, smart expand/collapse,
       3-section formula, indicator glow, disclaimer redesign, backtest
-      header, corrected indicator list, fixed CLI commands (#design, @web-developer)
+      header, corrected indicator list (#design, @web-developer)
 - [x] 2026-09-01 — v3.4.0 — de-AI web redesign: custom sigma favicon,
       solid emerald palette, left-aligned hero, asymmetric feature grid,
       scrolling ticker tape, terminal preview, noise texture, math symbol
@@ -78,5 +78,5 @@
 
 (Interesting ideas not yet committed to implementation.)
 
-- [ ] Allow multiple indicators in a single backtest run (web + CLI)
+- [ ] Allow multiple indicators in a single backtest run
       (#feature, @idea-generator)

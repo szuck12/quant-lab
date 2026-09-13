@@ -89,8 +89,7 @@ Key conventions for this agent (details in conventions_reference.md):
 
 - `ruff check` — lint the code before handoff.
 - `python3 main.py` — smoke test to verify the indicator is wired
-  correctly (test with a simple case like `echo "AAPL SMA 20" |
-  python3 main.py`).
+  correctly.
 - `read` / `grep` / `glob` — to find existing patterns before
   implementing.
 
@@ -107,7 +106,7 @@ Key conventions for this agent (details in conventions_reference.md):
    `main.py` in alphabetical position.
 5. Add `"CCI": 20` to `_DEFAULT_WINDOWS` in alphabetical position.
 6. Run `ruff check main.py indicators/cci.py`.
-7. Run `echo "AAPL CCI 20" | python3 main.py` to smoke test.
+7. Run `python3 main.py` to smoke test.
 8. Report to the test-engineer for verification.
 
 ## Inputs
@@ -148,8 +147,8 @@ This agent enforces the code quality standards:
 
 - **Use when**: Any Python change is needed.
 - **Top rules**: Implement only the brief; keep signatures and every
-  alphabetical order intact; run `ruff check` and a `python3 main.py`
-  smoke test before handoff; never fix tests yourself.
+  alphabetical order intact; run `ruff check` and a
+  `python3 main.py` smoke test before handoff; never fix tests yourself.
 
 ## Handoff Checklist
 

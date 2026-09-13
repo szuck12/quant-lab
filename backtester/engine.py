@@ -194,11 +194,8 @@ class BacktestEngine:
             max_tickers = self.config.get("max_tickers")
             if max_tickers:
                 tickers = tickers[:max_tickers]
-            print(f"\n  Universe: {universe} "
-                  f"({len(tickers)} tickers)")
 
         interval = self._smallest_interval()
-        print("\nStep 1/5: Downloading data...")
         _progress(1)
         _progress(2)
         all_data = self.pipeline.fetch(
@@ -208,13 +205,6 @@ class BacktestEngine:
         _progress(32)
 
         if not all_data:
-            missing = ", ".join(tickers)
-            print(f"\n  Error: no data returned for [{missing}]")
-            print("  Possible causes:")
-            print("    - Ticker symbol is misspelled or delisted")
-            print("    - Insufficient history for the requested "
-                  "interval")
-            print("    - Network or data-source issue")
             return BacktestResult(
                 trades=[],
                 metrics={},
@@ -240,7 +230,6 @@ class BacktestEngine:
             position_size_base=position_size_base,
         )
 
-        print("\nStep 2/5: Computing indicators...")
         all_trades: list[Trade] = []
         ticker_results: dict[str, list[Trade]] = {}
         skipped = 0
@@ -272,19 +261,6 @@ class BacktestEngine:
         # Sort all trades globally by entry date
         all_trades.sort(key=lambda t: t.entry_date)
 
-        print("\nStep 3/5: Evaluating conditions...")
-        simulated = len(ticker_results) - skipped
-        print(f"  {simulated} tickers with signals, "
-              f"{skipped} skipped (no signals)")
-        for ticker, trades in ticker_results.items():
-            if trades:
-                print(f"    {ticker}: {len(trades)} entry signals")
-
-        print("\nStep 4/5: Simulating portfolio...")
-        total_trades = sum(len(t) for t in ticker_results.values())
-        print(f"  Total trades executed: {total_trades}")
-
-        print("\nStep 5/5: Computing metrics...")
         _progress(66)
         metrics = compute_metrics(all_trades, capital)
         _progress(72)

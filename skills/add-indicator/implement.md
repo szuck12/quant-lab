@@ -113,7 +113,6 @@ Add entry to `_DEFAULT_WINDOWS` in alphabetical position:
 
 ```bash
 ruff check main.py indicators/<name>.py
-echo "AAPL <INDICATOR> <default_window>" | python3 main.py
 ```
 
-Both must pass before handing to the Test Engineer.
+Must pass before handing to the Test Engineer.

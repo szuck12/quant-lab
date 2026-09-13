@@ -83,7 +83,6 @@ common ones:
 | `#bug` | Bug fixes |
 | `#docs` | Documentation changes |
 | `#refactor` | Code restructuring without behaviour change |
-| `#cli` | Command-line interface changes |
 | `#infra` | Build, CI, project config |
 
 For completed items, check the box and prefix with the completion date

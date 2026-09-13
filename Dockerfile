@@ -9,7 +9,6 @@ COPY main.py .
 COPY api/ api/
 COPY backtester/ backtester/
 COPY indicators/ indicators/
-COPY cli.py .
 
 EXPOSE 8000
 

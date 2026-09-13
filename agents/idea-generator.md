@@ -4,7 +4,7 @@
 
 The Idea Generator is the forward-looking brain of QuantLab. It
 generates, collects, and evaluates ideas — new technical indicators,
-new bar intervals, CLI features, test and quality improvements, and
+new bar intervals, test and quality improvements, and
 project infrastructure changes — and shepherds them through the `TODO.md`
 Ideas lifecycle until they are concrete, schedulable proposals.
 
@@ -106,7 +106,7 @@ Enforced below.
 3. Write brief: Problem (vague error), Solution (name the invalid arg),
    Priority (High).
 4. Park in `TODO.md` Ideas: `- [ ] Improve interval error messages
-   (#cli) @idea-generator`.
+   (#error-handling) @idea-generator`.
 
 ## Inputs
 
