@@ -143,11 +143,11 @@ export function ConditionRow({
             <option value="1mo">Monthly</option>
             <option value="3mo">Quarterly</option>
           </select>
-          {['5m', '15m', '30m', '1h'].includes(condition.interval) && (
-            <span className="mt-1 text-[10px] text-slate-400">
-              Intraday data limited to 60 days (1h: 2 years)
-            </span>
-          )}
+          <span className="mt-1 h-3 text-[10px] text-slate-400">
+            {['5m', '15m', '30m', '1h'].includes(condition.interval)
+              ? 'Intraday data limited to 60 days (1h: 2 years)'
+              : '\u00A0'}
+          </span>
         </label>
 
         {/* Remove */}

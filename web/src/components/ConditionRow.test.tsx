@@ -165,8 +165,8 @@ describe('ConditionRow interval dropdown', () => {
     expect(screen.getByText(/intraday data limited/i)).toBeInTheDocument();
   });
 
-  it('does not show intraday hint for daily interval', () => {
-    render(
+  it('does not show intraday hint text for daily interval', () => {
+    const { container } = render(
       <ConditionRow
         index={0}
         condition={condition}
@@ -177,7 +177,9 @@ describe('ConditionRow interval dropdown', () => {
       />,
     );
 
-    expect(screen.queryByText(/intraday data limited/i)).not.toBeInTheDocument();
+    const hintSpan = container.querySelector('.h-3.text-\\[10px\\]');
+    expect(hintSpan).toBeInTheDocument();
+    expect(hintSpan).not.toHaveTextContent(/intraday/i);
   });
 
   it.each(INTRADAY_INTERVALS)('shows hint for %s interval', (interval) => {
@@ -193,5 +195,22 @@ describe('ConditionRow interval dropdown', () => {
     );
 
     expect(screen.getByText(/intraday data limited/i)).toBeInTheDocument();
+  });
+
+  it('hint span has fixed height for layout consistency', () => {
+    const { container } = render(
+      <ConditionRow
+        index={0}
+        condition={condition}
+        indicators={indicators}
+        onChange={() => {}}
+        onRemove={() => {}}
+        canRemove={false}
+      />,
+    );
+
+    const hintSpan = container.querySelector('.h-3.text-\\[10px\\]');
+    expect(hintSpan).toBeInTheDocument();
+    expect(hintSpan?.className).toContain('h-3');
   });
 });
