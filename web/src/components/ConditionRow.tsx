@@ -102,7 +102,7 @@ export function ConditionRow({
           </select>
           <span className="mt-1 h-3 text-[10px] text-slate-400">
             {selected?.description
-              ? `${selected.description}${selected.value_hint ? ` — ${selected.value_hint}` : ''}`
+              ? `${selected.description}${selected.value_hint ? `, ${selected.value_hint}` : ''}`
               : '\u00A0'}
           </span>
         </label>
