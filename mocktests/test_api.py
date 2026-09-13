@@ -632,8 +632,13 @@ class TestPositionSizingAPI:
         )
         assert resp.status_code == 422
 
-    def test_default_values_preserve_behavior(self, client):
+    @patch("backtester.engine.DataPipeline")
+    def test_default_values_preserve_behavior(self, MockPipeline, client):
         """Backtest without position_size fields should still work."""
+        mock_pipeline = MockPipeline.return_value
+        mock_pipeline.fetch.return_value = _mock_pipeline_fetch(
+            ["AAPL"], "1d", 2
+        )
         resp = client.post(
             "/api/backtest",
             json={

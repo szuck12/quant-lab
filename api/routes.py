@@ -6,6 +6,7 @@ from __future__ import annotations
 import threading
 from typing import Any
 
+import numpy as np
 import pandas as pd
 
 from api.schemas import (
@@ -19,9 +20,7 @@ from api.schemas import (
     TradeResponse,
 )
 from backtester.batch_indicators import COMPONENT_MAP, INDICATORS
-from backtester.data_pipeline import DataPipeline
 from backtester.engine import BacktestEngine, BacktestResult
-from backtester.metrics import compute_equity_curve
 from fastapi import APIRouter, HTTPException
 
 router = APIRouter()
@@ -408,52 +407,64 @@ def run_backtest(req: BacktestRequest) -> BacktestResponse:
     return _to_response(result, req, equity_curve)
 
 
+MAX_EQUITY_POINTS = 100
+
+
 def _build_equity_curve(
     result: BacktestResult, req: BacktestRequest
 ) -> list[EquityPoint]:
-    """Build aligned strategy + benchmark equity curves."""
-    strategy_eq = compute_equity_curve(result.trades, req.capital)
-    if strategy_eq.empty:
+    """Build aligned, downsampled strategy + benchmark equity curves.
+
+    Both series start at the requested capital on the strategy's first
+    date so they can be compared directly. The benchmark is the S&P 500
+    proxy (SPY) already fetched by the engine.
+    """
+    strategy_eq = result.equity_curve
+    if strategy_eq is None or strategy_eq.empty:
         return []
 
-    # Fetch benchmark data
-    pipeline = DataPipeline()
-    bench_data = pipeline.fetch(["SPY"], "1d", req.years)
-    bench_df = bench_data.get("SPY", pd.DataFrame())
+    # Normalize to one point per calendar date (intraday strategies
+    # collapse to their daily close).
+    strat_daily = strategy_eq.groupby(
+        strategy_eq.index.normalize()
+    ).last()
 
-    if bench_df.empty or bench_df["Close"].dropna().empty:
-        points = []
-        for ts, val in strategy_eq.items():
-            safe_val = req.capital if pd.isna(val) else float(val)
-            points.append(
-                EquityPoint(
-                    date=ts.strftime("%Y-%m-%d"),
-                    strategy=round(safe_val, 2),
-                    benchmark=round(req.capital, 2),
-                )
+    bench_df = result.benchmark_df
+    close = (
+        bench_df["Close"].dropna()
+        if bench_df is not None and not bench_df.empty
+        else pd.Series(dtype=float)
+    )
+
+    if close.empty:
+        bench_daily = pd.Series(req.capital, index=strat_daily.index)
+    else:
+        close_daily = close.groupby(close.index.normalize()).last()
+        aligned = close_daily.reindex(strat_daily.index).ffill().bfill()
+        base = aligned.iloc[0]
+        if pd.isna(base) or base <= 0:
+            bench_daily = pd.Series(
+                req.capital, index=strat_daily.index
             )
-        return points
+        else:
+            bench_daily = (aligned / base) * req.capital
 
-    bench_close = bench_df["Close"].dropna()
-    bench_equity = (bench_close / bench_close.iloc[0]) * req.capital
+    # Downsample to at most MAX_EQUITY_POINTS, always keeping the last.
+    n = len(strat_daily)
+    if n > MAX_EQUITY_POINTS:
+        idx = np.unique(
+            np.linspace(0, n - 1, MAX_EQUITY_POINTS).round().astype(int)
+        )
+        strat_daily = strat_daily.iloc[idx]
+        bench_daily = bench_daily.iloc[idx]
 
-    start = strategy_eq.index[0]
-    end = strategy_eq.index[-1]
-    daily_idx = pd.date_range(start=start, end=end, freq="B")
-
-    strat_series = strategy_eq.reindex(daily_idx).ffill()
-    bench_series = bench_equity.reindex(daily_idx).ffill()
-
-    strat_series = strat_series.fillna(req.capital)
-    bench_series = bench_series.fillna(req.capital)
-
-    points = []
-    for ts in daily_idx:
-        s_val = strat_series.get(ts)
-        if s_val is None or pd.isna(s_val):
+    points: list[EquityPoint] = []
+    for ts in strat_daily.index:
+        s_val = strat_daily.loc[ts]
+        b_val = bench_daily.get(ts, req.capital)
+        if pd.isna(s_val):
             s_val = req.capital
-        b_val = bench_series.get(ts)
-        if b_val is None or pd.isna(b_val):
+        if pd.isna(b_val):
             b_val = req.capital
         points.append(
             EquityPoint(
@@ -525,7 +536,7 @@ def _to_response(
         total_return=round(bm.get("total_return", 0), 6),
         annualized_return=round(bm.get("annualized_return", 0), 6),
         sharpe_ratio=round(bm.get("sharpe_ratio", 0), 4),
-        sortino_ratio=0.0,
+        sortino_ratio=round(bm.get("sortino_ratio", 0), 4),
         max_drawdown=round(bm.get("max_drawdown", 0), 6),
         profit_factor=0.0,
         avg_trade_return=0.0,

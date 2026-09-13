@@ -86,7 +86,7 @@ export function EquityChart({ data }: Props) {
             strokeWidth={1.5}
             dot={false}
             strokeDasharray="6 4"
-            name="Benchmark"
+            name="Benchmark (SPY)"
           />
         </LineChart>
       </ResponsiveContainer>

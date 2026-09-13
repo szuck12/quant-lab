@@ -36,7 +36,9 @@ Primary: **Backtest Engineer** (`agents/backtest-engineer.md`).
 - [ ] Test complete download failure (all tickers fail, network error)
 - [ ] Test empty trades (no signals found) → metrics section handles gracefully
 - [ ] Test edge cases: single return, zero std, NaN values in metrics
-- [ ] Verify equity curve includes daily values (not just trade exits)
+- [ ] Verify mark-to-market equity curve updates daily (not just at exits)
+- [ ] Verify tickers are simulated on one shared timeline (no per-ticker time reuse)
+- [ ] Verify benchmark (SPY) aligns to capital on the strategy's first date
 - [ ] Verify pyarrow warning is suppressed when engine is missing
 
 ### Handoff
@@ -50,12 +52,11 @@ Primary: **Backtest Engineer** (`agents/backtest-engineer.md`).
 |------|---------|
 | `backtester/data_pipeline.py` | Batch download + parquet cache |
 | `backtester/batch_indicators.py` | Vectorized indicator computation |
-| `backtester/engine.py` | Core simulation loop |
+| `backtester/engine.py` | Chronological portfolio simulation (day-by-day) |
 | `backtester/metrics.py` | Financial metrics |
-| `backtester/reporting.py` | Console output formatting |
 | `backtester/universe.py` | Universe resolution (S&P 500, CSV) |
 | `backtester/cache/` | Parquet cache directory |
-| `mocktests/test_backtester.py` | Mock test suite (197 tests) |
+| `mocktests/test_backtester.py` | Mock test suite |
 | `mocktests/test_universe.py` | Universe module tests (20 tests) |
 
 ## Condition Syntax
@@ -94,21 +95,26 @@ When working on the backtester, always ensure:
    caching silently skips if pyarrow/fastparquet is not installed.
    Large ticker lists are downloaded in chunks of ≤50 to avoid
    rate-limiting.
-3. **Engine** (`engine.py`): when all tickers fail, prints specific
-   error with the failed ticker names and possible causes, returns
-   empty BacktestResult without crashing. Universe resolution happens
-   before download — `--universe sp500` resolves via Wikipedia with
-   a 24h cache and browser-like User-Agent header; falls back to a
-   hardcoded S&P 500 snapshot (~503 tickers) if scraping fails.
+3. **Engine** (`engine.py`): simulates all tickers on one shared
+   chronological timeline (`_simulate_portfolio`) — on each day it
+   processes exits, then entries in alphabetical ticker order, stopping
+   once cash is exhausted, then marks equity to market. One open
+   position per ticker; cooldown of `hold` bars after each exit; open
+   positions left open at the end. Universe resolution happens before
+   download — `--universe sp500` resolves via Wikipedia with a 24h
+   cache and browser-like User-Agent header; falls back to a hardcoded
+   S&P 500 snapshot (~503 tickers) if scraping fails.
    `--universe path/to.csv` loads tickers from CSV.
-4. **Metrics** (`metrics.py`): handles edge cases — empty trades list
-   (returns all-zero metrics), single return (Sharpe returns 0.0),
-   NaN/zero std (returns 0.0, using tolerance `std < 1e-12` not
-   `== 0`). Equity curve includes daily business-day values
-   (forward-filled from trade exits) so Sharpe/Sortino use actual
-   daily returns, not per-trade returns.
-5. **Reporting** (`reporting.py`): switches to compact summary mode
-   (top/bottom 5, median, mean) when ≥20 tickers have trades.
+4. **Metrics** (`metrics.py`): consumes the mark-to-market equity curve
+   so Sharpe/Sortino use genuine daily returns and drawdown includes
+   unrealized P&L. Handles edge cases — empty trades list (returns
+   all-zero metrics), zero variance (Sharpe/Sortino return 0.0, using
+   tolerance `std < 1e-12`). Profit factor uses dollar P&L; annualized
+   return is floored at one month to avoid explosive short-run CAGR.
+5. **API/chart** (`api/routes.py`, `EquityChart.tsx`): strategy and
+   benchmark curves are aligned to capital on the strategy's first date
+   and downsampled to ≤100 points. The chart legend reads
+   "Benchmark (SPY)".
 
 Common user errors to handle gracefully:
 - Typo in ticker symbol (e.g. APPL instead of AAPL)

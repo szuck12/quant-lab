@@ -31,6 +31,7 @@ class Trade:
 def compute_metrics(
     trades: list[Trade],
     capital: float,
+    equity_curve: pd.Series | None = None,
     trading_days: int = 252,
 ) -> dict:
     """Compute all performance metrics from a list of trades.
@@ -38,6 +39,8 @@ def compute_metrics(
     Args:
         trades: List of completed trades.
         capital: Starting capital in USD.
+        equity_curve: Optional mark-to-market equity series. When not
+            supplied it is reconstructed from the trades.
         trading_days: Trading days per year (default 252).
 
     Returns:
@@ -59,23 +62,45 @@ def compute_metrics(
         }
 
     returns = [t.return_pct for t in trades]
-    wins = [r for r in returns if r > 0]
-    losses = [r for r in returns if r <= 0]
+
+    # Dollar P&L per trade when position data is available; otherwise
+    # fall back to fractional returns (legacy trades).
+    has_shares = any(t.shares > 0 for t in trades)
+    if has_shares:
+        pnls = [
+            t.shares * (t.exit_price - t.entry_price) for t in trades
+        ]
+    else:
+        pnls = list(returns)
+
+    wins = [p for p in pnls if p > 0]
+    losses = [p for p in pnls if p < 0]
 
     total_trades = len(trades)
     winning_trades = len(wins)
     losing_trades = len(losses)
     win_rate = winning_trades / total_trades if total_trades else 0.0
 
-    # Build equity curve first — use it for total return and annualization
-    equity = compute_equity_curve(trades, capital)
-    total_return = (equity.iloc[-1] / capital) - 1.0 if not equity.empty else 0.0
+    # Mark-to-market equity curve (open positions included)
+    equity = (
+        equity_curve
+        if equity_curve is not None and not equity_curve.empty
+        else compute_equity_curve(trades, capital)
+    )
+    total_return = (
+        (equity.iloc[-1] / capital) - 1.0 if not equity.empty else 0.0
+    )
 
-    # Use actual calendar time span for annualization
-    first_entry = min(t.entry_date for t in trades)
-    last_exit = max(t.exit_date for t in trades)
-    days = (last_exit - first_entry).days
-    years = max(days / 365.25, 0.01)
+    # Annualize over the actual equity span. Floor at one month to
+    # avoid the explosive CAGR of very short backtests.
+    if not equity.empty and len(equity) >= 2:
+        days = (equity.index[-1] - equity.index[0]).days
+    else:
+        days = (
+            max(t.exit_date for t in trades)
+            - min(t.entry_date for t in trades)
+        ).days
+    years = max(days / 365.25, 1.0 / 12.0)
     annualized = compute_annualized_return(total_return, years)
 
     daily_returns = equity.pct_change(fill_method=None).dropna()
@@ -84,8 +109,8 @@ def compute_metrics(
     sortino = compute_sortino_ratio(daily_returns, trading_days)
     max_dd = compute_max_drawdown(equity)
 
-    gross_profit = sum(w for w in wins) if wins else 0.0
-    gross_loss = abs(sum(l_ for l_ in losses)) if losses else 0.0
+    gross_profit = sum(wins) if wins else 0.0
+    gross_loss = abs(sum(losses)) if losses else 0.0
     profit_factor = gross_profit / gross_loss if gross_loss else 0.0
 
     avg_trade = np.mean(returns) if returns else 0.0
@@ -251,7 +276,11 @@ def compute_sharpe_ratio(
 def compute_sortino_ratio(
     daily_returns: pd.Series, trading_days: int = 252
 ) -> float:
-    """Annualized Sortino ratio (downside deviation only).
+    """Annualized Sortino ratio (downside deviation, risk-free = 0).
+
+    Uses the textbook downside deviation over all observations:
+    ``sqrt(mean(min(r, 0)^2))``. This includes zero-return days in the
+    denominator, unlike taking the std of only negative returns.
 
     Args:
         daily_returns: Daily return series.
@@ -262,11 +291,10 @@ def compute_sortino_ratio(
     """
     if daily_returns.empty:
         return 0.0
-    neg = daily_returns[daily_returns < 0]
-    neg_std = neg.std()
-    if neg.empty or neg_std < 1e-12 or pd.isna(neg_std):
+    downside = np.sqrt(np.mean(np.minimum(daily_returns, 0.0) ** 2))
+    if not np.isfinite(downside) or downside < 1e-12:
         return 0.0
-    return daily_returns.mean() / neg_std * np.sqrt(trading_days)
+    return daily_returns.mean() / downside * np.sqrt(trading_days)
 
 
 def compute_benchmark_metrics(
@@ -296,24 +324,37 @@ def compute_benchmark_metrics(
             "total_return": 0.0,
             "annualized_return": 0.0,
             "sharpe_ratio": 0.0,
+            "sortino_ratio": 0.0,
             "max_drawdown": 0.0,
         }
 
-    total_return = (data["Close"].iloc[-1] / data["Close"].iloc[0]) - 1.0
-    days = (data.index[-1] - data.index[0]).days
-    years = max(days / 365.25, 0.01)
+    close = data["Close"].dropna()
+    if len(close) < 2:
+        return {
+            "total_return": 0.0,
+            "annualized_return": 0.0,
+            "sharpe_ratio": 0.0,
+            "sortino_ratio": 0.0,
+            "max_drawdown": 0.0,
+        }
+
+    total_return = (close.iloc[-1] / close.iloc[0]) - 1.0
+    days = (close.index[-1] - close.index[0]).days
+    years = max(days / 365.25, 1.0 / 12.0)
     ann_return = compute_annualized_return(total_return, years)
 
-    daily_rets = data["Close"].pct_change().dropna()
+    daily_rets = close.pct_change(fill_method=None).dropna()
     sharpe = compute_sharpe_ratio(daily_rets, trading_days)
+    sortino = compute_sortino_ratio(daily_rets, trading_days)
 
-    cummax = data["Close"].cummax()
-    dd = (data["Close"] - cummax) / cummax
+    cummax = close.cummax()
+    dd = (close - cummax) / cummax
     max_dd = dd.min()
 
     return {
         "total_return": total_return,
         "annualized_return": ann_return,
         "sharpe_ratio": sharpe,
+        "sortino_ratio": sortino,
         "max_drawdown": max_dd,
     }

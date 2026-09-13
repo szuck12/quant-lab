@@ -276,3 +276,15 @@ Agents read this at session start and append at session end.
    matches `cash_remaining` exactly. Portfolio cash safety was
    confirmed correct (buy() rejects over-budget orders;
    calculate_buy_amount caps at remaining cash).
+- **2026-09-12**: v3.9.0 — chronological portfolio simulation rewrite.
+   Root cause of ~1000% returns: the old engine simulated each ticker's
+   full history sequentially with one shared portfolio, effectively
+   reusing the same time period per ticker. New `_simulate_portfolio`
+   iterates a master date axis; on each day it exits positions, then
+   enters alphabetically until cash is exhausted, then marks equity to
+   market. Rules: one position per ticker, hold measured in the
+   ticker's own bars, benchmark (SPY) fetched daily and reused.
+   Metrics now consume the mark-to-market equity curve (real daily
+   returns) → valid Sharpe/Sortino/drawdown. Profit factor uses dollar
+   P&L. Equity curve downsamples to 100 points; chart legend is
+   "Benchmark (SPY)".

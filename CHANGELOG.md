@@ -7,24 +7,46 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [3.9.0] - 2026-09-12
 
+### Changed
+- **Chronological portfolio simulation** — the engine now simulates
+  every ticker on one shared, day-by-day timeline instead of running
+  each ticker's full history sequentially. Tickers are processed
+  alphabetically within each day, exits run before entries, and
+  entries stop once available cash is exhausted. This removes
+  cross-ticker time reuse that produced unrealistically high returns
+  (e.g. ~1,000% over two years).
+- **Mark-to-market equity** — portfolio equity is valued every
+  trading day using each position's latest close, so drawdown and
+  daily returns now include unrealized P&L. Open positions at the
+  end are left open and marked to market.
+- **Benchmark alignment** — SPY is fetched once at daily resolution
+  and reused for both the metrics table and the chart. The benchmark
+  is scaled to the starting capital on the strategy's first date so
+  the two curves share a baseline.
+- **Shorter, cleaner chart** — the equity curve is downsampled to at
+  most 100 adaptive points (instead of every business day), and the
+  chart legend now reads "Benchmark (SPY)".
+
 ### Fixed
-- **Equity curve return accuracy** — the equity curve now weights
-  each trade's return by the capital actually invested instead of
-  compounding the full return on total equity. Previously,
-  overlapping trades or trades using a fraction of capital inflated
-  reported returns (e.g. two $5k trades at +10% showed +21% instead
-  of +10%). Realized dollar P&L now drives the curve, so returns
-  are accurate for all position sizes.
-- **Equity curve ordering** — trades are now processed by exit date
-  so the final equity includes every trade, and exit dates that fall
-  off the business-day calendar are retained.
+- **Sharpe and Sortino** — both are now computed from genuine
+  mark-to-market daily returns. Sortino uses the textbook downside
+  deviation `sqrt(mean(min(r, 0)^2))` over all days.
+- **Profit factor** — now aggregates gross dollar profit over gross
+  dollar loss (`shares·(exit−entry)`), not percentage returns.
+- **Annualized return** — computed over the actual equity span with a
+  one-month floor, avoiding the explosive CAGR of very short runs.
+- **Win rate** — zero-return trades are no longer counted as losses.
+- **Max drawdown** — computed on the mark-to-market curve, so it
+  reflects unrealized declines.
+- **`positions_value`** — now reports only open-position value rather
+  than total portfolio value.
 
 ### Verified
 - **Portfolio cash safety** — confirmed the portfolio never spends
   more cash than available: `calculate_buy_amount()` caps each buy
   at remaining cash and `buy()` rejects over-budget orders. Added
   regression tests covering partial allocation, overlapping trades,
-  and cash exhaustion.
+  same-day exhaustion, and cash never going negative.
 
 ## [3.8.1] - 2026-09-12
 

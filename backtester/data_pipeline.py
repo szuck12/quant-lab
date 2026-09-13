@@ -137,7 +137,6 @@ class DataPipeline:
             for i in range(0, len(tickers), CHUNK_SIZE)
         ]
         result: dict[str, pd.DataFrame] = {}
-        total = len(tickers)
         completed_chunks = 0
 
         with ThreadPoolExecutor(max_workers=3) as pool:
@@ -148,11 +147,6 @@ class DataPipeline:
                 for c in chunks
             }
             for future in as_completed(futures):
-                chunk_idx = chunks.index(futures[future])
-                start_idx = chunk_idx * CHUNK_SIZE + 1
-                end_idx = min(
-                    (chunk_idx + 1) * CHUNK_SIZE, total
-                )
                 result.update(future.result())
                 completed_chunks += 1
                 _report(int(100 * completed_chunks / len(chunks)))
@@ -195,7 +189,7 @@ class DataPipeline:
                 progress=False,
                 threads=True,
             )
-        except Exception as exc:
+        except Exception:
             _yf_logger.setLevel(_prev_level)
             return {}
         finally:

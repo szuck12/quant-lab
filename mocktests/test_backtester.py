@@ -2020,3 +2020,455 @@ class TestEquityCurveAdditivePnl:
         assert equity.iloc[-1] == pytest.approx(
             10_000.0 + dollar_gains, abs=0.01
         )
+
+
+# ===================================================================
+# §22  Chronological Portfolio Simulation (day-by-day, cash-limited)
+# ===================================================================
+
+from unittest.mock import patch as _patch  # noqa: E402
+
+
+def _sim_df(dates, prices):
+    prices = np.asarray(prices, dtype=float)
+    return pd.DataFrame(
+        {
+            "Open": prices,
+            "High": prices + 1.0,
+            "Low": prices - 1.0,
+            "Close": prices,
+            "Volume": np.full(len(prices), 1_000_000.0),
+        },
+        index=dates,
+    )
+
+
+def _run_sim(
+    tickers=("AAA",),
+    position_size=100,
+    base="total",
+    hold=5,
+    stop_loss=None,
+    n=120,
+    prices=None,
+    benchmark_prices=None,
+    capital=10_000.0,
+    condition=None,
+):
+    """Run a deterministic backtest with a mocked pipeline."""
+    dates = pd.date_range("2023-01-02", periods=n, freq="B")
+    if prices is None:
+        prices = np.linspace(100.0, 110.0, n)
+    strategy_df = _sim_df(dates, prices)
+    if benchmark_prices is None:
+        benchmark_prices = np.linspace(100.0, 105.0, n)
+    bench_df = _sim_df(dates, benchmark_prices)
+    tickers = list(tickers)
+
+    def fetch(req_tickers, interval, years, on_progress=None, **kwargs):
+        if list(req_tickers) == ["SPY"]:
+            return {"SPY": bench_df}
+        return {t: strategy_df.copy() for t in req_tickers}
+
+    with _patch("backtester.engine.DataPipeline") as MockPipeline:
+        MockPipeline.return_value.fetch.side_effect = fetch
+        conds = [
+            condition
+            or Condition("SMA", (2,), None, ">", 0.0, "1d")
+        ]
+        config = {
+            "tickers": tickers,
+            "hold": hold,
+            "capital": capital,
+            "benchmark": "SPY",
+            "years": 1,
+            "stop_loss": stop_loss,
+            "universe": None,
+            "max_tickers": None,
+            "position_size": position_size,
+            "position_size_base": base,
+        }
+        return BacktestEngine(conds, config).run()
+
+
+def _max_concurrent_invested(trades):
+    """Peak dollars deployed across simultaneously open positions."""
+    events = []
+    for t in trades:
+        events.append((t.entry_date, 1, t.invested))
+        events.append((t.exit_date, -1, t.invested))
+    # Process exits before entries on the same date
+    events.sort(key=lambda e: (e[0], e[1]))
+    cur = 0.0
+    peak = 0.0
+    for _, sign, inv in events:
+        cur += sign * inv
+        peak = max(peak, cur)
+    return peak
+
+
+class TestChronologicalSimulation:
+    """The engine must simulate all tickers on one shared timeline."""
+
+    def test_never_over_allocates_capital(self):
+        result = _run_sim(
+            tickers=["AAA", "BBB", "CCC", "DDD"],
+            position_size=50,
+            base="total",
+        )
+        peak = _max_concurrent_invested(result.trades)
+        assert peak <= 10_000.0 + 1e-6
+
+    def test_cash_never_negative(self):
+        result = _run_sim(
+            tickers=["AAA", "BBB", "CCC"], position_size=100
+        )
+        assert result.metrics["cash_remaining"] >= 0.0
+
+    def test_no_cross_ticker_time_reuse(self):
+        """Many tickers must not multiply returns via duplicated time."""
+        result = _run_sim(
+            tickers=["AAA", "BBB", "CCC", "DDD", "EEE"],
+            position_size=100,
+            base="total",
+        )
+        # Concurrent invested capital can never exceed portfolio equity
+        peak = _max_concurrent_invested(result.trades)
+        assert peak <= result.equity_curve.max() + 1e-6
+        # Total return must equal the final equity-based return
+        eq = result.equity_curve
+        expected = (eq.iloc[-1] / 10_000.0) - 1.0
+        assert result.metrics["total_return"] == pytest.approx(
+            expected, abs=1e-9
+        )
+
+    def test_alphabetical_allocation_priority(self):
+        """On the first signal day, only the first alphabetical ticker
+        is funded when position_size is 100%."""
+        result = _run_sim(
+            tickers=["ZZZ", "AAA", "MMM"],
+            position_size=100,
+            base="total",
+        )
+        assert result.trades
+        first_date = min(t.entry_date for t in result.trades)
+        first_day = {
+            t.ticker
+            for t in result.trades
+            if t.entry_date == first_date and t.invested > 0
+        }
+        assert first_day == {"AAA"}
+
+    def test_same_day_entries_stop_when_cash_exhausted(self):
+        result = _run_sim(
+            tickers=["AAA", "BBB"],
+            position_size=100,
+            base="total",
+        )
+        if result.trades:
+            first_date = min(t.entry_date for t in result.trades)
+            same_day = [
+                t for t in result.trades if t.entry_date == first_date
+            ]
+            assert sum(t.invested for t in same_day) <= 10_000.0 + 1e-6
+
+    def test_one_position_per_ticker(self):
+        """A ticker is not pyramided — only one open position at a time."""
+        result = _run_sim(tickers=["AAA"], position_size=100)
+        peak = _max_concurrent_invested(result.trades)
+        per_position = 10_000.0
+        assert peak <= per_position + 1e-6
+
+    def test_open_positions_marked_to_market(self):
+        result = _run_sim(tickers=["AAA"], position_size=50)
+        eq = result.equity_curve
+        end_value = result.metrics["cash_remaining"] + result.metrics[
+            "positions_value"
+        ]
+        assert eq.iloc[-1] == pytest.approx(end_value, abs=0.02)
+
+    def test_equity_starts_at_capital(self):
+        result = _run_sim(tickers=["AAA", "BBB"])
+        assert result.equity_curve.iloc[0] == pytest.approx(
+            10_000.0, abs=0.01
+        )
+
+    def test_mark_to_market_updates_between_trades(self):
+        """Equity must change on days a position is open, not only on
+        exit dates (true mark-to-market)."""
+        result = _run_sim(tickers=["AAA"], hold=20)
+        equity = result.equity_curve
+        nonzero_changes = int((equity.diff().abs() > 1e-9).sum())
+        assert nonzero_changes > len(result.trades)
+        assert result.metrics["positions_value"] == 0.0
+        total = (
+            result.metrics["cash_remaining"]
+            + result.metrics["positions_value"]
+        )
+        assert total == pytest.approx(equity.iloc[-1], abs=0.02)
+
+    def test_hold_period_respected(self):
+        result = _run_sim(tickers=["AAA"], hold=5)
+        for t in result.trades:
+            assert t.hold_bars >= 1
+            assert t.hold_bars <= 5
+
+    def test_stop_loss_triggers_early_exit(self):
+        # Price collapses from bar 6 onward → stop-loss should exit early
+        n = 60
+        prices = np.concatenate(
+            [np.linspace(100, 101, 6), np.linspace(100, 50, n - 6)]
+        )
+        result = _run_sim(
+            tickers=["AAA"],
+            hold=30,
+            stop_loss=5.0,
+            n=n,
+            prices=prices,
+        )
+        assert result.trades
+        early = [t for t in result.trades if t.hold_bars < 30]
+        assert early, "stop-loss should have exited before hold period"
+        for t in early:
+            assert t.return_pct <= -0.05 + 0.01
+
+    def test_cooldown_prevents_immediate_reentry(self):
+        result = _run_sim(tickers=["AAA"], hold=5)
+        trades = sorted(result.trades, key=lambda t: t.entry_date)
+        for prev, nxt in zip(trades, trades[1:]):
+            gap = nxt.entry_date - prev.exit_date
+            assert gap.days > 0
+
+    def test_benchmark_fetched_at_daily_interval(self):
+        with _patch("backtester.engine.DataPipeline") as MockPipeline:
+            seen = {}
+
+            def fetch(req_tickers, interval, years,
+                      on_progress=None, **kwargs):
+                seen["bench_interval"] = interval
+                return {t: _sim_df(
+                    pd.date_range("2023-01-02", periods=60, freq="B"),
+                    np.linspace(100, 105, 60),
+                ) for t in req_tickers}
+
+            MockPipeline.return_value.fetch.side_effect = fetch
+            conds = [Condition("SMA", (2,), None, ">", 0.0, "1d")]
+            config = {
+                "tickers": ["AAA"], "hold": 5, "capital": 10_000.0,
+                "benchmark": "SPY", "years": 1, "stop_loss": None,
+                "universe": None, "max_tickers": None,
+                "position_size": 100, "position_size_base": "total",
+            }
+            BacktestEngine(conds, config).run()
+            assert seen["bench_interval"] == "1d"
+
+    def test_metrics_cash_positions_identity(self):
+        result = _run_sim(
+            tickers=["AAA", "BBB", "CCC"],
+            position_size=30,
+            hold=10,
+        )
+        total = (
+            result.metrics["cash_remaining"]
+            + result.metrics["positions_value"]
+        )
+        assert total == pytest.approx(
+            result.equity_curve.iloc[-1], abs=0.02
+        )
+
+
+# ===================================================================
+# §23  Metric correctness (Sharpe, Sortino, profit factor, drawdown)
+# ===================================================================
+
+
+def _mk_trade(entry, exit_price, invested=1000.0, shares=None,
+              entry_date="2023-01-02", hold=10, ret=None):
+    shares = invested / entry if shares is None else shares
+    return Trade(
+        ticker="T",
+        entry_date=pd.Timestamp(entry_date),
+        entry_price=entry,
+        exit_date=pd.Timestamp(entry_date) + pd.Timedelta(days=hold),
+        exit_price=exit_price,
+        hold_bars=hold,
+        return_pct=(exit_price - entry) / entry if ret is None else ret,
+        shares=shares,
+        invested=invested,
+    )
+
+
+class TestMetricCorrectness:
+    def test_sharpe_matches_formula(self):
+        r = pd.Series([0.01, -0.005, 0.008, 0.002, -0.001])
+        expected = r.mean() / r.std() * np.sqrt(252)
+        assert compute_sharpe_ratio(r) == pytest.approx(expected)
+
+    def test_sharpe_zero_variance_returns_zero(self):
+        r = pd.Series([0.001, 0.001, 0.001, 0.001])
+        assert compute_sharpe_ratio(r) == 0.0
+
+    def test_sortino_uses_downside_deviation(self):
+        r = pd.Series([0.01, -0.02, 0.03, -0.01])
+        downside = np.sqrt(np.mean(np.minimum(r, 0.0) ** 2))
+        expected = r.mean() / downside * np.sqrt(252)
+        assert compute_sortino_ratio(r) == pytest.approx(expected)
+
+    def test_sortino_all_positive_returns_zero(self):
+        r = pd.Series([0.01, 0.02, 0.03])
+        assert compute_sortino_ratio(r) == 0.0
+
+    def test_profit_factor_is_dollar_weighted(self):
+        trades = [
+            _mk_trade(100.0, 110.0, invested=1000.0),   # +100
+            _mk_trade(100.0, 90.0, invested=100.0),     # -10
+            _mk_trade(100.0, 105.0, invested=2000.0),   # +100
+        ]
+        m = compute_metrics(trades, 10_000.0)
+        assert m["profit_factor"] == pytest.approx(200.0 / 10.0)
+
+    def test_profit_factor_no_losses(self):
+        trades = [_mk_trade(100.0, 110.0, invested=1000.0)]
+        m = compute_metrics(trades, 10_000.0)
+        assert m["profit_factor"] == 0.0
+
+    def test_win_rate_excludes_zero_return_trades(self):
+        trades = [
+            _mk_trade(100.0, 110.0, invested=1000.0),
+            _mk_trade(100.0, 100.0, invested=1000.0, ret=0.0),
+            _mk_trade(100.0, 90.0, invested=1000.0),
+        ]
+        m = compute_metrics(trades, 10_000.0)
+        assert m["winning_trades"] == 1
+        assert m["losing_trades"] == 1
+        assert m["win_rate"] == pytest.approx(1.0 / 3.0)
+
+    def test_max_drawdown_uses_supplied_curve(self):
+        idx = pd.date_range("2023-01-02", periods=4, freq="B")
+        equity = pd.Series([10_000.0, 11_000.0, 9_000.0, 9_500.0],
+                           index=idx)
+        trades = [_mk_trade(100.0, 110.0)]
+        m = compute_metrics(trades, 10_000.0, equity)
+        assert m["max_drawdown"] == pytest.approx(
+            (9_000.0 - 11_000.0) / 11_000.0
+        )
+
+    def test_total_return_from_supplied_curve(self):
+        idx = pd.date_range("2023-01-02", periods=3, freq="B")
+        equity = pd.Series([10_000.0, 10_500.0, 12_000.0], index=idx)
+        trades = [_mk_trade(100.0, 120.0)]
+        m = compute_metrics(trades, 10_000.0, equity)
+        assert m["total_return"] == pytest.approx(0.20)
+
+    def test_annualized_floored_at_one_month(self):
+        idx = pd.date_range("2023-01-02", periods=2, freq="B")
+        equity = pd.Series([10_000.0, 10_100.0], index=idx)
+        trades = [_mk_trade(100.0, 101.0)]
+        m = compute_metrics(trades, 10_000.0, equity)
+        # 1% over one day, floored to 1/12 year → 1.01^12 - 1
+        assert m["annualized_return"] == pytest.approx(
+            1.01 ** 12 - 1.0, rel=1e-3
+        )
+
+    def test_metrics_accepts_equity_curve(self):
+        idx = pd.date_range("2023-01-02", periods=10, freq="B")
+        equity = pd.Series(
+            np.linspace(10_000.0, 11_000.0, 10), index=idx
+        )
+        trades = [_mk_trade(100.0, 110.0)]
+        m = compute_metrics(trades, 10_000.0, equity)
+        assert m["total_return"] == pytest.approx(0.10)
+
+    def test_empty_trades_zero_metrics(self):
+        m = compute_metrics([], 10_000.0)
+        assert m["total_return"] == 0.0
+        assert m["sharpe_ratio"] == 0.0
+        assert m["profit_factor"] == 0.0
+
+    def test_benchmark_metrics_include_sortino(self):
+        from backtester.metrics import compute_benchmark_metrics
+        idx = pd.date_range("2023-01-02", periods=60, freq="B")
+        prices = 100 + np.cumsum(np.random.RandomState(0).randn(60) * 0.5)
+        df = pd.DataFrame({"Close": prices}, index=idx)
+        bm = compute_benchmark_metrics(df, idx[0], idx[-1])
+        assert "sortino_ratio" in bm
+        assert np.isfinite(bm["sortino_ratio"])
+
+    def test_benchmark_uses_adjusted_close(self):
+        from backtester.metrics import compute_benchmark_metrics
+        idx = pd.date_range("2023-01-02", periods=3, freq="B")
+        df = pd.DataFrame({"Close": [100.0, 110.0, 120.0]}, index=idx)
+        bm = compute_benchmark_metrics(df, idx[0], idx[-1])
+        assert bm["total_return"] == pytest.approx(0.20)
+
+
+# ===================================================================
+# §24  Equity curve API: alignment and downsampling
+# ===================================================================
+
+
+class TestEquityCurveAPI:
+    def _result(self, n=500):
+        from backtester.engine import BacktestResult
+        idx = pd.date_range("2020-01-01", periods=n, freq="B")
+        strat = pd.Series(np.linspace(10_000, 12_000, n), index=idx)
+        bench = pd.DataFrame(
+            {"Close": np.linspace(100.0, 130.0, n)}, index=idx
+        )
+        return BacktestResult(
+            trades=[],
+            metrics={},
+            benchmark_metrics={},
+            ticker_results={},
+            conditions=[],
+            config={},
+            equity_curve=strat,
+            benchmark_df=bench,
+        )
+
+    def _req(self):
+        from api.schemas import BacktestRequest
+        return BacktestRequest(
+            conditions=[
+                {
+                    "indicator": "SMA",
+                    "operator": ">",
+                    "value": 0.0,
+                    "interval": "1d",
+                }
+            ]
+        )
+
+    def test_downsampled_to_max_points(self):
+        from api.routes import MAX_EQUITY_POINTS, _build_equity_curve
+        points = _build_equity_curve(self._result(500), self._req())
+        assert 0 < len(points) <= MAX_EQUITY_POINTS
+
+    def test_starts_at_capital_for_both(self):
+        from api.routes import _build_equity_curve
+        points = _build_equity_curve(self._result(500), self._req())
+        assert points[0].strategy == pytest.approx(10_000.0, abs=0.5)
+        assert points[0].benchmark == pytest.approx(10_000.0, abs=0.5)
+
+    def test_benchmark_baseline_aligned(self):
+        from api.routes import _build_equity_curve
+        points = _build_equity_curve(self._result(200), self._req())
+        assert points[-1].benchmark > points[0].benchmark
+        # benchmark moves in step with its underlying price series
+        assert points[-1].benchmark == pytest.approx(13_000.0, rel=0.05)
+
+    def test_empty_strategy_returns_empty(self):
+        from api.routes import _build_equity_curve
+        from backtester.engine import BacktestResult
+        result = BacktestResult(
+            trades=[], metrics={}, benchmark_metrics={},
+            ticker_results={}, conditions=[], config={},
+            equity_curve=pd.Series(dtype=float),
+            benchmark_df=pd.DataFrame(),
+        )
+        assert _build_equity_curve(result, self._req()) == []
+
+    def test_short_series_not_padded(self):
+        from api.routes import _build_equity_curve
+        points = _build_equity_curve(self._result(20), self._req())
+        assert len(points) == 20

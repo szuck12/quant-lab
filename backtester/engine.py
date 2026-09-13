@@ -7,7 +7,7 @@ simulates portfolio trades, and computes performance metrics.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from collections.abc import Callable
 
 import numpy as np
@@ -44,6 +44,23 @@ class BacktestResult:
     ticker_results: dict[str, list[Trade]]
     conditions: list[Condition]
     config: dict
+    equity_curve: pd.Series = field(
+        default_factory=lambda: pd.Series(dtype=float)
+    )
+    benchmark_df: pd.DataFrame = field(default_factory=pd.DataFrame)
+
+
+@dataclass
+class _OpenPosition:
+    """An open position tracked during the portfolio simulation."""
+
+    ticker: str
+    shares: float
+    entry_price: float
+    invested: float
+    entry_date: pd.Timestamp
+    entry_bar: int
+    exit_bar: int
 
 
 @dataclass
@@ -161,16 +178,16 @@ class BacktestEngine:
         Steps:
         1. Determine smallest interval from conditions.
         2. Download data for all tickers at that interval.
-        3. Compute indicators for each ticker.
-        4. Evaluate conditions on each bar.
-        5. Simulate portfolio with position sizing.
-        6. Compute metrics and benchmark comparison.
+        3. Simulate the portfolio day-by-day in chronological order,
+           enforcing real cash availability across all tickers.
+        4. Compute metrics from the mark-to-market equity curve.
+        5. Compare against the benchmark (SPY, daily).
 
         Args:
             on_progress: Optional callback receiving progress 0–100.
 
         Returns:
-            BacktestResult with trades, metrics, and benchmark.
+            BacktestResult with trades, metrics, benchmark, and curves.
         """
         tickers = self.config["tickers"]
         years = self.config["years"]
@@ -196,7 +213,6 @@ class BacktestEngine:
                 tickers = tickers[:max_tickers]
 
         interval = self._smallest_interval()
-        _progress(1)
         _progress(2)
         all_data = self.pipeline.fetch(
             tickers, interval, years,
@@ -212,83 +228,67 @@ class BacktestEngine:
                 ticker_results={},
                 conditions=self.conditions,
                 config=self.config,
+                equity_curve=pd.Series(dtype=float),
+                benchmark_df=pd.DataFrame(),
             )
 
-        # Download benchmark data
-        _progress(32)
+        # Benchmark is always the S&P 500 proxy (SPY) at daily
+        # resolution, independent of the strategy interval.
         bench_data = self.pipeline.fetch(
-            [benchmark], interval, years,
+            [benchmark], "1d", years,
             on_progress=lambda p: _progress(32 + int(3 * p / 100)),
         )
         bench_df = bench_data.get(benchmark, pd.DataFrame())
         _progress(35)
 
-        # Create portfolio
+        # Single portfolio shared chronologically across every ticker
         portfolio = Portfolio(
             capital=capital,
             position_size=position_size,
             position_size_base=position_size_base,
         )
 
-        all_trades: list[Trade] = []
-        ticker_results: dict[str, list[Trade]] = {}
-        skipped = 0
+        _progress(36)
+        (
+            all_trades,
+            ticker_results,
+            equity_curve,
+        ) = self._simulate_portfolio(
+            all_data,
+            portfolio,
+            on_progress=lambda p: _progress(36 + int(52 * p / 100)),
+        )
+        _progress(88)
 
-        total_tickers = len(all_data)
-        # Ticker loop spans 35%–65% (30% range).
-        # Metrics spans 65%–100% (35% range with sub-steps).
-        ticker_start = 35
-        ticker_end = 65
-        ticker_step = (ticker_end - ticker_start) / max(total_tickers, 1)
-        _progress(ticker_start)
-        for i, (ticker, df) in enumerate(all_data.items()):
-            base = ticker_start + int(ticker_step * i)
-            enriched = self._compute_indicators(ticker, df)
-            _progress(base + int(ticker_step * 0.3))
-            # Vectorized: skip tickers with no entry signals
-            if not self._has_any_signal(enriched):
-                ticker_results[ticker] = []
-                skipped += 1
-            else:
-                trades = self._simulate_ticker(
-                    ticker, enriched, portfolio
-                )
-                ticker_results[ticker] = trades
-                all_trades.extend(trades)
-            _progress(base + int(ticker_step * 0.9))
-        _progress(ticker_end)
-
-        # Sort all trades globally by entry date
+        # Trades for display/metrics, ordered by entry date
         all_trades.sort(key=lambda t: t.entry_date)
 
-        _progress(66)
-        metrics = compute_metrics(all_trades, capital)
-        _progress(72)
+        _progress(89)
+        metrics = compute_metrics(all_trades, capital, equity_curve)
+        _progress(93)
         metrics["cash_remaining"] = round(portfolio.cash, 2)
+        end_prices = {
+            t: all_data[t]["Close"].iloc[-1]
+            for t in portfolio.positions
+            if t in all_data
+        }
         metrics["positions_value"] = round(
-            portfolio.get_total_value(
-                {t: all_data[t]["Close"].iloc[-1]
-                 for t in portfolio.positions
-                 if t in all_data}
+            sum(
+                pos.shares * end_prices.get(t, pos.avg_cost)
+                for t, pos in portfolio.positions.items()
             ),
             2,
         )
-        _progress(78)
 
         benchmark_metrics = {}
-        if not bench_df.empty and all_trades:
-            _progress(80)
-            dates = [t.entry_date for t in all_trades]
-            start_date = min(dates)
-            end_date = max(t.exit_date for t in all_trades)
+        if not bench_df.empty and not equity_curve.empty:
             benchmark_metrics = compute_benchmark_metrics(
-                bench_df, start_date, end_date
+                bench_df,
+                equity_curve.index[0],
+                equity_curve.index[-1],
             )
-            _progress(86)
-        else:
-            _progress(84)
+        _progress(97)
 
-        _progress(92)
         result = BacktestResult(
             trades=all_trades,
             metrics=metrics,
@@ -296,6 +296,8 @@ class BacktestEngine:
             ticker_results=ticker_results,
             conditions=self.conditions,
             config=self.config,
+            equity_curve=equity_curve,
+            benchmark_df=bench_df,
         )
         _progress(100)
         return result
@@ -365,22 +367,23 @@ class BacktestEngine:
         parts.append(cond.interval)
         return "_".join(parts)
 
-    def _has_any_signal(self, df: pd.DataFrame) -> bool:
-        """Vectorized check for any entry signal in the DataFrame.
+    def _signal_mask(self, df: pd.DataFrame) -> pd.Series:
+        """Vectorized entry-signal mask for every bar.
 
-        Uses pandas boolean masking instead of row-by-row iteration.
+        A bar is a signal when all conditions are simultaneously true
+        and none of the indicator values are NaN.
 
         Args:
             df: DataFrame with indicator columns.
 
         Returns:
-            True if at least one bar triggers all conditions.
+            Boolean Series aligned to df.index.
         """
         mask = pd.Series(True, index=df.index, dtype=bool)
         for cond in self.conditions:
             col = self._condition_col_name(cond)
             if col not in df.columns:
-                return False
+                return pd.Series(False, index=df.index, dtype=bool)
             col_data = df[col]
             mask &= col_data.notna()
             if cond.operator == ">":
@@ -393,7 +396,18 @@ class BacktestEngine:
                 mask &= (col_data <= cond.value).fillna(False)
             elif cond.operator == "==":
                 mask &= (col_data == cond.value).fillna(False)
-        return bool(mask.any())
+        return mask
+
+    def _has_any_signal(self, df: pd.DataFrame) -> bool:
+        """Vectorized check for any entry signal in the DataFrame.
+
+        Args:
+            df: DataFrame with indicator columns.
+
+        Returns:
+            True if at least one bar triggers all conditions.
+        """
+        return bool(self._signal_mask(df).any())
 
     def _evaluate_conditions(self, row: pd.Series) -> bool:
         """Check if all conditions are met for a single bar.
@@ -439,122 +453,172 @@ class BacktestEngine:
             return value == threshold
         raise ValueError(f"Unknown operator '{operator}'")
 
-    def _simulate_ticker(
+    def _simulate_portfolio(
         self,
-        ticker: str,
-        df: pd.DataFrame,
-        portfolio: Portfolio | None = None,
-    ) -> list[Trade]:
-        """Simulate trades for a single ticker.
+        all_data: dict[str, pd.DataFrame],
+        portfolio: Portfolio,
+        on_progress: Callable[[int], None] | None = None,
+    ) -> tuple[list[Trade], dict[str, list[Trade]], pd.Series]:
+        """Simulate every ticker on one shared chronological timeline.
 
-        Entry: all conditions simultaneously true.
-        Exit: after hold_period bars or stop-loss trigger.
+        Tickers are processed alphabetically within each trading day.
+        Exits run before entries, and entries stop for that day once
+        available cash is exhausted. This prevents the same capital
+        from being deployed more than once on a given date and removes
+        cross-ticker time reuse.
 
-        Uses precomputed entry bars for speed — only iterates over
-        bars where conditions are met, skipping non-signal bars.
+        Portfolio equity is marked to market every trading day; open
+        positions are valued at their latest known close and are left
+        open at the end of the backtest.
 
         Args:
-            ticker: Stock symbol.
-            df: DataFrame with indicator columns.
-            portfolio: Portfolio for position sizing (optional).
+            all_data: Mapping of ticker -> OHLCV DataFrame.
+            portfolio: Shared, stateful portfolio.
+            on_progress: Optional callback receiving progress 0–100.
 
         Returns:
-            List of completed trades.
+            Tuple of (all trades, per-ticker trades, equity curve).
         """
-        trades: list[Trade] = []
         hold = self.config["hold"]
         stop_loss = self.config.get("stop_loss")
 
-        # Precompute signal mask vectorially
-        mask = pd.Series(True, index=df.index, dtype=bool)
-        for cond in self.conditions:
-            col = self._condition_col_name(cond)
-            if col not in df.columns:
-                return trades
-            col_data = df[col]
-            mask &= col_data.notna()
-            if cond.operator == ">":
-                mask &= (col_data > cond.value).fillna(False)
-            elif cond.operator == "<":
-                mask &= (col_data < cond.value).fillna(False)
-            elif cond.operator == ">=":
-                mask &= (col_data >= cond.value).fillna(False)
-            elif cond.operator == "<=":
-                mask &= (col_data <= cond.value).fillna(False)
-            elif cond.operator == "==":
-                mask &= (col_data == cond.value).fillna(False)
-
-        # Get all entry bar positions
-        entry_positions = np.where(mask.values)[0]
-        if len(entry_positions) == 0:
-            return trades
-
-        # Pre-extract Close prices as numpy array for fast access
-        close_arr = df["Close"].values
-        idx = df.index
-
-        # Iterate only over signal bars
-        last_exit = -1
-        for pos in entry_positions:
-            # Skip if within cooldown period of last exit
-            if pos <= last_exit:
+        # Precompute indicators and signals per ticker
+        prepared: dict[str, dict] = {}
+        master_index: pd.DatetimeIndex | None = None
+        for ticker in sorted(all_data.keys()):
+            df = all_data[ticker]
+            if df is None or df.empty:
                 continue
-
-            entry_price = close_arr[pos]
-            if pd.isna(entry_price) or entry_price <= 0:
-                continue
-
-            # Skip if hold period extends past available data
-            if pos + hold >= len(df):
-                break
-
-            # Position sizing via portfolio
-            shares = 0.0
-            invested = 0.0
-            if portfolio is not None:
-                shares = portfolio.calculate_buy_amount(
-                    ticker, entry_price
-                )
-                if shares <= 0:
-                    continue
-                portfolio.buy(ticker, shares, entry_price)
-                invested = shares * entry_price
-
-            exit_idx = pos + hold
-
-            # Check stop-loss during hold period
-            if stop_loss is not None:
-                threshold = -stop_loss / 100.0
-                for j in range(pos + 1, min(exit_idx + 1, len(df))):
-                    ret = (close_arr[j] - entry_price) / entry_price
-                    if ret <= threshold:
-                        exit_idx = j
-                        break
-
-            if exit_idx >= len(df):
-                break
-
-            exit_date = idx[exit_idx]
-            exit_price = close_arr[exit_idx]
-            ret = (exit_price - entry_price) / entry_price
-
-            # Sell from portfolio
-            if portfolio is not None and shares > 0:
-                portfolio.sell(ticker, exit_price)
-
-            trades.append(
-                Trade(
-                    ticker=ticker,
-                    entry_date=idx[pos],
-                    entry_price=entry_price,
-                    exit_date=exit_date,
-                    exit_price=exit_price,
-                    hold_bars=exit_idx - pos,
-                    return_pct=ret,
-                    shares=shares,
-                    invested=invested,
-                )
+            enriched = self._compute_indicators(ticker, df)
+            prepared[ticker] = {
+                "index": enriched.index,
+                "close": enriched["Close"].to_numpy(dtype=float),
+                "signal": self._signal_mask(enriched).to_numpy(
+                    dtype=bool
+                ),
+            }
+            master_index = (
+                enriched.index
+                if master_index is None
+                else master_index.union(enriched.index)
             )
-            last_exit = exit_idx + hold  # cooldown
 
-        return trades
+        tickers = sorted(prepared.keys())
+        ticker_results: dict[str, list[Trade]] = {t: [] for t in tickers}
+        trades: list[Trade] = []
+
+        if master_index is None or len(master_index) == 0:
+            return trades, ticker_results, pd.Series(dtype=float)
+
+        # Map each ticker's local bars onto the master date axis
+        for ticker in tickers:
+            p = prepared[ticker]
+            gpos = master_index.get_indexer(p["index"])
+            local_by_global = np.full(len(master_index), -1, dtype=int)
+            valid = gpos >= 0
+            local_by_global[gpos[valid]] = np.arange(len(gpos))[valid]
+            p["local_by_global"] = local_by_global
+
+        open_positions: dict[str, _OpenPosition] = {}
+        last_exit_bar: dict[str, int] = {}
+        last_close: dict[str, float] = {}
+        equity_values = np.empty(len(master_index), dtype=float)
+        total = len(master_index)
+        report_every = max(1, total // 100)
+
+        for gi in range(total):
+            date = master_index[gi]
+
+            # Refresh the latest known close for active tickers
+            for ticker in tickers:
+                lp = prepared[ticker]["local_by_global"][gi]
+                if lp >= 0:
+                    last_close[ticker] = prepared[ticker]["close"][lp]
+
+            # --- 1. Exits: hold-period expiry or stop-loss ---
+            for ticker in list(open_positions.keys()):
+                op = open_positions[ticker]
+                lp = prepared[ticker]["local_by_global"][gi]
+                if lp < 0:
+                    continue
+                price = prepared[ticker]["close"][lp]
+                if pd.isna(price) or price <= 0:
+                    continue
+                should_exit = lp >= op.exit_bar
+                if stop_loss is not None and not should_exit:
+                    ret = (price - op.entry_price) / op.entry_price
+                    if ret <= -stop_loss / 100.0:
+                        should_exit = True
+                if not should_exit:
+                    continue
+                portfolio.sell(ticker, price)
+                ret = (price - op.entry_price) / op.entry_price
+                trade = Trade(
+                    ticker=ticker,
+                    entry_date=op.entry_date,
+                    entry_price=op.entry_price,
+                    exit_date=date,
+                    exit_price=price,
+                    hold_bars=lp - op.entry_bar,
+                    return_pct=ret,
+                    shares=op.shares,
+                    invested=op.invested,
+                )
+                trades.append(trade)
+                ticker_results[ticker].append(trade)
+                del open_positions[ticker]
+                last_exit_bar[ticker] = lp
+
+            # --- 2. Entries: alphabetical, cash-limited, once/day ---
+            if portfolio.cash > 0:
+                for ticker in tickers:
+                    if portfolio.cash <= 0:
+                        break
+                    if ticker in open_positions:
+                        continue
+                    lp = prepared[ticker]["local_by_global"][gi]
+                    if lp < 0:
+                        continue
+                    if not prepared[ticker]["signal"][lp]:
+                        continue
+                    last_exit = last_exit_bar.get(ticker)
+                    if last_exit is not None and lp <= last_exit + hold:
+                        continue
+                    if lp + hold >= len(prepared[ticker]["index"]):
+                        continue
+                    price = prepared[ticker]["close"][lp]
+                    if pd.isna(price) or price <= 0:
+                        continue
+                    shares = portfolio.calculate_buy_amount(
+                        ticker, price
+                    )
+                    if shares <= 0:
+                        continue
+                    if not portfolio.buy(ticker, shares, price):
+                        continue
+                    open_positions[ticker] = _OpenPosition(
+                        ticker=ticker,
+                        shares=shares,
+                        entry_price=price,
+                        invested=shares * price,
+                        entry_date=date,
+                        entry_bar=lp,
+                        exit_bar=lp + hold,
+                    )
+
+            # --- 3. Mark-to-market equity (open positions included) ---
+            value = portfolio.cash
+            for ticker, op in open_positions.items():
+                px = last_close.get(ticker, op.entry_price)
+                value += op.shares * px
+            equity_values[gi] = value
+
+            if on_progress and (
+                gi % report_every == 0 or gi == total - 1
+            ):
+                on_progress(int(100 * (gi + 1) / total))
+
+        equity_curve = pd.Series(
+            equity_values, index=master_index, dtype=float
+        )
+        return trades, ticker_results, equity_curve

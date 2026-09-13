@@ -100,6 +100,18 @@ evaluation.
   total equity. Process trades by `exit_date` so the final equity
   includes every trade. This prevents inflated returns when trades
   overlap or use a fraction of capital.
+- MUST simulate all tickers on ONE shared chronological timeline
+  (`_simulate_portfolio`): exits before entries each day, entries in
+  alphabetical ticker order, and entries stop once cash is exhausted.
+  NEVER simulate each ticker's full history sequentially — that reuses
+  the same time period and inflates returns.
+- MUST mark portfolio equity to market every trading day and feed that
+  curve to metrics, so Sharpe/Sortino/drawdown reflect unrealized P&L.
+- MUST enforce one open position per ticker and a per-ticker cooldown of
+  `hold` bars after each exit.
+- MUST fetch the benchmark (SPY) once at daily resolution and reuse it
+  for both metrics and the chart; scale it to the strategy's starting
+  capital on the strategy's first date.
 
 ## Session Instructions
 
