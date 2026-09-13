@@ -244,3 +244,9 @@ Agents read this at session start and append at session end.
    names (plus_di → +DI, upper → Upper Band), parameter names
    (adx_window → ADX Window, smooth_k → Smooth %K). Use a
    lookup table in the frontend, not string manipulation.
+- **2026-09-12**: Progress tracking architecture — backtests run in
+   a background thread. POST /api/backtest/start returns backtest_id.
+   GET /api/backtest/{id}/progress polls status (0–100). GET
+   /api/backtest/{id}/result returns results. Frontend polls every
+   500ms. Engine.run() accepts on_progress callback. Progress is
+   front-skewed: download 0–40%, ticker loop 42–92%, metrics 93–100%.

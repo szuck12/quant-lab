@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { runBacktest } from './api';
+import { startBacktest, getBacktestProgress, getBacktestResult } from './api';
 import { BacktestForm } from './components/BacktestForm';
 import { EquityChart } from './components/EquityChart';
 import { HomePage } from './components/HomePage';
@@ -33,6 +33,7 @@ export function App() {
     return (['home', 'backtest', 'indicators'] as const).includes(hash as Page) ? (hash as Page) : 'home';
   });
   const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<BacktestResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,10 +50,32 @@ export function App() {
 
   const handleSubmit = async (req: BacktestRequest) => {
     setLoading(true);
+    setProgress(0);
     setError(null);
     try {
-      const data = await runBacktest(req);
+      const { backtest_id } = await startBacktest(req);
+
+      // Poll progress every 500ms
+      let lastProgress = 0;
+      while (true) {
+        await new Promise((r) => setTimeout(r, 500));
+        const status = await getBacktestProgress(backtest_id);
+
+        // Never go backwards
+        if (status.progress > lastProgress) {
+          lastProgress = status.progress;
+          setProgress(status.progress);
+        }
+
+        if (status.status === 'done') break;
+        if (status.status === 'error') {
+          throw new Error('Backtest failed');
+        }
+      }
+
+      const data = await getBacktestResult(backtest_id);
       setResult(data);
+      setProgress(100);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       setError(msg);
@@ -132,6 +155,7 @@ export function App() {
           {page === 'backtest' && (
             <BacktestPage
               loading={loading}
+              progress={progress}
               result={result}
               error={error}
               onSubmit={handleSubmit}
@@ -175,11 +199,13 @@ export function App() {
 
 function BacktestPage({
   loading,
+  progress,
   result,
   error,
   onSubmit,
 }: {
   loading: boolean;
+  progress: number;
   result: BacktestResponse | null;
   error: string | null;
   onSubmit: (req: BacktestRequest) => void;
@@ -202,7 +228,7 @@ function BacktestPage({
 
       {/* Form */}
       <section className="rounded-xl border border-slate-300 border-t-4 border-t-emerald-500 bg-white/95 p-6 shadow-sm">
-        <BacktestForm loading={loading} onSubmit={onSubmit} />
+        <BacktestForm loading={loading} progress={progress} onSubmit={onSubmit} />
       </section>
 
       {/* Error */}

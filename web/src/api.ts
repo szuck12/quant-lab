@@ -40,3 +40,15 @@ export function fetchConfig(): Promise<AppConfig> {
 export function runBacktest(req: BacktestRequest): Promise<BacktestResponse> {
   return post<BacktestResponse>('/api/backtest', req);
 }
+
+export function startBacktest(req: BacktestRequest): Promise<{ backtest_id: number }> {
+  return post<{ backtest_id: number }>('/api/backtest/start', req);
+}
+
+export function getBacktestProgress(backtestId: number): Promise<{ status: string; progress: number }> {
+  return get<{ status: string; progress: number }>(`/api/backtest/${backtestId}/progress`);
+}
+
+export function getBacktestResult(backtestId: number): Promise<BacktestResponse> {
+  return get<BacktestResponse>(`/api/backtest/${backtestId}/result`);
+}

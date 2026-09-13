@@ -18,10 +18,11 @@ const EMPTY: ConditionRequest = {
 
 interface Props {
   loading: boolean;
+  progress?: number;
   onSubmit: (req: BacktestRequest) => void;
 }
 
-export function BacktestForm({ loading, onSubmit }: Props) {
+export function BacktestForm({ loading, progress = 0, onSubmit }: Props) {
   const [indicators, setIndicators] = useState<IndicatorInfo[]>([]);
   const [maxYears, setMaxYears] = useState(20);
   const [conditions, setConditions] = useState<ConditionRequest[]>([EMPTY]);
@@ -290,7 +291,7 @@ export function BacktestForm({ loading, onSubmit }: Props) {
         {loading ? (
           <span className="flex items-center justify-center gap-2">
             <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-            Running Backtest...
+            Running Backtest... {progress}%
           </span>
         ) : (
           'Run Backtest'

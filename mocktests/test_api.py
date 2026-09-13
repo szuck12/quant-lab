@@ -651,3 +651,114 @@ class TestPositionSizingAPI:
         data = resp.json()
         assert "cash_remaining" in data["metrics"]
         assert "positions_value" in data["metrics"]
+
+
+# -- Progress tracking tests --
+
+
+class TestProgressTracking:
+    @patch("backtester.engine.DataPipeline")
+    def test_start_backtest_returns_id(self, MockPipeline, client):
+        mock_pipeline = MockPipeline.return_value
+        mock_pipeline.fetch.return_value = _mock_pipeline_fetch(
+            ["AAPL"], "1d", 2
+        )
+        resp = client.post(
+            "/api/backtest/start",
+            json={
+                "conditions": [
+                    {
+                        "indicator": "RSI",
+                        "params": {"window": 14},
+                        "operator": "<",
+                        "value": 30,
+                        "interval": "1d",
+                    }
+                ],
+                "years": 2,
+            },
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "backtest_id" in data
+        assert isinstance(data["backtest_id"], int)
+
+    @patch("backtester.engine.DataPipeline")
+    def test_progress_completes(self, MockPipeline, client):
+        mock_pipeline = MockPipeline.return_value
+        mock_pipeline.fetch.return_value = _mock_pipeline_fetch(
+            ["AAPL"], "1d", 2
+        )
+        resp = client.post(
+            "/api/backtest/start",
+            json={
+                "conditions": [
+                    {
+                        "indicator": "RSI",
+                        "operator": "<",
+                        "value": 30,
+                        "interval": "1d",
+                    }
+                ],
+                "years": 2,
+            },
+        )
+        backtest_id = resp.json()["backtest_id"]
+
+        import time
+        for _ in range(50):
+            progress_resp = client.get(
+                f"/api/backtest/{backtest_id}/progress"
+            )
+            if progress_resp.json()["status"] == "done":
+                break
+            time.sleep(0.1)
+
+        final = client.get(f"/api/backtest/{backtest_id}/progress")
+        assert final.json()["status"] == "done"
+        assert final.json()["progress"] == 100
+
+    @patch("backtester.engine.DataPipeline")
+    def test_result_available_after_completion(self, MockPipeline, client):
+        mock_pipeline = MockPipeline.return_value
+        mock_pipeline.fetch.return_value = _mock_pipeline_fetch(
+            ["AAPL"], "1d", 2
+        )
+        resp = client.post(
+            "/api/backtest/start",
+            json={
+                "conditions": [
+                    {
+                        "indicator": "RSI",
+                        "operator": "<",
+                        "value": 30,
+                        "interval": "1d",
+                    }
+                ],
+                "years": 2,
+            },
+        )
+        backtest_id = resp.json()["backtest_id"]
+
+        import time
+        for _ in range(50):
+            progress_resp = client.get(
+                f"/api/backtest/{backtest_id}/progress"
+            )
+            if progress_resp.json()["status"] == "done":
+                break
+            time.sleep(0.1)
+
+        result_resp = client.get(
+            f"/api/backtest/{backtest_id}/result"
+        )
+        assert result_resp.status_code == 200
+        assert "metrics" in result_resp.json()
+
+    def test_progress_not_found(self, client):
+        resp = client.get("/api/backtest/99999/progress")
+        assert resp.status_code == 404
+
+    def test_result_not_found(self, client):
+        resp = client.get("/api/backtest/99999/result")
+        assert resp.status_code == 404

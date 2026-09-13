@@ -5,6 +5,15 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com) and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.8.0] - 2026-09-12
+
+### Added
+- **Backtest progress indicator** — running a backtest now shows a
+  live percentage (0–100%) in the submit button. Progress tracks
+  through data download (0–40%), indicator computation and
+  simulation (40–92%), and metrics (92–100%). Uses background
+  thread with polling; never goes backwards.
+
 ## [3.7.1] - 2026-09-12
 
 ### Fixed

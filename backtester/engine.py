@@ -8,6 +8,7 @@ simulates portfolio trades, and computes performance metrics.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from collections.abc import Callable
 
 import pandas as pd
 
@@ -150,7 +151,10 @@ class BacktestEngine:
         self.config = config
         self.pipeline = DataPipeline()
 
-    def run(self) -> BacktestResult:
+    def run(
+        self,
+        on_progress: Callable[[int], None] | None = None,
+    ) -> BacktestResult:
         """Execute the full backtest.
 
         Steps:
@@ -160,6 +164,9 @@ class BacktestEngine:
         4. Evaluate conditions on each bar.
         5. Simulate portfolio with position sizing.
         6. Compute metrics and benchmark comparison.
+
+        Args:
+            on_progress: Optional callback receiving progress 0–100.
 
         Returns:
             BacktestResult with trades, metrics, and benchmark.
@@ -173,7 +180,12 @@ class BacktestEngine:
             "position_size_base", "total"
         )
 
+        def _progress(pct: int) -> None:
+            if on_progress:
+                on_progress(min(pct, 100))
+
         # Resolve universe if specified
+        _progress(1)
         universe = self.config.get("universe")
         if universe:
             from backtester.universe import resolve_universe
@@ -186,7 +198,9 @@ class BacktestEngine:
 
         interval = self._smallest_interval()
         print("\nStep 1/5: Downloading data...")
+        _progress(3)
         all_data = self.pipeline.fetch(tickers, interval, years)
+        _progress(38)
 
         if not all_data:
             missing = ", ".join(tickers)
@@ -206,10 +220,12 @@ class BacktestEngine:
             )
 
         # Download benchmark data
+        _progress(39)
         bench_data = self.pipeline.fetch(
             [benchmark], interval, years
         )
         bench_df = bench_data.get(benchmark, pd.DataFrame())
+        _progress(42)
 
         # Create portfolio
         portfolio = Portfolio(
@@ -223,18 +239,22 @@ class BacktestEngine:
         ticker_results: dict[str, list[Trade]] = {}
         skipped = 0
 
-        for ticker, df in all_data.items():
+        total_tickers = len(all_data)
+        for i, (ticker, df) in enumerate(all_data.items()):
             enriched = self._compute_indicators(ticker, df)
             # Vectorized: skip tickers with no entry signals
             if not self._has_any_signal(enriched):
                 ticker_results[ticker] = []
                 skipped += 1
-                continue
-            trades = self._simulate_ticker(
-                ticker, enriched, portfolio
-            )
-            ticker_results[ticker] = trades
-            all_trades.extend(trades)
+            else:
+                trades = self._simulate_ticker(
+                    ticker, enriched, portfolio
+                )
+                ticker_results[ticker] = trades
+                all_trades.extend(trades)
+            # Progress: 42%–92% for ticker loop
+            if total_tickers > 0:
+                _progress(42 + int(50 * (i + 1) / total_tickers))
 
         print("\nStep 3/5: Evaluating conditions...")
         simulated = len(ticker_results) - skipped
@@ -249,6 +269,7 @@ class BacktestEngine:
         print(f"  Total trades executed: {total_trades}")
 
         print("\nStep 5/5: Computing metrics...")
+        _progress(93)
         metrics = compute_metrics(all_trades, capital)
         metrics["cash_remaining"] = round(portfolio.cash, 2)
         metrics["positions_value"] = round(
@@ -269,6 +290,7 @@ class BacktestEngine:
                 bench_df, start_date, end_date
             )
 
+        _progress(98)
         return BacktestResult(
             trades=all_trades,
             metrics=metrics,

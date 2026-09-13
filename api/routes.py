@@ -3,6 +3,9 @@
 
 from __future__ import annotations
 
+import threading
+from typing import Any
+
 import pandas as pd
 
 from api.schemas import (
@@ -558,3 +561,164 @@ def _param_names(cond) -> list[str]:
     schema = INDICATOR_SCHEMA.get(cond.indicator, {})
     params = schema.get("params", [])
     return [p["name"] for p in params[: len(cond.params)]]
+
+
+# -- Progress tracking for background backtests --
+
+_backtest_counter = 0
+_backtest_lock = threading.Lock()
+_backtest_progress: dict[int, dict[str, Any]] = {}
+
+
+def _next_backtest_id() -> int:
+    global _backtest_counter
+    with _backtest_lock:
+        _backtest_counter += 1
+        return _backtest_counter
+
+
+def _build_conditions_and_config(req: BacktestRequest):
+    """Build engine conditions and config from a request."""
+    from backtester.engine import Condition
+
+    conditions = []
+    for c in req.conditions:
+        params = tuple(c.params.values()) if c.params else ()
+        conditions.append(
+            Condition(
+                indicator=c.indicator.upper(),
+                params=params,
+                component=c.component,
+                operator=c.operator,
+                value=c.value,
+                interval=c.interval,
+            )
+        )
+
+    config = {
+        "tickers": [],
+        "hold": 10,
+        "capital": req.capital,
+        "benchmark": "SPY",
+        "years": req.years,
+        "stop_loss": None,
+        "universe": "sp500",
+        "max_tickers": None,
+        "position_size": req.position_size,
+        "position_size_base": req.position_size_base,
+    }
+    return conditions, config
+
+
+def _run_backtest_background(
+    backtest_id: int,
+    req: BacktestRequest,
+) -> None:
+    """Run backtest in a background thread with progress tracking."""
+    try:
+        conditions, config = _build_conditions_and_config(req)
+        engine = BacktestEngine(conditions, config)
+
+        def on_progress(pct: int) -> None:
+            _backtest_progress[backtest_id]["progress"] = pct
+
+        result = engine.run(on_progress=on_progress)
+
+        if not result.trades:
+            _backtest_progress[backtest_id].update(
+                {"status": "error", "detail": "No trades generated."}
+            )
+            return
+
+        equity_curve = _build_equity_curve(result, req)
+        response = _to_response(result, req, equity_curve)
+
+        _backtest_progress[backtest_id].update(
+            {"status": "done", "progress": 100, "result": response}
+        )
+    except Exception as e:
+        _backtest_progress[backtest_id].update(
+            {"status": "error", "detail": str(e)}
+        )
+
+
+@router.post("/backtest/start")
+def start_backtest(req: BacktestRequest) -> dict[str, int]:
+    """Start a backtest in the background, return backtest_id."""
+    if req.years <= 0:
+        raise HTTPException(
+            status_code=422,
+            detail="Years must be greater than 0.",
+        )
+    if req.years > MAX_YEARS:
+        req.years = MAX_YEARS
+    if req.capital <= 0:
+        raise HTTPException(
+            status_code=422,
+            detail="Capital must be a positive number.",
+        )
+    if req.capital > 1_000_000_000:
+        raise HTTPException(
+            status_code=422,
+            detail="Capital cannot exceed $1,000,000,000.",
+        )
+    for cond in req.conditions:
+        if cond.operator not in VALID_OPERATORS:
+            raise HTTPException(
+                status_code=422,
+                detail=f"Invalid operator '{cond.operator}'.",
+            )
+        if cond.indicator not in INDICATORS:
+            raise HTTPException(
+                status_code=422,
+                detail=f"Unknown indicator '{cond.indicator}'.",
+            )
+
+    backtest_id = _next_backtest_id()
+    _backtest_progress[backtest_id] = {
+        "status": "running",
+        "progress": 0,
+    }
+
+    thread = threading.Thread(
+        target=_run_backtest_background,
+        args=(backtest_id, req),
+        daemon=True,
+    )
+    thread.start()
+
+    return {"backtest_id": backtest_id}
+
+
+@router.get("/backtest/{backtest_id}/progress")
+def get_backtest_progress(backtest_id: int) -> dict[str, Any]:
+    """Return current progress of a background backtest."""
+    info = _backtest_progress.get(backtest_id)
+    if info is None:
+        raise HTTPException(
+            status_code=404, detail="Backtest not found."
+        )
+    return {
+        "status": info["status"],
+        "progress": info["progress"],
+    }
+
+
+@router.get("/backtest/{backtest_id}/result")
+def get_backtest_result(backtest_id: int) -> BacktestResponse:
+    """Return results of a completed backtest."""
+    info = _backtest_progress.get(backtest_id)
+    if info is None:
+        raise HTTPException(
+            status_code=404, detail="Backtest not found."
+        )
+    if info["status"] == "running":
+        raise HTTPException(
+            status_code=202, detail="Backtest still running."
+        )
+    if info["status"] == "error":
+        raise HTTPException(
+            status_code=500,
+            detail=info.get("detail", "Backtest failed."),
+        )
+    return info["result"]
