@@ -111,7 +111,7 @@ export function ConditionRow({
           <select
             value={condition.indicator}
             onChange={(e) => update({ indicator: e.target.value })}
-            className="condition-field rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-800 transition-colors focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/20"
+            className="condition-field appearance-none rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-800 transition-colors focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/20"
           >
             {indicators.map((ind) => (
               <option key={ind.name} value={ind.name}>
@@ -137,7 +137,7 @@ export function ConditionRow({
               onChange={(e) =>
                 update({ component: e.target.value || null })
               }
-              className="condition-field rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 transition-colors focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/20"
+              className="condition-field appearance-none rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 transition-colors focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/20"
             >
               {components.map((c) => (
                 <option key={c} value={c}>
@@ -157,7 +157,7 @@ export function ConditionRow({
           <select
             value={condition.operator}
             onChange={(e) => update({ operator: e.target.value as Operator })}
-            className="condition-field rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 transition-colors focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/20"
+            className="condition-field appearance-none rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 transition-colors focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/20"
           >
             {OPERATORS.map((op) => (
               <option key={op} value={op}>
@@ -191,7 +191,7 @@ export function ConditionRow({
           <select
             value={condition.interval}
             onChange={(e) => update({ interval: e.target.value })}
-            className="condition-field rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 transition-colors focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/20"
+            className="condition-field appearance-none rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 transition-colors focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/20"
           >
             <option value="5m">5 Minute</option>
             <option value="15m">15 Minute</option>
