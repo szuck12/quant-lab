@@ -1742,3 +1742,281 @@ class TestCacheKeyIncludesYears:
         assert "2" in path_2yr.name
         assert "5" in path_5yr.name
         assert path_2yr != path_5yr
+
+
+# ===================================================================
+# §21  Equity Curve Weighting & Portfolio Cash Safety
+# ===================================================================
+
+
+def _weighted_trade(
+    entry: float,
+    exit_price: float,
+    invested: float,
+    entry_date: str = "2025-01-01",
+    hold: int = 10,
+    ticker: str = "AAPL",
+) -> Trade:
+    """Build a Trade with position-sizing data (shares + invested)."""
+    return Trade(
+        ticker=ticker,
+        entry_date=pd.Timestamp(entry_date),
+        entry_price=entry,
+        exit_date=pd.Timestamp(entry_date) + pd.Timedelta(days=hold),
+        exit_price=exit_price,
+        hold_bars=hold,
+        return_pct=(exit_price - entry) / entry,
+        shares=invested / entry,
+        invested=invested,
+    )
+
+
+class TestEquityCurveWeighting:
+    """Equity curve must weight returns by capital actually invested.
+
+    Regression tests for the bug where the equity curve compounded
+    each trade's full return on total equity, inflating returns when
+    trades used only part of the capital or overlapped.
+    """
+
+    def test_partial_investment_not_inflated(self):
+        """A trade using 50% of capital with +10% gains 5% of equity."""
+        from backtester.metrics import compute_equity_curve
+        trades = [_weighted_trade(100.0, 110.0, invested=5000.0)]
+        equity = compute_equity_curve(trades, 10_000.0)
+        assert equity.iloc[-1] == pytest.approx(10_500.0, abs=0.01)
+
+    def test_full_investment_applies_full_return(self):
+        """A trade using 100% of capital applies its full return."""
+        from backtester.metrics import compute_equity_curve
+        trades = [_weighted_trade(100.0, 110.0, invested=10_000.0)]
+        equity = compute_equity_curve(trades, 10_000.0)
+        assert equity.iloc[-1] == pytest.approx(11_000.0, abs=0.01)
+
+    def test_overlapping_trades_not_double_counted(self):
+        """Two overlapping trades each using 50% must total 10%, not 21%."""
+        from backtester.metrics import compute_equity_curve
+        trades = [
+            _weighted_trade(
+                100.0, 110.0, invested=5000.0, entry_date="2025-01-01"
+            ),
+            _weighted_trade(
+                100.0, 110.0, invested=5000.0, entry_date="2025-01-06"
+            ),
+        ]
+        equity = compute_equity_curve(trades, 10_000.0)
+        # 10000 + 500 + 500 = 11000, NOT 12100
+        assert equity.iloc[-1] == pytest.approx(11_000.0, abs=0.01)
+
+    def test_many_partial_trades_linear_growth(self):
+        """50 trades each investing 20% at +10% → +100%, not compounded."""
+        from backtester.metrics import compute_equity_curve
+        trades = [
+            _weighted_trade(
+                100.0,
+                110.0,
+                invested=2000.0,
+                entry_date=f"2025-{1 + (i // 28):02d}-"
+                f"{1 + (i % 28):02d}",
+                hold=3,
+            )
+            for i in range(50)
+        ]
+        equity = compute_equity_curve(trades, 10_000.0)
+        # Each trade gains $200; 50 trades → $10,000 gain → $20,000
+        assert equity.iloc[-1] == pytest.approx(20_000.0, abs=5.0)
+
+    def test_losing_partial_trade_reduces_correctly(self):
+        """A trade using 50% of capital with -10% loses 5% of equity."""
+        from backtester.metrics import compute_equity_curve
+        trades = [_weighted_trade(100.0, 90.0, invested=5000.0)]
+        equity = compute_equity_curve(trades, 10_000.0)
+        assert equity.iloc[-1] == pytest.approx(9_500.0, abs=0.01)
+
+    def test_final_value_exact_with_out_of_order_exits(self):
+        """Final equity must include every trade even if exits are out
+        of entry order."""
+        from backtester.metrics import compute_equity_curve
+        # Trade A enters first but exits last
+        trade_a = _weighted_trade(
+            100.0, 110.0, invested=5000.0, entry_date="2025-01-01", hold=120
+        )
+        # Trade B enters later but exits earlier
+        trade_b = _weighted_trade(
+            100.0, 110.0, invested=5000.0, entry_date="2025-01-02", hold=3
+        )
+        equity = compute_equity_curve([trade_a, trade_b], 10_000.0)
+        assert equity.iloc[-1] == pytest.approx(11_000.0, abs=0.01)
+
+    def test_legacy_trades_still_compound(self):
+        """Trades without position data keep the previous behavior."""
+        from backtester.metrics import compute_equity_curve
+        trades = [
+            Trade("AAPL", pd.Timestamp("2025-01-06"), 100.0,
+                  pd.Timestamp("2025-01-17"), 110.0, 10, 0.10),
+            Trade("AAPL", pd.Timestamp("2025-02-03"), 110.0,
+                  pd.Timestamp("2025-02-14"), 121.0, 10, 0.10),
+        ]
+        equity = compute_equity_curve(trades, 10_000.0)
+        assert equity.iloc[-1] == pytest.approx(12_100.0, abs=1.0)
+
+    def test_equity_starts_at_capital(self):
+        """The curve begins flat at the starting capital."""
+        from backtester.metrics import compute_equity_curve
+        trades = [_weighted_trade(100.0, 110.0, invested=5000.0)]
+        equity = compute_equity_curve(trades, 10_000.0)
+        assert equity.iloc[0] == 10_000.0
+
+    def test_total_return_matches_weighted_equity(self):
+        """compute_metrics total_return must match the weighted curve."""
+        from backtester.metrics import compute_metrics, compute_equity_curve
+        trades = [
+            _weighted_trade(100.0, 110.0, invested=5000.0),
+            _weighted_trade(100.0, 110.0, invested=5000.0,
+                            entry_date="2025-01-06"),
+        ]
+        metrics = compute_metrics(trades, 10_000.0)
+        equity = compute_equity_curve(trades, 10_000.0)
+        expected = (equity.iloc[-1] / 10_000.0) - 1.0
+        assert metrics["total_return"] == pytest.approx(expected, abs=1e-6)
+        assert metrics["total_return"] == pytest.approx(0.10, abs=1e-6)
+
+    def test_total_return_matches_dollar_gains(self):
+        """total_return must equal summed dollar gains over capital."""
+        from backtester.metrics import compute_metrics
+        trades = [
+            _weighted_trade(100.0, 110.0, invested=4000.0),
+            _weighted_trade(50.0, 45.0, invested=3000.0,
+                            entry_date="2025-01-06"),
+        ]
+        metrics = compute_metrics(trades, 10_000.0)
+        expected = (400.0 - 300.0) / 10_000.0
+        assert metrics["total_return"] == pytest.approx(expected, abs=1e-6)
+
+
+class TestPortfolioCashSafety:
+    """The portfolio must never spend more cash than it has."""
+
+    def test_buy_beyond_cash_is_rejected(self):
+        from backtester.engine import Portfolio
+        p = Portfolio(capital=10_000.0, position_size=100,
+                      position_size_base="total")
+        # Try to buy $15,000 worth with only $10,000 cash
+        ok = p.buy("AAPL", shares=150, price=100.0)
+        assert ok is False
+        assert p.cash == 10_000.0
+        assert "AAPL" not in p.positions
+
+    def test_calculate_buy_amount_capped_by_cash(self):
+        from backtester.engine import Portfolio
+        p = Portfolio(capital=10_000.0, position_size=100,
+                      position_size_base="total")
+        # Deploy $9,000 first
+        p.buy("AAPL", shares=90, price=100.0)
+        assert p.cash == pytest.approx(1_000.0)
+        # Second ticker wants $10,000 but only $1,000 remains
+        shares = p.calculate_buy_amount("MSFT", 100.0)
+        assert shares == pytest.approx(10.0)  # $1,000 / $100
+
+    def test_no_buy_when_cash_exhausted(self):
+        from backtester.engine import Portfolio
+        p = Portfolio(capital=10_000.0, position_size=100,
+                      position_size_base="total")
+        p.buy("AAPL", shares=100, price=100.0)  # all cash used
+        assert p.cash == pytest.approx(0.0)
+        shares = p.calculate_buy_amount("MSFT", 100.0)
+        assert shares == 0.0
+
+    def test_cash_restored_on_sell(self):
+        from backtester.engine import Portfolio
+        p = Portfolio(capital=10_000.0, position_size=100,
+                      position_size_base="total")
+        p.buy("AAPL", shares=50, price=100.0)  # spend $5,000
+        assert p.cash == pytest.approx(5_000.0)
+        proceeds = p.sell("AAPL", 110.0)  # regain $5,500
+        assert proceeds == pytest.approx(5_500.0)
+        assert p.cash == pytest.approx(10_500.0)
+
+    def test_accounting_identity(self):
+        """cash + invested + realized P&L == initial capital."""
+        from backtester.engine import Portfolio
+        p = Portfolio(capital=10_000.0, position_size=50,
+                      position_size_base="total")
+        p.buy("AAPL", shares=50, price=100.0)  # invest $5,000
+        p.sell("AAPL", 110.0)                  # +$500 realized
+        p.buy("MSFT", shares=25, price=100.0)  # invest $2,500
+        invested_now = p.positions["MSFT"].shares * 100.0
+        total = p.cash + invested_now
+        # cash should reflect the $500 realized gain
+        assert total == pytest.approx(10_500.0, abs=0.01)
+
+    def test_engine_never_overspends(self):
+        """End-to-end: engine portfolio cash never goes negative."""
+        with patch("backtester.engine.DataPipeline") as MockPipeline:
+            dates = pd.date_range("2025-01-01", periods=100, freq="B")
+            close = np.linspace(100, 120, 100)
+            df = pd.DataFrame(
+                {"Open": close, "High": close + 1, "Low": close - 1,
+                 "Close": close, "Volume": np.full(100, 1_000_000.0)},
+                index=dates,
+            )
+            df["RSI_14"] = 30.0  # always signals
+            MockPipeline.return_value.fetch.return_value = {
+                "AAA": df, "BBB": df.copy(), "CCC": df.copy(),
+            }
+
+            conditions = [Condition("RSI", (14,), None, "<", 50.0, "1d")]
+            config = {
+                "tickers": ["AAA", "BBB", "CCC"], "hold": 5,
+                "capital": 10_000.0, "benchmark": "SPY", "years": 2,
+                "stop_loss": None, "universe": None, "max_tickers": None,
+                "position_size": 100, "position_size_base": "total",
+            }
+            engine = BacktestEngine(conditions, config)
+            result = engine.run()
+
+            cash = result.metrics["cash_remaining"]
+            positions = result.metrics["positions_value"]
+            assert cash >= 0.0
+            # Total deployed value can never exceed capital + gains,
+            # but at minimum cash + open positions must be sane
+            assert cash + positions >= 0.0
+
+
+class TestEquityCurveAdditivePnl:
+    """Equity must track realized dollar P&L exactly, even when
+    cumulative losses push equity below the amount later invested
+    (the case that broke the capped-fraction formulation)."""
+
+    def test_large_loss_then_large_investment(self):
+        from backtester.metrics import compute_equity_curve
+        # Trade A: invests full $10,000 and loses 50% → equity $5,000
+        trade_a = _weighted_trade(
+            100.0, 50.0, invested=10_000.0, entry_date="2025-01-01", hold=10
+        )
+        # Trade B: invests $10,000 and gains 10% → +$1,000
+        trade_b = _weighted_trade(
+            100.0, 110.0, invested=10_000.0, entry_date="2025-02-01", hold=10
+        )
+        equity = compute_equity_curve([trade_a, trade_b], 10_000.0)
+        # 10,000 - 5,000 + 1,000 = 6,000 (not 5,500)
+        assert equity.iloc[-1] == pytest.approx(6_000.0, abs=0.01)
+
+    def test_final_equity_equals_cash_for_closed_trades(self):
+        """When all positions are closed, the equity curve's final
+        value equals capital plus summed dollar gains."""
+        from backtester.metrics import compute_equity_curve
+        trades = [
+            _weighted_trade(100.0, 120.0, invested=3_000.0),
+            _weighted_trade(50.0, 40.0, invested=2_000.0,
+                            entry_date="2025-01-05"),
+            _weighted_trade(200.0, 210.0, invested=5_000.0,
+                            entry_date="2025-01-10"),
+        ]
+        equity = compute_equity_curve(trades, 10_000.0)
+        dollar_gains = sum(
+            t.shares * (t.exit_price - t.entry_price) for t in trades
+        )
+        assert equity.iloc[-1] == pytest.approx(
+            10_000.0 + dollar_gains, abs=0.01
+        )

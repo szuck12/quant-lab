@@ -267,3 +267,12 @@ Agents read this at session start and append at session end.
    memory data cache, cache key includes years to prevent staleness.
 - **2026-09-12**: Trade log ordering — all_trades sorted by
    entry_date globally after ticker loop completes.
+- **2026-09-12**: v3.9.0 — equity curve weighting fix. The curve now
+   adjusts equity by realized dollar P&L (`equity += return_pct *
+   invested`) instead of compounding the full return_pct on total
+   equity. `return_pct * invested == shares * (exit - entry)`.
+   Trades processed by exit_date so the final value includes all
+   trades; equity final now equals capital + summed dollar gains and
+   matches `cash_remaining` exactly. Portfolio cash safety was
+   confirmed correct (buy() rejects over-budget orders;
+   calculate_buy_amount caps at remaining cash).

@@ -95,6 +95,11 @@ evaluation.
   span (`(last_exit - first_entry).days / 365.25`), not sum of hold bars.
 - MUST return max_drawdown as a negative value (e.g. -0.15 for 15%).
 - MUST sort `all_trades` by `entry_date` before returning results.
+- MUST weight each trade's equity contribution by the capital actually
+  invested (`trade.invested`), never compound the full `return_pct` on
+  total equity. Process trades by `exit_date` so the final equity
+  includes every trade. This prevents inflated returns when trades
+  overlap or use a fraction of capital.
 
 ## Session Instructions
 

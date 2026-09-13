@@ -5,6 +5,27 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com) and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.9.0] - 2026-09-12
+
+### Fixed
+- **Equity curve return accuracy** — the equity curve now weights
+  each trade's return by the capital actually invested instead of
+  compounding the full return on total equity. Previously,
+  overlapping trades or trades using a fraction of capital inflated
+  reported returns (e.g. two $5k trades at +10% showed +21% instead
+  of +10%). Realized dollar P&L now drives the curve, so returns
+  are accurate for all position sizes.
+- **Equity curve ordering** — trades are now processed by exit date
+  so the final equity includes every trade, and exit dates that fall
+  off the business-day calendar are retained.
+
+### Verified
+- **Portfolio cash safety** — confirmed the portfolio never spends
+  more cash than available: `calculate_buy_amount()` caps each buy
+  at remaining cash and `buy()` rejects over-budget orders. Added
+  regression tests covering partial allocation, overlapping trades,
+  and cash exhaustion.
+
 ## [3.8.1] - 2026-09-12
 
 ### Changed

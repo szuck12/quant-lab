@@ -161,6 +161,11 @@ def compute_equity_curve(
     with the last known equity value so pct_change() produces
     accurate daily returns for Sharpe/Sortino computation.
 
+    Equity is updated by realized dollar P&L, not by compounding
+    the full per-trade return on total equity. A trade only
+    affects the capital it actually invested, so overlapping
+    positions and partial allocations are counted correctly.
+
     Args:
         trades: List of completed trades.
         capital: Starting capital.
@@ -171,27 +176,40 @@ def compute_equity_curve(
     if not trades:
         return pd.Series(dtype=float)
 
-    sorted_trades = sorted(trades, key=lambda t: t.entry_date)
+    # Process by exit date so the curve reflects realized equity
+    # chronologically and the final value includes every trade.
+    sorted_trades = sorted(
+        trades, key=lambda t: (t.exit_date, t.entry_date)
+    )
 
-    # Build equity at each trade exit
+    # Build equity at each trade exit. Equity moves by realized
+    # dollar P&L only: return_pct * invested == shares * (exit-entry).
+    # This prevents compounding a trade's full return on capital it
+    # never deployed (overlapping or partial positions).
     exit_equity: dict[pd.Timestamp, float] = {}
     equity = capital
     for trade in sorted_trades:
-        equity *= 1.0 + trade.return_pct
+        if trade.invested > 0:
+            equity += trade.return_pct * trade.invested
+        else:
+            # Legacy trades without position data — compound as before.
+            equity *= 1.0 + trade.return_pct
         exit_equity[trade.exit_date] = equity
 
-    # Create a daily date range covering the full period
-    start = sorted_trades[0].entry_date
-    end = sorted_trades[-1].exit_date
+    # Create a date range covering the full period. Include the exact
+    # exit dates so no trade is dropped if it lands off a business day.
+    start = min(t.entry_date for t in trades)
+    end = max(t.exit_date for t in trades)
     daily_idx = pd.date_range(start=start, end=end, freq="B")
+    exit_idx = pd.DatetimeIndex(list(exit_equity.keys()))
+    combined = daily_idx.union(exit_idx).sort_values()
 
-    # Map exit dates to equity values, forward-fill the rest
-    series = pd.Series(index=daily_idx, dtype=float)
+    # Map exit dates to equity values, forward-fill the rest.
+    # Initialize to capital so the curve starts flat at capital.
+    series = pd.Series(capital, index=combined, dtype=float)
     for ts, val in exit_equity.items():
-        if ts in series.index:
-            series.loc[ts] = val
+        series.loc[ts] = val
     series = series.ffill()
-    series.iloc[0] = capital
 
     return series
 
