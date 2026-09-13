@@ -250,3 +250,13 @@ Agents read this at session start and append at session end.
    /api/backtest/{id}/result returns results. Frontend polls every
    500ms. Engine.run() accepts on_progress callback. Progress is
    front-skewed: download 0–40%, ticker loop 42–92%, metrics 93–100%.
+- **2026-09-12**: Version synchronization — version appears in 3
+   locations: navbar badge (App.tsx ~line 111), footer text (App.tsx
+   ~line 173), README line 3. All must be updated together. Agent
+   docs (release-manager, consistency-guardian) already document this.
+- **2026-09-12**: Input validation lesson — <input type="number">
+   doesn't allow empty state. Use <input type="text" inputMode="...">
+   with local string state to support empty + validation. Validate
+   on blur, not on every keystroke, to avoid blocking intermediate
+   typing. Integer params: reject decimals. All params: show
+   "Required" on empty blur.

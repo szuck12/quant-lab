@@ -15,6 +15,13 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   (35–65%), and metrics (65–100%). Uses background thread with
   polling; never goes backwards; no jump exceeds 10%.
 
+### Fixed
+- **Input validation** — window (integer) parameters now reject
+  decimal values with an error message. All inputs (window, value)
+  can be deleted to empty and show "Required" on blur. Value inputs
+  accept decimal values for all indicators.
+- **Version badge** — navbar, footer, and README now show 3.8.0.
+
 ## [3.7.1] - 2026-09-12
 
 ### Fixed

@@ -1,5 +1,7 @@
 import '@testing-library/jest-dom/vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { vi } from 'vitest';
 import { ConditionRow } from './ConditionRow';
 import type { IndicatorInfo, ConditionRequest } from '../types';
 
@@ -343,5 +345,203 @@ describe('ConditionRow indicator display', () => {
     expect(screen.getByText('Window')).toBeInTheDocument();
     expect(screen.getByText('Smooth %K')).toBeInTheDocument();
     expect(screen.getByText('Smooth %D')).toBeInTheDocument();
+  });
+});
+
+describe('ConditionRow input validation', () => {
+  const bbIndicator: IndicatorInfo[] = [
+    {
+      name: 'BB',
+      description: 'Volatility envelope around price',
+      params: [
+        { name: 'window', type: 'int', default: 20, min: 5, max: 100, hint: 'SMA period' },
+        { name: 'num_std', type: 'float', default: 2.0, min: 0.5, max: 5.0, hint: 'Std Deviations' },
+      ],
+      components: ['upper', 'middle', 'lower'],
+      value_hint: 'Price level',
+    },
+  ];
+
+  const bbCondition: ConditionRequest = {
+    indicator: 'BB',
+    params: { window: 20, num_std: 2.0 },
+    component: 'upper',
+    operator: '>',
+    value: 150,
+    interval: '1d',
+  };
+
+  it('window input shows error when emptied', async () => {
+    const onChange = vi.fn();
+    render(
+      <ConditionRow
+        index={0}
+        condition={bbCondition}
+        indicators={bbIndicator}
+        onChange={onChange}
+        onRemove={() => {}}
+        canRemove={false}
+      />,
+    );
+
+    const windowInput = screen.getByRole('textbox', { name: /window/i });
+    await userEvent.clear(windowInput);
+    fireEvent.blur(windowInput);
+
+    expect(screen.getByText('Required')).toBeInTheDocument();
+  });
+
+  it('window input shows error for decimal values', async () => {
+    const onChange = vi.fn();
+    render(
+      <ConditionRow
+        index={0}
+        condition={bbCondition}
+        indicators={bbIndicator}
+        onChange={onChange}
+        onRemove={() => {}}
+        canRemove={false}
+      />,
+    );
+
+    const windowInput = screen.getByRole('textbox', { name: /window/i });
+    await userEvent.clear(windowInput);
+    await userEvent.type(windowInput, '14.5');
+    fireEvent.blur(windowInput);
+
+    expect(screen.getByText('Must be a whole number')).toBeInTheDocument();
+  });
+
+  it('window input accepts valid integer', async () => {
+    const onChange = vi.fn();
+    render(
+      <ConditionRow
+        index={0}
+        condition={bbCondition}
+        indicators={bbIndicator}
+        onChange={onChange}
+        onRemove={() => {}}
+        canRemove={false}
+      />,
+    );
+
+    const windowInput = screen.getByRole('textbox', { name: /window/i });
+    await userEvent.clear(windowInput);
+    await userEvent.type(windowInput, '30');
+    fireEvent.blur(windowInput);
+
+    expect(onChange).toHaveBeenCalledWith(0, expect.objectContaining({
+      params: expect.objectContaining({ window: 30 }),
+    }));
+  });
+
+  it('float param input accepts decimals', async () => {
+    const onChange = vi.fn();
+    render(
+      <ConditionRow
+        index={0}
+        condition={bbCondition}
+        indicators={bbIndicator}
+        onChange={onChange}
+        onRemove={() => {}}
+        canRemove={false}
+      />,
+    );
+
+    const stdInput = screen.getByRole('textbox', { name: /std deviations/i });
+    await userEvent.clear(stdInput);
+    await userEvent.type(stdInput, '2.5');
+    fireEvent.blur(stdInput);
+
+    expect(onChange).toHaveBeenCalledWith(0, expect.objectContaining({
+      params: expect.objectContaining({ num_std: 2.5 }),
+    }));
+  });
+
+  it('value input shows error when emptied', async () => {
+    const onChange = vi.fn();
+    render(
+      <ConditionRow
+        index={0}
+        condition={bbCondition}
+        indicators={bbIndicator}
+        onChange={onChange}
+        onRemove={() => {}}
+        canRemove={false}
+      />,
+    );
+
+    const valueInput = screen.getByRole('textbox', { name: /value/i });
+    await userEvent.clear(valueInput);
+    fireEvent.blur(valueInput);
+
+    expect(screen.getByText('Required')).toBeInTheDocument();
+  });
+
+  it('value input accepts decimals', async () => {
+    const onChange = vi.fn();
+    render(
+      <ConditionRow
+        index={0}
+        condition={bbCondition}
+        indicators={bbIndicator}
+        onChange={onChange}
+        onRemove={() => {}}
+        canRemove={false}
+      />,
+    );
+
+    const valueInput = screen.getByRole('textbox', { name: /value/i });
+    await userEvent.clear(valueInput);
+    await userEvent.type(valueInput, '150.5');
+    fireEvent.blur(valueInput);
+
+    expect(onChange).toHaveBeenCalledWith(0, expect.objectContaining({
+      value: 150.5,
+    }));
+  });
+
+  it('value input shows error for non-numeric text', async () => {
+    const onChange = vi.fn();
+    render(
+      <ConditionRow
+        index={0}
+        condition={bbCondition}
+        indicators={bbIndicator}
+        onChange={onChange}
+        onRemove={() => {}}
+        canRemove={false}
+      />,
+    );
+
+    const valueInput = screen.getByRole('textbox', { name: /value/i });
+    await userEvent.clear(valueInput);
+    await userEvent.type(valueInput, 'abc');
+    fireEvent.blur(valueInput);
+
+    expect(screen.getByText('Invalid number')).toBeInTheDocument();
+  });
+
+  it('both inputs can be deleted to empty', async () => {
+    render(
+      <ConditionRow
+        index={0}
+        condition={bbCondition}
+        indicators={bbIndicator}
+        onChange={() => {}}
+        onRemove={() => {}}
+        canRemove={false}
+      />,
+    );
+
+    const windowInput = screen.getByRole('textbox', { name: /window/i });
+    const valueInput = screen.getByRole('textbox', { name: /value/i });
+
+    await userEvent.clear(windowInput);
+    await userEvent.clear(valueInput);
+
+    // Inputs should be empty
+    expect(windowInput).toHaveValue('');
+    expect(valueInput).toHaveValue('');
   });
 });

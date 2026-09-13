@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import type { IndicatorInfo, ConditionRequest, Operator } from '../types';
 import { OPERATORS } from '../types';
 
@@ -71,6 +72,30 @@ export function ConditionRow({
   const selected = indicators.find((i) => i.name === condition.indicator);
   const components = selected?.components ?? [];
 
+  // Local state for raw input strings (allows empty state)
+  const [paramRaw, setParamRaw] = useState<Record<string, string>>(() => {
+    const init: Record<string, string> = {};
+    selected?.params.forEach((p) => {
+      init[p.name] = String(condition.params[p.name] ?? p.default);
+    });
+    return init;
+  });
+  const [valueRaw, setValueRaw] = useState(String(condition.value));
+  const [paramErrors, setParamErrors] = useState<Record<string, string>>({});
+  const [valueError, setValueError] = useState('');
+
+  // Reset local state when indicator changes
+  useEffect(() => {
+    const init: Record<string, string> = {};
+    selected?.params.forEach((p) => {
+      init[p.name] = String(condition.params[p.name] ?? p.default);
+    });
+    setParamRaw(init);
+    setValueRaw(String(condition.value));
+    setParamErrors({});
+    setValueError('');
+  }, [condition.indicator]);
+
   const update = (fields: Partial<ConditionRequest>) => {
     const next = { ...condition, ...fields };
 
@@ -94,9 +119,62 @@ export function ConditionRow({
   };
 
   const setParam = (name: string, raw: string) => {
+    setParamRaw((prev) => ({ ...prev, [name]: raw }));
+    setParamErrors((prev) => ({ ...prev, [name]: '' }));
+
+    if (raw === '') return;
+
     const val = parseFloat(raw);
     if (isNaN(val)) return;
+
+    // For integer params (window), reject decimals
+    const param = selected?.params.find((p) => p.name === name);
+    if (param?.type === 'int' && raw.includes('.')) {
+      setParamErrors((prev) => ({ ...prev, [name]: 'Must be a whole number' }));
+      return;
+    }
+
     update({ params: { ...condition.params, [name]: val } });
+  };
+
+  const validateParam = (name: string) => {
+    const raw = paramRaw[name];
+    if (raw === '' || raw === undefined) {
+      setParamErrors((prev) => ({ ...prev, [name]: 'Required' }));
+      return;
+    }
+    const val = parseFloat(raw);
+    if (isNaN(val)) {
+      setParamErrors((prev) => ({ ...prev, [name]: 'Invalid number' }));
+      return;
+    }
+    const param = selected?.params.find((p) => p.name === name);
+    if (param?.type === 'int' && !Number.isInteger(val)) {
+      setParamErrors((prev) => ({ ...prev, [name]: 'Must be a whole number' }));
+      return;
+    }
+    update({ params: { ...condition.params, [name]: val } });
+  };
+
+  const setValue = (raw: string) => {
+    setValueRaw(raw);
+    setValueError('');
+    if (raw === '') return;
+    const val = parseFloat(raw);
+    if (!isNaN(val)) {
+      update({ value: val });
+    }
+  };
+
+  const validateValue = () => {
+    if (valueRaw === '') {
+      setValueError('Required');
+      return;
+    }
+    const val = parseFloat(valueRaw);
+    if (isNaN(val)) {
+      setValueError('Invalid number');
+    }
   };
 
   return (
@@ -176,11 +254,20 @@ export function ConditionRow({
           <input
             type="text"
             inputMode="decimal"
-            value={condition.value}
-            onChange={(e) => update({ value: parseFloat(e.target.value) || 0 })}
-            className="condition-field w-32 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm tabular-nums transition-colors focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/20"
+            value={valueRaw}
+            onChange={(e) => setValue(e.target.value)}
+            onBlur={validateValue}
+            className={`condition-field w-32 rounded-xl border px-3 py-2.5 text-sm tabular-nums transition-colors focus:outline-none focus:ring-2 ${
+              valueError
+                ? 'border-red-300 focus:border-red-400 focus:ring-red-400/20'
+                : 'border-slate-200 bg-white focus:border-emerald-400 focus:ring-emerald-400/20'
+            }`}
           />
-          <span className="h-3" />
+          <span className="h-3">
+            {valueError && (
+              <span className="text-[10px] text-red-500">{valueError}</span>
+            )}
+          </span>
         </label>
 
         {/* Interval */}
@@ -231,13 +318,16 @@ export function ConditionRow({
               </span>
               <div className="flex items-center gap-1.5">
                 <input
-                  type="number"
-                  step={p.type === 'float' ? '0.1' : '1'}
-                  min={p.min}
-                  max={p.max}
-                  value={condition.params[p.name] ?? p.default}
+                  type="text"
+                  inputMode={p.type === 'float' ? 'decimal' : 'numeric'}
+                  value={paramRaw[p.name] ?? ''}
                   onChange={(e) => setParam(p.name, e.target.value)}
-                  className="w-20 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm tabular-nums transition-colors focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/20"
+                  onBlur={() => validateParam(p.name)}
+                  className={`w-20 rounded-lg border px-2.5 py-2 text-sm tabular-nums transition-colors focus:outline-none focus:ring-2 ${
+                    paramErrors[p.name]
+                      ? 'border-red-300 focus:border-red-400 focus:ring-red-400/20'
+                      : 'border-slate-200 bg-white focus:border-emerald-400 focus:ring-emerald-400/20'
+                  }`}
                 />
                 {p.min !== undefined && p.max !== undefined && (
                   <span className="text-[10px] text-slate-400">
@@ -245,6 +335,11 @@ export function ConditionRow({
                   </span>
                 )}
               </div>
+              {paramErrors[p.name] && (
+                <span className="mt-0.5 text-[10px] text-red-500">
+                  {paramErrors[p.name]}
+                </span>
+              )}
             </label>
           ))}
         </div>
