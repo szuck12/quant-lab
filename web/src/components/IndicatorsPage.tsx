@@ -54,7 +54,7 @@ function IndicatorAccordion({
 
   return (
     <div
-      className={`border-b border-slate-200/60 last:border-0 border-l-[3px]
+      className={`border-b border-slate-200/60 last:border-b-0 border-l-[3px]
         transition-colors ${accent} ${isOpen ? 'bg-slate-50/60' : ''}`}
     >
       <button
