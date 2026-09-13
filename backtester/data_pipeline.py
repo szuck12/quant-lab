@@ -21,6 +21,60 @@ CHUNK_SIZE = 200  # yf.download handles larger batches efficiently
 # In-memory cache: key = f"{ticker}_{interval}_{years}" -> DataFrame
 _memory_cache: dict[str, pd.DataFrame] = {}
 
+_REQUIRED_COLUMNS = ("Open", "High", "Low", "Close", "Volume")
+
+
+def _normalize_frame(df: pd.DataFrame | None) -> pd.DataFrame:
+    """Return a single-level OHLCV frame.
+
+    yfinance can return MultiIndex columns whose level order and names
+    vary by version (e.g. (Price, Ticker) or (Ticker, Price), sometimes
+    unnamed). Left unflattened, ``df["Close"]`` returns a DataFrame and
+    downstream code raises "truth value of a Series is ambiguous".
+
+    This flattens MultiIndex columns, keeps the OHLCV columns, coerces
+    them to numeric, drops duplicate dates, and sorts ascending.
+
+    Args:
+        df: A raw per-ticker OHLCV DataFrame (possibly MultiIndex).
+
+    Returns:
+        A normalized single-level OHLCV DataFrame (empty if unusable).
+    """
+    if df is None or df.empty:
+        return pd.DataFrame()
+
+    frame = df.copy()
+
+    # Flatten MultiIndex columns by selecting the level holding OHLCV.
+    if isinstance(frame.columns, pd.MultiIndex):
+        chosen = None
+        for level in range(frame.columns.nlevels):
+            values = set(frame.columns.get_level_values(level))
+            if "Close" in values and "Open" in values:
+                chosen = level
+                break
+        if chosen is None:
+            chosen = 0
+        frame.columns = frame.columns.get_level_values(chosen)
+
+    # Keep only the required OHLCV columns that are present. A usable
+    # frame must have a Close series.
+    if "Close" not in frame.columns:
+        return pd.DataFrame()
+    cols = [c for c in _REQUIRED_COLUMNS if c in frame.columns]
+    frame = frame.loc[:, cols]
+
+    for col in cols:
+        frame[col] = pd.to_numeric(frame[col], errors="coerce")
+
+    # Drop rows with no usable data (e.g. a fully-failed ticker).
+    frame = frame.dropna(how="all")
+
+    # Drop duplicate dates and sort so indexing/hold logic is sound.
+    frame = frame[~frame.index.duplicated(keep="last")].sort_index()
+    return frame
+
 
 class DataPipeline:
     """Batch data download with parquet caching."""
@@ -202,24 +256,21 @@ class DataPipeline:
         failed_tickers: list[str] = []
 
         if len(tickers) == 1:
-            df = raw.copy()
-            df = df.dropna(how="all")
-            if isinstance(df.columns, pd.MultiIndex):
-                df.columns = df.columns.droplevel("Ticker")
-            if not df.empty:
-                result[tickers[0]] = df
+            frame = _normalize_frame(raw)
+            if not frame.empty:
+                result[tickers[0]] = frame
             else:
                 failed_tickers.append(tickers[0])
         else:
             for ticker in tickers:
                 try:
-                    df = raw[ticker].copy()
+                    sub = raw[ticker]
                 except KeyError:
                     failed_tickers.append(ticker)
                     continue
-                df = df.dropna(how="all")
-                if not df.empty:
-                    result[ticker] = df
+                frame = _normalize_frame(sub)
+                if not frame.empty:
+                    result[ticker] = frame
                 else:
                     failed_tickers.append(ticker)
 

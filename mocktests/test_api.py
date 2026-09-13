@@ -767,3 +767,242 @@ class TestProgressTracking:
     def test_result_not_found(self, client):
         resp = client.get("/api/backtest/99999/result")
         assert resp.status_code == 404
+
+
+# -- Data robustness / error surfacing --
+
+
+def _multiindex_ohlcv(rows=120, ticker="AAPL"):
+    """Flat data reshaped with yfinance-style MultiIndex columns."""
+    df = _make_ohlcv(rows)
+    df.columns = pd.MultiIndex.from_product(
+        [["Open", "High", "Low", "Close", "Volume"], [ticker]]
+    )
+    return df
+
+
+def _poll(client, backtest_id, tries=100):
+    import time
+    for _ in range(tries):
+        s = client.get(
+            f"/api/backtest/{backtest_id}/progress"
+        ).json()
+        if s["status"] != "running":
+            return s
+        time.sleep(0.05)
+    return s
+
+
+class TestDataRobustnessAPI:
+    @patch("backtester.engine.DataPipeline")
+    def test_multiindex_benchmark_completes(self, MockPipeline, client):
+        """The exact production failure: MultiIndex benchmark columns."""
+        mock_pipeline = MockPipeline.return_value
+
+        def fetch(tickers, interval, years, on_progress=None, **kw):
+            if list(tickers) == ["SPY"]:
+                return {"SPY": _multiindex_ohlcv(120, "SPY")}
+            return {t: _multiindex_ohlcv(120, t) for t in tickers}
+
+        mock_pipeline.fetch.side_effect = fetch
+        resp = client.post(
+            "/api/backtest/start",
+            json={
+                "conditions": [
+                    {
+                        "indicator": "RSI",
+                        "params": {"window": 14},
+                        "operator": "<",
+                        "value": 101,
+                        "interval": "1d",
+                    }
+                ],
+                "years": 2,
+            },
+        )
+        backtest_id = resp.json()["backtest_id"]
+        status = _poll(client, backtest_id)
+        assert status["status"] == "done"
+        result = client.get(f"/api/backtest/{backtest_id}/result")
+        assert result.status_code == 200
+        body = result.json()
+        assert body["metrics"]["total_trades"] > 0
+        assert body["benchmark_metrics"]["total_return"] != 0.0
+
+    @patch("backtester.engine.DataPipeline")
+    def test_background_error_surfaces_detail(self, MockPipeline, client):
+        """A no-data run must expose its reason via /progress."""
+        MockPipeline.return_value.fetch.return_value = {}
+        resp = client.post(
+            "/api/backtest/start",
+            json={
+                "conditions": [
+                    {
+                        "indicator": "RSI",
+                        "operator": "<",
+                        "value": 30,
+                        "interval": "1d",
+                    }
+                ],
+                "years": 2,
+            },
+        )
+        backtest_id = resp.json()["backtest_id"]
+        status = _poll(client, backtest_id)
+        assert status["status"] == "error"
+        assert status.get("detail")
+        assert "market data" in status["detail"].lower()
+
+    @patch("backtester.engine.DataPipeline")
+    def test_result_returns_reason_on_error(self, MockPipeline, client):
+        MockPipeline.return_value.fetch.return_value = {}
+        resp = client.post(
+            "/api/backtest/start",
+            json={
+                "conditions": [
+                    {
+                        "indicator": "RSI",
+                        "operator": "<",
+                        "value": 30,
+                        "interval": "1d",
+                    }
+                ],
+                "years": 2,
+            },
+        )
+        backtest_id = resp.json()["backtest_id"]
+        _poll(client, backtest_id)
+        result = client.get(f"/api/backtest/{backtest_id}/result")
+        assert result.status_code == 500
+        assert "market data" in result.json()["detail"].lower()
+
+    @patch("backtester.engine.DataPipeline")
+    def test_sync_no_data_returns_reason(self, MockPipeline, client):
+        MockPipeline.return_value.fetch.return_value = {}
+        resp = client.post(
+            "/api/backtest",
+            json={
+                "conditions": [
+                    {
+                        "indicator": "RSI",
+                        "operator": "<",
+                        "value": 30,
+                        "interval": "1d",
+                    }
+                ],
+                "years": 2,
+            },
+        )
+        assert resp.status_code == 422
+        assert "market data" in resp.json()["detail"].lower()
+
+    @patch("backtester.engine.DataPipeline")
+    def test_progress_omits_detail_on_success(self, MockPipeline, client):
+        mock_pipeline = MockPipeline.return_value
+        mock_pipeline.fetch.return_value = _mock_pipeline_fetch(
+            ["AAPL"], "1d", 2
+        )
+        resp = client.post(
+            "/api/backtest/start",
+            json={
+                "conditions": [
+                    {
+                        "indicator": "RSI",
+                        "operator": "<",
+                        "value": 101,
+                        "interval": "1d",
+                    }
+                ],
+                "years": 2,
+            },
+        )
+        backtest_id = resp.json()["backtest_id"]
+        status = _poll(client, backtest_id)
+        assert status["status"] == "done"
+        assert not status.get("detail")
+
+    @patch("backtester.engine.DataPipeline")
+    def test_equity_curve_downsampled_and_aligned(
+        self, MockPipeline, client
+    ):
+        mock_pipeline = MockPipeline.return_value
+        mock_pipeline.fetch.return_value = _mock_pipeline_fetch(
+            ["AAPL"], "1d", 2
+        )
+        resp = client.post(
+            "/api/backtest/start",
+            json={
+                "conditions": [
+                    {
+                        "indicator": "RSI",
+                        "operator": "<",
+                        "value": 101,
+                        "interval": "1d",
+                    }
+                ],
+                "years": 2,
+            },
+        )
+        backtest_id = resp.json()["backtest_id"]
+        _poll(client, backtest_id)
+        body = client.get(
+            f"/api/backtest/{backtest_id}/result"
+        ).json()
+        curve = body["equity_curve"]
+        assert 0 < len(curve) <= 100
+        assert curve[0]["strategy"] == 10000.0
+        assert curve[0]["benchmark"] == 10000.0
+
+    @patch("backtester.data_pipeline.DataPipeline")
+    def test_health_data_probe(self, MockPipeline, client):
+        MockPipeline.return_value.fetch.return_value = _mock_pipeline_fetch(
+            ["SPY"], "1d", 0.1
+        )
+        resp = client.get("/health/data")
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["status"] == "ok"
+        assert body["rows"] > 0
+        assert "Close" in body["columns"]
+
+    @patch("backtester.engine.DataPipeline")
+    def test_intraday_intervals_complete(self, MockPipeline, client):
+        """tz-aware intraday strategies must not fail on the benchmark."""
+        mock_pipeline = MockPipeline.return_value
+        idx = pd.date_range(
+            "2024-01-02", periods=200, freq="h",
+            tz="America/New_York",
+        )
+        rng = np.random.RandomState(0)
+        close = 100 + np.cumsum(rng.randn(200))
+        strategy = pd.DataFrame(
+            {"Open": close, "High": close + 1, "Low": close - 1,
+             "Close": close, "Volume": np.full(200, 1e6)},
+            index=idx,
+        )
+        bench = _make_ohlcv(60, 100.0)
+
+        def fetch(tickers, interval, years, on_progress=None, **kw):
+            if list(tickers) == ["SPY"]:
+                return {"SPY": bench}
+            return {t: strategy for t in tickers}
+
+        mock_pipeline.fetch.side_effect = fetch
+        resp = client.post(
+            "/api/backtest/start",
+            json={
+                "conditions": [
+                    {
+                        "indicator": "RSI",
+                        "params": {"window": 14},
+                        "operator": "<",
+                        "value": 101,
+                        "interval": "1h",
+                    }
+                ],
+                "years": 1,
+            },
+        )
+        backtest_id = resp.json()["backtest_id"]
+        status = _poll(client, backtest_id)
+        assert status["status"] == "done", status

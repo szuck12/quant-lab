@@ -39,6 +39,10 @@ Primary: **Backtest Engineer** (`agents/backtest-engineer.md`).
 - [ ] Verify mark-to-market equity curve updates daily (not just at exits)
 - [ ] Verify tickers are simulated on one shared timeline (no per-ticker time reuse)
 - [ ] Verify benchmark (SPY) aligns to capital on the strategy's first date
+- [ ] Verify MultiIndex-column data is flattened (`_normalize_frame`)
+- [ ] Verify duplicate-date / unsorted indexes do not crash a run
+- [ ] Verify intraday (tz-aware) strategies compare safely with the naive benchmark
+- [ ] Verify `/health/data` reports the SPY frame shape
 - [ ] Verify pyarrow warning is suppressed when engine is missing
 
 ### Handoff

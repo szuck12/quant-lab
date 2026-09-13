@@ -297,6 +297,27 @@ def compute_sortino_ratio(
     return daily_returns.mean() / downside * np.sqrt(trading_days)
 
 
+def _naive_dates(index: pd.Index) -> pd.DatetimeIndex:
+    """Return a tz-naive, normalized (midnight) DatetimeIndex.
+
+    Intraday yfinance data is timezone-aware while daily data is naive;
+    comparing the two raises. Normalizing to naive dates makes strategy
+    and benchmark series safely comparable.
+    """
+    idx = pd.DatetimeIndex(index)
+    if idx.tz is not None:
+        idx = idx.tz_localize(None)
+    return idx.normalize()
+
+
+def _to_naive_timestamp(value: object) -> pd.Timestamp:
+    """Convert a value to a tz-naive, normalized Timestamp."""
+    ts = pd.Timestamp(value)
+    if ts.tzinfo is not None:
+        ts = ts.tz_localize(None)
+    return ts.normalize()
+
+
 def compute_benchmark_metrics(
     benchmark_data: pd.DataFrame,
     start_date: pd.Timestamp,
@@ -304,6 +325,9 @@ def compute_benchmark_metrics(
     trading_days: int = 252,
 ) -> dict:
     """Compute buy-and-hold metrics for a benchmark ticker.
+
+    Robust to timezone-aware indexes and to MultiIndex columns
+    (``data["Close"]`` returning a DataFrame).
 
     Args:
         benchmark_data: OHLCV DataFrame for the benchmark.
@@ -314,31 +338,47 @@ def compute_benchmark_metrics(
     Returns:
         Dict of benchmark metrics.
     """
-    mask = (benchmark_data.index >= start_date) & (
-        benchmark_data.index <= end_date
+    empty = {
+        "total_return": 0.0,
+        "annualized_return": 0.0,
+        "sharpe_ratio": 0.0,
+        "sortino_ratio": 0.0,
+        "max_drawdown": 0.0,
+    }
+
+    if benchmark_data is None or benchmark_data.empty:
+        return empty
+
+    try:
+        close_col = benchmark_data["Close"]
+    except KeyError:
+        return empty
+    # Defensive: a MultiIndex frame yields a DataFrame for "Close".
+    if isinstance(close_col, pd.DataFrame):
+        if close_col.shape[1] == 0:
+            return empty
+        close_col = close_col.iloc[:, 0]
+
+    frame = pd.DataFrame(
+        {"Close": pd.to_numeric(close_col, errors="coerce")}
     )
-    data = benchmark_data.loc[mask]
+    frame.index = _naive_dates(benchmark_data.index)
+
+    start = _to_naive_timestamp(start_date)
+    end = _to_naive_timestamp(end_date)
+    mask = (frame.index >= start) & (frame.index <= end)
+    data = frame.loc[mask]
 
     if data.empty or len(data) < 2:
-        return {
-            "total_return": 0.0,
-            "annualized_return": 0.0,
-            "sharpe_ratio": 0.0,
-            "sortino_ratio": 0.0,
-            "max_drawdown": 0.0,
-        }
+        return empty
 
     close = data["Close"].dropna()
     if len(close) < 2:
-        return {
-            "total_return": 0.0,
-            "annualized_return": 0.0,
-            "sharpe_ratio": 0.0,
-            "sortino_ratio": 0.0,
-            "max_drawdown": 0.0,
-        }
+        return empty
 
     total_return = (close.iloc[-1] / close.iloc[0]) - 1.0
+    if not np.isfinite(total_return):
+        return empty
     days = (close.index[-1] - close.index[0]).days
     years = max(days / 365.25, 1.0 / 12.0)
     ann_return = compute_annualized_return(total_return, years)

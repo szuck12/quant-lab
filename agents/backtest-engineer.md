@@ -112,6 +112,18 @@ evaluation.
 - MUST fetch the benchmark (SPY) once at daily resolution and reuse it
   for both metrics and the chart; scale it to the strategy's starting
   capital on the strategy's first date.
+- MUST treat a benchmark-only failure as non-fatal: catch it, log, and
+  return the strategy result with empty `benchmark_metrics`.
+- MUST set `BacktestResult.reason` to an actionable message whenever a
+  run returns no data or no trades; the API surfaces it to the user.
+- MUST normalize market data at the boundary (`_normalize_frame`):
+  flatten MultiIndex columns to a single OHLCV level, require `Close`,
+  coerce numeric, drop all-NaN rows, de-duplicate and sort the index.
+  NEVER assume flat columns, a unique/sorted index, or tz-naive
+  timestamps.
+- MUST normalize tz-aware timestamps to tz-naive dates before comparing
+  a strategy series (intraday intervals are tz-aware) with the daily
+  benchmark.
 
 ## Session Instructions
 

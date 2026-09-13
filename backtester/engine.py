@@ -7,6 +7,7 @@ simulates portfolio trades, and computes performance metrics.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 from collections.abc import Callable
 
@@ -14,12 +15,14 @@ import numpy as np
 import pandas as pd
 
 from backtester.batch_indicators import compute_indicator
-from backtester.data_pipeline import DataPipeline
+from backtester.data_pipeline import DataPipeline, _normalize_frame
 from backtester.metrics import (
     Trade,
     compute_benchmark_metrics,
     compute_metrics,
 )
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -48,6 +51,7 @@ class BacktestResult:
         default_factory=lambda: pd.Series(dtype=float)
     )
     benchmark_df: pd.DataFrame = field(default_factory=pd.DataFrame)
+    reason: str = ""
 
 
 @dataclass
@@ -230,6 +234,11 @@ class BacktestEngine:
                 config=self.config,
                 equity_curve=pd.Series(dtype=float),
                 benchmark_df=pd.DataFrame(),
+                reason=(
+                    "No market data was returned for the selected "
+                    "universe. Yahoo Finance may be rate-limiting or "
+                    "unavailable — please try again shortly."
+                ),
             )
 
         # Benchmark is always the S&P 500 proxy (SPY) at daily
@@ -267,11 +276,12 @@ class BacktestEngine:
         metrics = compute_metrics(all_trades, capital, equity_curve)
         _progress(93)
         metrics["cash_remaining"] = round(portfolio.cash, 2)
-        end_prices = {
-            t: all_data[t]["Close"].iloc[-1]
-            for t in portfolio.positions
-            if t in all_data
-        }
+        end_prices: dict[str, float] = {}
+        for t in portfolio.positions:
+            if t in all_data:
+                frame = _normalize_frame(all_data[t])
+                if not frame.empty:
+                    end_prices[t] = float(frame["Close"].iloc[-1])
         metrics["positions_value"] = round(
             sum(
                 pos.shares * end_prices.get(t, pos.avg_cost)
@@ -280,14 +290,28 @@ class BacktestEngine:
             2,
         )
 
-        benchmark_metrics = {}
+        # Benchmark is non-fatal: a benchmark data problem must never
+        # fail the whole backtest.
+        benchmark_metrics: dict = {}
         if not bench_df.empty and not equity_curve.empty:
-            benchmark_metrics = compute_benchmark_metrics(
-                bench_df,
-                equity_curve.index[0],
-                equity_curve.index[-1],
-            )
+            try:
+                benchmark_metrics = compute_benchmark_metrics(
+                    bench_df,
+                    equity_curve.index[0],
+                    equity_curve.index[-1],
+                )
+            except Exception as exc:  # pragma: no cover - defensive
+                logger.warning("Benchmark metrics failed: %s", exc)
+                benchmark_metrics = {}
         _progress(97)
+
+        reason = ""
+        if not all_trades:
+            reason = (
+                "No trades matched your conditions for this period "
+                "and universe. Try loosening thresholds or extending "
+                "the period."
+            )
 
         result = BacktestResult(
             trades=all_trades,
@@ -298,6 +322,7 @@ class BacktestEngine:
             config=self.config,
             equity_curve=equity_curve,
             benchmark_df=bench_df,
+            reason=reason,
         )
         _progress(100)
         return result
@@ -486,8 +511,8 @@ class BacktestEngine:
         prepared: dict[str, dict] = {}
         master_index: pd.DatetimeIndex | None = None
         for ticker in sorted(all_data.keys()):
-            df = all_data[ticker]
-            if df is None or df.empty:
+            df = _normalize_frame(all_data[ticker])
+            if df.empty:
                 continue
             enriched = self._compute_indicators(ticker, df)
             prepared[ticker] = {

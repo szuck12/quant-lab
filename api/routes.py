@@ -396,9 +396,8 @@ def run_backtest(req: BacktestRequest) -> BacktestResponse:
     if not result.trades:
         raise HTTPException(
             status_code=422,
-            detail="No trades generated across S&P 500. "
-            "Try adjusting your conditions, using a longer "
-            "period, or changing the indicator threshold.",
+            detail=result.reason
+            or "No trades were generated for this configuration.",
         )
 
     # Build equity curve with benchmark
@@ -410,6 +409,14 @@ def run_backtest(req: BacktestRequest) -> BacktestResponse:
 MAX_EQUITY_POINTS = 100
 
 
+def _naive_date_index(index: pd.Index) -> pd.DatetimeIndex:
+    """Return a tz-naive, normalized DatetimeIndex."""
+    idx = pd.DatetimeIndex(index)
+    if idx.tz is not None:
+        idx = idx.tz_localize(None)
+    return idx.normalize()
+
+
 def _build_equity_curve(
     result: BacktestResult, req: BacktestRequest
 ) -> list[EquityPoint]:
@@ -417,31 +424,43 @@ def _build_equity_curve(
 
     Both series start at the requested capital on the strategy's first
     date so they can be compared directly. The benchmark is the S&P 500
-    proxy (SPY) already fetched by the engine.
+    proxy (SPY) already fetched by the engine. Timezone-aware strategy
+    indexes (intraday) are normalized to naive dates so they align with
+    the daily benchmark.
     """
     strategy_eq = result.equity_curve
     if strategy_eq is None or strategy_eq.empty:
         return []
 
     # Normalize to one point per calendar date (intraday strategies
-    # collapse to their daily close).
-    strat_daily = strategy_eq.groupby(
-        strategy_eq.index.normalize()
-    ).last()
+    # collapse to their daily close). Strip timezones first.
+    strat_daily = pd.Series(
+        strategy_eq.to_numpy(dtype=float),
+        index=_naive_date_index(strategy_eq.index),
+    )
+    strat_daily = strat_daily.groupby(level=0).last()
 
     bench_df = result.benchmark_df
-    close = (
-        bench_df["Close"].dropna()
-        if bench_df is not None and not bench_df.empty
-        else pd.Series(dtype=float)
-    )
+    close = pd.Series(dtype=float)
+    if bench_df is not None and not bench_df.empty:
+        try:
+            close_col = bench_df["Close"]
+        except KeyError:
+            close_col = None
+        if isinstance(close_col, pd.DataFrame):
+            close_col = close_col.iloc[:, 0] if close_col.shape[1] else None
+        if close_col is not None:
+            close = pd.Series(
+                pd.to_numeric(close_col, errors="coerce").to_numpy(),
+                index=_naive_date_index(bench_df.index),
+            ).dropna()
 
     if close.empty:
         bench_daily = pd.Series(req.capital, index=strat_daily.index)
     else:
-        close_daily = close.groupby(close.index.normalize()).last()
+        close_daily = close.groupby(level=0).last()
         aligned = close_daily.reindex(strat_daily.index).ffill().bfill()
-        base = aligned.iloc[0]
+        base = aligned.iloc[0] if len(aligned) else float("nan")
         if pd.isna(base) or base <= 0:
             bench_daily = pd.Series(
                 req.capital, index=strat_daily.index
@@ -636,8 +655,12 @@ def _run_backtest_background(
         result = engine.run(on_progress=on_progress)
 
         if not result.trades:
+            detail = (
+                result.reason
+                or "No trades were generated for this configuration."
+            )
             _backtest_progress[backtest_id].update(
-                {"status": "error", "detail": "No trades generated."}
+                {"status": "error", "detail": detail}
             )
             return
 
@@ -712,6 +735,7 @@ def get_backtest_progress(backtest_id: int) -> dict[str, Any]:
     return {
         "status": info["status"],
         "progress": info["progress"],
+        "detail": info.get("detail"),
     }
 
 

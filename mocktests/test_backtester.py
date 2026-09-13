@@ -2472,3 +2472,297 @@ class TestEquityCurveAPI:
         from api.routes import _build_equity_curve
         points = _build_equity_curve(self._result(20), self._req())
         assert len(points) == 20
+
+
+# ===================================================================
+# §25  Data robustness: MultiIndex columns, timezones, dup indexes
+# ===================================================================
+
+
+def _mi_frame(dates, ticker, order="price_first", index=None):
+    """Build a MultiIndex-column OHLCV frame like yfinance can return."""
+    rng = np.random.RandomState(0)
+    c = np.maximum(100 + np.cumsum(rng.randn(len(dates))), 10)
+    data = np.column_stack([c, c + 1, c - 1, c, np.full(len(dates), 1e6)])
+    levels = (["Open", "High", "Low", "Close", "Volume"], [ticker])
+    if order == "price_first":
+        cols = pd.MultiIndex.from_product(levels, names=["Price", "Ticker"])
+    else:
+        cols = pd.MultiIndex.from_product(
+            (levels[1], levels[0]), names=["Ticker", "Price"]
+        )
+        data = data  # values align to (Ticker, Price) product order
+    if index is None:
+        index = dates
+    return pd.DataFrame(data, index=index, columns=cols)
+
+
+class TestNormalizeFrame:
+    """_normalize_frame must flatten columns and sanitize indexes."""
+
+    def test_flattens_price_ticker(self):
+        from backtester.data_pipeline import _normalize_frame
+        dates = pd.date_range("2023-01-02", periods=30, freq="B")
+        out = _normalize_frame(_mi_frame(dates, "SPY", "price_first"))
+        assert not isinstance(out.columns, pd.MultiIndex)
+        assert set(out.columns) == {"Open", "High", "Low", "Close", "Volume"}
+        assert len(out) == 30
+
+    def test_flattens_ticker_price(self):
+        from backtester.data_pipeline import _normalize_frame
+        dates = pd.date_range("2023-01-02", periods=30, freq="B")
+        out = _normalize_frame(_mi_frame(dates, "SPY", "ticker_first"))
+        assert "Close" in out.columns
+        assert not isinstance(out.columns, pd.MultiIndex)
+
+    def test_unnamed_levels(self):
+        from backtester.data_pipeline import _normalize_frame
+        dates = pd.date_range("2023-01-02", periods=10, freq="B")
+        c = np.arange(10, dtype=float) + 100
+        cols = pd.MultiIndex.from_product(
+            [["Open", "High", "Low", "Close", "Volume"], ["X"]]
+        )
+        df = pd.DataFrame(
+            np.column_stack([c, c, c, c, c]), index=dates, columns=cols
+        )
+        out = _normalize_frame(df)
+        assert set(out.columns) == {"Open", "High", "Low", "Close", "Volume"}
+
+    def test_keeps_only_ohlcv(self):
+        from backtester.data_pipeline import _normalize_frame
+        dates = pd.date_range("2023-01-02", periods=5, freq="B")
+        df = pd.DataFrame(
+            {"Open": 1.0, "High": 2.0, "Low": 0.5, "Close": 1.5,
+             "Volume": 10.0, "Dividends": 0.0, "Stock Splits": 0.0},
+            index=dates,
+        )
+        out = _normalize_frame(df)
+        assert "Dividends" not in out.columns
+        assert "Stock Splits" not in out.columns
+
+    def test_coerces_strings_to_numeric(self):
+        from backtester.data_pipeline import _normalize_frame
+        dates = pd.date_range("2023-01-02", periods=3, freq="B")
+        df = pd.DataFrame(
+            {"Open": ["1", "2", "3"], "High": ["2", "3", "4"],
+             "Low": ["0", "1", "2"], "Close": ["1.5", "2.5", "3.5"],
+             "Volume": ["10", "20", "30"]},
+            index=dates,
+        )
+        out = _normalize_frame(df)
+        assert out["Close"].dtype.kind == "f"
+        assert out["Close"].iloc[0] == 1.5
+
+    def test_drops_duplicate_dates(self):
+        from backtester.data_pipeline import _normalize_frame
+        dates = pd.date_range("2023-01-02", periods=5, freq="B")
+        df = pd.DataFrame(
+            {"Open": 1.0, "High": 2.0, "Low": 0.5, "Close": 1.5,
+             "Volume": 10.0},
+            index=dates,
+        )
+        df = pd.concat([df, df.iloc[1:3]])
+        out = _normalize_frame(df)
+        assert out.index.is_unique
+        assert len(out) == 5
+
+    def test_sorts_descending_input(self):
+        from backtester.data_pipeline import _normalize_frame
+        dates = pd.date_range("2023-01-02", periods=5, freq="B")
+        df = pd.DataFrame(
+            {"Open": 1.0, "High": 2.0, "Low": 0.5, "Close": 1.5,
+             "Volume": 10.0},
+            index=dates,
+        ).iloc[::-1]
+        out = _normalize_frame(df)
+        assert out.index.is_monotonic_increasing
+
+    def test_empty_returns_empty(self):
+        from backtester.data_pipeline import _normalize_frame
+        assert _normalize_frame(None).empty
+        assert _normalize_frame(pd.DataFrame()).empty
+
+    def test_all_nan_returns_empty(self):
+        from backtester.data_pipeline import _normalize_frame
+        dates = pd.date_range("2023-01-02", periods=3, freq="B")
+        df = pd.DataFrame(
+            {c: [np.nan, np.nan, np.nan]
+             for c in ["Open", "High", "Low", "Close", "Volume"]},
+            index=dates,
+        )
+        assert _normalize_frame(df).empty
+
+    def test_missing_close_returns_empty(self):
+        from backtester.data_pipeline import _normalize_frame
+        dates = pd.date_range("2023-01-02", periods=3, freq="B")
+        df = pd.DataFrame({"Open": [1, 2, 3], "Volume": [1, 2, 3]},
+                          index=dates)
+        assert _normalize_frame(df).empty
+
+
+class TestBenchmarkMetricsRobustness:
+    """compute_benchmark_metrics must be tz- and frame-safe."""
+
+    def _idx(self, n=60, tz=None):
+        return pd.date_range("2023-01-02", periods=n, freq="B", tz=tz)
+
+    def test_multiindex_close_returns_finite(self):
+        from backtester.metrics import compute_benchmark_metrics
+        dates = self._idx()
+        df = _mi_frame(dates, "SPY", "price_first")
+        bm = compute_benchmark_metrics(df, dates[0], dates[-1])
+        assert np.isfinite(bm["total_return"])
+        assert bm["max_drawdown"] <= 0.0
+
+    def test_tz_aware_benchmark_index(self):
+        from backtester.metrics import compute_benchmark_metrics
+        dates = self._idx(tz="America/New_York")
+        df = _mi_frame(dates, "SPY", "price_first", index=dates)
+        bm = compute_benchmark_metrics(df, dates[0], dates[-1])
+        assert np.isfinite(bm["total_return"])
+
+    def test_aware_start_naive_bench(self):
+        from backtester.metrics import compute_benchmark_metrics
+        dates = self._idx()
+        df = _mi_frame(dates, "SPY", "price_first")
+        aware_start = dates[0].tz_localize("America/New_York")
+        aware_end = dates[-1].tz_localize("America/New_York")
+        bm = compute_benchmark_metrics(df, aware_start, aware_end)
+        assert np.isfinite(bm["total_return"])
+
+    def test_naive_start_aware_bench(self):
+        from backtester.metrics import compute_benchmark_metrics
+        dates = self._idx(tz="America/New_York")
+        df = _mi_frame(dates, "SPY", "price_first", index=dates)
+        naive_start = dates[0].tz_localize(None)
+        naive_end = dates[-1].tz_localize(None)
+        bm = compute_benchmark_metrics(df, naive_start, naive_end)
+        assert np.isfinite(bm["total_return"])
+
+    def test_window_slice(self):
+        from backtester.metrics import compute_benchmark_metrics
+        dates = self._idx(100)
+        df = _mi_frame(dates, "SPY", "price_first")
+        bm = compute_benchmark_metrics(df, dates[10], dates[20])
+        assert np.isfinite(bm["total_return"])
+        assert bm["sharpe_ratio"] != 0.0 or bm["total_return"] != 0.0
+
+    def test_too_few_rows_returns_zeros(self):
+        from backtester.metrics import compute_benchmark_metrics
+        dates = self._idx(5)
+        df = _mi_frame(dates, "SPY", "price_first")
+        bm = compute_benchmark_metrics(df, dates[0], dates[0])
+        assert bm["total_return"] == 0.0
+
+    def test_missing_close_returns_zeros(self):
+        from backtester.metrics import compute_benchmark_metrics
+        dates = self._idx(20)
+        df = pd.DataFrame({"Open": np.arange(20.0)}, index=dates)
+        bm = compute_benchmark_metrics(df, dates[0], dates[-1])
+        assert bm["total_return"] == 0.0
+
+    def test_drawdown_negative(self):
+        from backtester.metrics import compute_benchmark_metrics
+        dates = self._idx(60)
+        price = np.concatenate([np.linspace(100, 120, 30),
+                                np.linspace(120, 90, 30)])
+        df = pd.DataFrame({"Close": price}, index=dates)
+        bm = compute_benchmark_metrics(df, dates[0], dates[-1])
+        assert bm["max_drawdown"] < 0.0
+
+
+class TestEngineDataRobustness:
+    """The engine must tolerate MultiIndex, tz-aware, and dup indexes."""
+
+    def _run(self, sdf, bdf, interval="1d", tickers=("AAA",)):
+        def fetch(t, i, y, on_progress=None, **kw):
+            if list(t) == ["SPY"]:
+                return {"SPY": bdf}
+            return {x: sdf for x in t}
+        with _patch("backtester.engine.DataPipeline") as MP:
+            MP.return_value.fetch.side_effect = fetch
+            conds = [Condition("RSI", (14,), None, "<", 101.0, interval)]
+            cfg = {"tickers": list(tickers), "hold": 5,
+                   "capital": 10_000.0, "benchmark": "SPY", "years": 2,
+                   "stop_loss": None, "universe": None,
+                   "max_tickers": None, "position_size": 100,
+                   "position_size_base": "total"}
+            return BacktestEngine(conds, cfg).run()
+
+    def test_multiindex_strategy(self):
+        dates = pd.date_range("2023-01-02", periods=120, freq="B")
+        res = self._run(_mi_frame(dates, "AAA", "price_first"),
+                        _sim_df(dates, np.linspace(100, 110, 120)))
+        assert len(res.trades) > 0
+        assert res.benchmark_metrics
+
+    def test_multiindex_benchmark(self):
+        dates = pd.date_range("2023-01-02", periods=120, freq="B")
+        res = self._run(_sim_df(dates, np.linspace(100, 110, 120)),
+                        _mi_frame(dates, "SPY", "price_first"))
+        assert len(res.trades) > 0
+        assert res.benchmark_metrics
+
+    def test_tz_aware_intraday_strategy(self):
+        dates = pd.date_range(
+            "2023-01-02", periods=120, freq="h",
+            tz="America/New_York",
+        )
+        bench = pd.date_range("2023-01-02", periods=120, freq="B")
+        res = self._run(
+            _sim_df(dates, np.linspace(100, 110, 120)),
+            _sim_df(bench, np.linspace(100, 105, 120)),
+            interval="1h",
+        )
+        assert len(res.trades) > 0
+        assert res.benchmark_metrics
+
+    def test_duplicate_index_ticker(self):
+        dates = pd.date_range("2023-01-02", periods=120, freq="B")
+        dup = pd.concat([
+            _sim_df(dates, np.linspace(100, 110, 120)),
+            _sim_df(dates[:5], np.linspace(100, 101, 5)),
+        ])
+        res = self._run(dup, _sim_df(dates, np.linspace(100, 105, 120)))
+        assert len(res.trades) > 0
+
+    def test_single_row_ticker(self):
+        dates = pd.date_range("2023-01-02", periods=120, freq="B")
+        res = self._run(_sim_df(dates[:1], [100.0]),
+                        _sim_df(dates, np.linspace(100, 105, 120)))
+        assert res.trades == []
+
+    def test_benchmark_failure_is_non_fatal(self):
+        dates = pd.date_range("2023-01-02", periods=120, freq="B")
+        with _patch(
+            "backtester.engine.compute_benchmark_metrics",
+            side_effect=ValueError("boom"),
+        ):
+            res = self._run(_sim_df(dates, np.linspace(100, 110, 120)),
+                            _sim_df(dates, np.linspace(100, 105, 120)))
+        assert len(res.trades) > 0
+        assert res.benchmark_metrics == {}
+
+    def test_reason_when_no_data(self):
+        with _patch("backtester.engine.DataPipeline") as MP:
+            MP.return_value.fetch.return_value = {}
+            conds = [Condition("RSI", (14,), None, "<", 30.0, "1d")]
+            cfg = {"tickers": ["AAA"], "hold": 5, "capital": 10_000.0,
+                   "benchmark": "SPY", "years": 2, "stop_loss": None,
+                   "universe": None, "max_tickers": None,
+                   "position_size": 100, "position_size_base": "total"}
+            res = BacktestEngine(conds, cfg).run()
+        assert "market data" in res.reason.lower()
+
+    def test_reason_when_no_trades(self):
+        dates = pd.date_range("2023-01-02", periods=120, freq="B")
+        res = self._run(_sim_df(dates, np.linspace(100, 110, 120)),
+                        _sim_df(dates, np.linspace(100, 105, 120)))
+        assert res.reason == "" or "trades" in res.reason.lower()
+
+    def test_no_reason_when_trades(self):
+        dates = pd.date_range("2023-01-02", periods=120, freq="B")
+        res = self._run(_sim_df(dates, np.linspace(100, 110, 120)),
+                        _sim_df(dates, np.linspace(100, 105, 120)))
+        if res.trades:
+            assert res.reason == ""

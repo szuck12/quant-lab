@@ -5,6 +5,36 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com) and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.9.1] - 2026-09-12
+
+### Fixed
+- **MultiIndex benchmark crash** — market data whose columns arrive
+  as a MultiIndex (e.g. `(Price, Ticker)`) made `df["Close"]` return a
+  DataFrame, so the benchmark calculation raised "The truth value of a
+  Series is ambiguous". This failed **every** backtest regardless of
+  indicator or interval. Frames are now flattened to a single OHLCV
+  level at the data boundary and the benchmark logic is defensive.
+- **Intraday timezone failure** — timezone-aware strategy indexes
+  (5m/15m/30m/1h) were compared against the tz-naive daily benchmark,
+  raising "Invalid comparison between dtype=datetime64[ns] and
+  Timestamp". All timestamps are normalized to tz-naive dates before
+  comparison.
+- **Duplicate-date index crash** — a ticker with duplicate dates made
+  `get_indexer` raise `InvalidIndexError`; the whole run failed.
+  Frames are now de-duplicated and sorted.
+- **Error details now surfaced** — `GET /backtest/{id}/progress`
+  returns the failure `detail`, and the UI shows it instead of a
+  generic "Backtest failed".
+- **Clearer failure reasons** — no-data and no-trades runs now return
+  actionable messages (e.g. Yahoo Finance may be rate-limiting).
+
+### Added
+- **Data health probe** — `GET /health/data` fetches a small SPY
+  slice and reports row/column/timezone info to diagnose production
+  data issues without running a full backtest.
+- **Benchmark resilience** — a benchmark-only failure is non-fatal;
+  the strategy result is still returned with an empty benchmark.
+
 ## [3.9.0] - 2026-09-12
 
 ### Changed

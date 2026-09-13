@@ -26,6 +26,10 @@ surfaces as a clean, canonical error instead of a crash.
 - Test-data fixtures in `mocktests/conftest.py`.
 - Data-behavior coverage in `mocktests/test_data_period.py`.
 - `backtester/data_pipeline.py` — parquet caching and batch download.
+- `_normalize_frame()` — the canonical OHLCV normalizer: flattens
+  MultiIndex columns to a single level, requires `Close`, coerces
+  numeric, drops all-NaN rows, de-duplicates and sorts the index. It is
+  the single place that guards against yfinance shape variation.
 
 ### What It Does NOT Do
 

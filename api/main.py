@@ -33,3 +33,31 @@ app.include_router(router, prefix="/api")
 def health_check() -> dict[str, str]:
     """Health check endpoint."""
     return {"status": "ok"}
+
+
+@app.get("/health/data")
+def health_data() -> dict:
+    """Probe market-data connectivity and report the frame shape.
+
+    Fetches a small SPY slice and reports row/column/tz info. Useful
+    for diagnosing production data issues (rate limits, MultiIndex
+    column shapes) without running a full backtest.
+    """
+    from backtester.data_pipeline import DataPipeline
+
+    try:
+        data = DataPipeline().fetch(["SPY"], "1d", 0.1)
+        df = data.get("SPY")
+        if df is None or df.empty:
+            return {
+                "status": "error",
+                "detail": "No data returned for SPY.",
+            }
+        return {
+            "status": "ok",
+            "rows": int(len(df)),
+            "columns": [str(c) for c in df.columns],
+            "index_tz": str(getattr(df.index, "tz", None)),
+        }
+    except Exception as exc:  # pragma: no cover - defensive
+        return {"status": "error", "detail": str(exc)}

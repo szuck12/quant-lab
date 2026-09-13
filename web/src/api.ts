@@ -45,8 +45,12 @@ export function startBacktest(req: BacktestRequest): Promise<{ backtest_id: numb
   return post<{ backtest_id: number }>('/api/backtest/start', req);
 }
 
-export function getBacktestProgress(backtestId: number): Promise<{ status: string; progress: number }> {
-  return get<{ status: string; progress: number }>(`/api/backtest/${backtestId}/progress`);
+export function getBacktestProgress(
+  backtestId: number,
+): Promise<{ status: string; progress: number; detail?: string }> {
+  return get<{ status: string; progress: number; detail?: string }>(
+    `/api/backtest/${backtestId}/progress`,
+  );
 }
 
 export function getBacktestResult(backtestId: number): Promise<BacktestResponse> {

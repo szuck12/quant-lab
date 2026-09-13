@@ -288,3 +288,15 @@ Agents read this at session start and append at session end.
    returns) → valid Sharpe/Sortino/drawdown. Profit factor uses dollar
    P&L. Equity curve downsamples to 100 points; chart legend is
    "Benchmark (SPY)".
+- **2026-09-12**: v3.9.1 — production "Backtest failed" root cause.
+   yfinance sometimes returns MultiIndex columns; `df["Close"]` then
+   returns a DataFrame, so metrics raised "truth value of a Series is
+   ambiguous" and EVERY backtest failed. Fix: `_normalize_frame()` in
+   `data_pipeline.py` flattens MultiIndex columns (level-agnostic),
+   coerces numeric, drops all-NaN rows, de-duplicates + sorts the
+   index; applied at the data boundary and defensively in the engine.
+   Also: tz-aware intraday indexes must be normalized to naive dates
+   before comparing with the daily benchmark; benchmark failure is now
+   non-fatal; `/progress` returns `detail`; `/health/data` probes the
+   data shape. Lesson: normalize market data at the boundary — never
+   assume flat columns, unique/sorted index, or tz-naive timestamps.
