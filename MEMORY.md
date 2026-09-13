@@ -260,3 +260,12 @@ Agents read this at session start and append at session end.
    on blur, not on every keystroke, to avoid blocking intermediate
    typing. Integer params: reject decimals. All params: show
    "Required" on empty blur.
+- **2026-09-12**: Metrics calculation fixes — total_return now uses
+   equity curve final value (compounding), years uses calendar time
+   span (not sum of hold bars), max_drawdown returns negative values.
+- **2026-09-12**: Performance optimizations — precomputed entry bars
+   in simulation (skip non-signal bars), indicator deduplication per
+   ticker, vectorized CCI (replaced rolling().apply(lambda)), in-
+   memory data cache, cache key includes years to prevent staleness.
+- **2026-09-12**: Trade log ordering — all_trades sorted by
+   entry_date globally after ticker loop completes.

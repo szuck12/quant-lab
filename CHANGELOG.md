@@ -16,11 +16,39 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   polling; never goes backwards; no jump exceeds 10%.
 
 ### Fixed
+- **Annualized return calculation** — now computed from equity curve
+  final value using actual calendar time span, not sum of hold bars.
+- **Max drawdown sign** — now returns negative values (e.g. -0.15
+  for 15% drawdown) following standard convention.
+- **Benchmark display** — metrics table header now shows
+  "Benchmark (SPY)" for clarity.
+- **Trade log ordering** — trades are now sorted globally by
+  entry date instead of by ticker iteration order.
 - **Input validation** — window (integer) parameters now reject
   decimal values with an error message. All inputs (window, value)
   can be deleted to empty and show "Required" on blur. Value inputs
   accept decimal values for all indicators.
 - **Version badge** — navbar, footer, and README now show 3.8.0.
+
+### Changed
+- **Backtest interval options** — expanded from 3 (Daily, Weekly,
+  Monthly) to 8 intervals (5m, 15m, 30m, 1h, Daily, Weekly,
+  Monthly, Quarterly). Intraday intervals show data-limit hints.
+  Hint container uses fixed height to prevent layout shift.
+- **Last N Years** — now accepts decimal values (e.g. 0.5 for
+  6 months) in addition to whole numbers.
+
+### Performance
+- **Precomputed entry bars** — simulation loop now only iterates
+  over bars where conditions are met, skipping non-signal bars.
+- **Indicator deduplication** — same indicator computed once when
+  used in multiple conditions.
+- **Vectorized CCI** — replaced rolling().apply(lambda) with
+  pure vectorized pandas operations.
+- **In-memory data cache** — parquet data cached in memory across
+  fetch() calls within a session.
+- **Cache key includes years** — prevents stale data when switching
+  between different year ranges.
 
 ## [3.7.1] - 2026-09-12
 

@@ -67,12 +67,17 @@ def compute_metrics(
     losing_trades = len(losses)
     win_rate = winning_trades / total_trades if total_trades else 0.0
 
-    total_return = compute_total_return(trades, capital)
-    n_bars = sum(t.hold_bars for t in trades)
-    years = max(n_bars / trading_days, 0.01)
+    # Build equity curve first — use it for total return and annualization
+    equity = compute_equity_curve(trades, capital)
+    total_return = (equity.iloc[-1] / capital) - 1.0 if not equity.empty else 0.0
+
+    # Use actual calendar time span for annualization
+    first_entry = min(t.entry_date for t in trades)
+    last_exit = max(t.exit_date for t in trades)
+    days = (last_exit - first_entry).days
+    years = max(days / 365.25, 0.01)
     annualized = compute_annualized_return(total_return, years)
 
-    equity = compute_equity_curve(trades, capital)
     daily_returns = equity.pct_change(fill_method=None).dropna()
 
     sharpe = compute_sharpe_ratio(daily_returns, trading_days)
@@ -198,13 +203,13 @@ def compute_max_drawdown(equity_curve: pd.Series) -> float:
         equity_curve: Portfolio value over time.
 
     Returns:
-        Max drawdown as a positive decimal (e.g. 0.15 for 15%).
+        Max drawdown as a negative decimal (e.g. -0.15 for 15%).
     """
     if equity_curve.empty or len(equity_curve) < 2:
         return 0.0
     cummax = equity_curve.cummax()
     drawdown = (equity_curve - cummax) / cummax
-    return abs(drawdown.min())
+    return drawdown.min()
 
 
 def compute_sharpe_ratio(
@@ -286,7 +291,7 @@ def compute_benchmark_metrics(
 
     cummax = data["Close"].cummax()
     dd = (data["Close"] - cummax) / cummax
-    max_dd = abs(dd.min())
+    max_dd = dd.min()
 
     return {
         "total_return": total_return,

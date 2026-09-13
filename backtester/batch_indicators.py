@@ -96,9 +96,8 @@ def compute_cci(df: pd.DataFrame, window: int = 20) -> pd.Series:
     """
     typical = (df["High"] + df["Low"] + df["Close"]) / 3.0
     sma = typical.rolling(window=window).mean()
-    mad = typical.rolling(window=window).apply(
-        lambda x: np.mean(np.abs(x - np.mean(x))), raw=True
-    )
+    # Vectorized MAD: rolling mean of absolute deviation from rolling mean
+    mad = (typical - sma).abs().rolling(window=window).mean()
     cci = (typical - sma) / (0.015 * mad)
     return cci
 

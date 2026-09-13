@@ -48,3 +48,29 @@ describe('BacktestForm number inputs', () => {
     expect(yearsInput.getAttribute('min')).toBe('0');
   });
 });
+
+describe('MetricsTable benchmark display', () => {
+  it('shows "Benchmark (SPY)" as column header', async () => {
+    const { MetricsTable } = await import('./MetricsTable');
+    const strategy = {
+      total_trades: 10, winning_trades: 6, losing_trades: 4,
+      win_rate: 0.6, total_return: 0.15, annualized_return: 0.1,
+      sharpe_ratio: 1.2, sortino_ratio: 1.5, max_drawdown: -0.05,
+      profit_factor: 2.0, avg_trade_return: 0.015,
+      cash_remaining: 5000, positions_value: 6500,
+    };
+    const benchmark = {
+      total_trades: 0, winning_trades: 0, losing_trades: 0,
+      win_rate: 0, total_return: 0.08, annualized_return: 0.06,
+      sharpe_ratio: 0.8, sortino_ratio: 0.9, max_drawdown: -0.03,
+      profit_factor: 0, avg_trade_return: 0,
+      cash_remaining: 0, positions_value: 0,
+    };
+    render(
+      <table>
+        <MetricsTable strategy={strategy} benchmark={benchmark} />
+      </table>,
+    );
+    expect(screen.getByText('Benchmark (SPY)')).toBeInTheDocument();
+  });
+});

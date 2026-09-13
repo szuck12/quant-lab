@@ -92,6 +92,11 @@ evaluation.
 - MUST treat `years` config value as `float` — it supports decimals
   (e.g. 0.5 for 6 months). Type annotations in `data_pipeline.py`
   and `api/schemas.py` are `float`, not `int`.
+- MUST compute total_return from equity curve final value (compounding),
+  not from linear dollar-gain sum. Annualization uses calendar time
+  span (`(last_exit - first_entry).days / 365.25`), not sum of hold bars.
+- MUST return max_drawdown as a negative value (e.g. -0.15 for 15%).
+- MUST sort `all_trades` by `entry_date` before returning results.
 
 ## Session Instructions
 

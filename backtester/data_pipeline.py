@@ -18,6 +18,9 @@ import yfinance as yf
 CACHE_DIR = Path(__file__).parent / "cache"
 CHUNK_SIZE = 200  # yf.download handles larger batches efficiently
 
+# In-memory cache: key = f"{ticker}_{interval}_{years}" -> DataFrame
+_memory_cache: dict[str, pd.DataFrame] = {}
+
 
 class DataPipeline:
     """Batch data download with parquet caching."""
@@ -53,8 +56,14 @@ class DataPipeline:
         total = len(tickers)
 
         for i, ticker in enumerate(tickers):
-            cached = self._load_cache(ticker, interval)
+            cache_key = f"{ticker}_{interval}_{years}"
+            # Check in-memory cache first
+            if cache_key in _memory_cache:
+                result[ticker] = _memory_cache[cache_key]
+                continue
+            cached = self._load_cache(ticker, interval, years)
             if cached is not None and len(cached) > 0:
+                _memory_cache[cache_key] = cached
                 result[ticker] = cached
             else:
                 to_download.append(ticker)
@@ -71,7 +80,9 @@ class DataPipeline:
                 progress_range=95,
             )
             for ticker, df in downloaded.items():
-                self._save_cache(ticker, interval, df)
+                self._save_cache(ticker, interval, years, df)
+                cache_key = f"{ticker}_{interval}_{years}"
+                _memory_cache[cache_key] = df
                 result[ticker] = df
         elif on_progress:
             on_progress(100)
@@ -229,16 +240,18 @@ class DataPipeline:
 
         return result
 
-    def _cache_path(self, ticker: str, interval: str) -> Path:
-        """Return parquet file path for a ticker+interval."""
-        return self.cache_dir / f"{ticker}_{interval}.parquet"
+    def _cache_path(self, ticker: str, interval: str, years: float) -> Path:
+        """Return parquet file path for a ticker+interval+years."""
+        return self.cache_dir / f"{ticker}_{interval}_{years}.parquet"
 
-    def _load_cache(self, ticker: str, interval: str) -> pd.DataFrame | None:
+    def _load_cache(
+        self, ticker: str, interval: str, years: float
+    ) -> pd.DataFrame | None:
         """Load a single ticker from parquet cache.
 
         Returns None if cache file does not exist.
         """
-        path = self._cache_path(ticker, interval)
+        path = self._cache_path(ticker, interval, years)
         if not path.exists():
             return None
         try:
@@ -247,13 +260,13 @@ class DataPipeline:
             return None
 
     def _save_cache(
-        self, ticker: str, interval: str, data: pd.DataFrame
+        self, ticker: str, interval: str, years: float, data: pd.DataFrame
     ) -> None:
         """Save a single ticker to parquet cache.
 
         Silently skips if pyarrow/fastparquet is not installed.
         """
-        path = self._cache_path(ticker, interval)
+        path = self._cache_path(ticker, interval, years)
         try:
             data.to_parquet(path)
         except Exception:

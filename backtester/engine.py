@@ -10,6 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from collections.abc import Callable
 
+import numpy as np
 import pandas as pd
 
 from backtester.batch_indicators import compute_indicator
@@ -268,6 +269,9 @@ class BacktestEngine:
             _progress(base + int(ticker_step * 0.9))
         _progress(ticker_end)
 
+        # Sort all trades globally by entry date
+        all_trades.sort(key=lambda t: t.entry_date)
+
         print("\nStep 3/5: Evaluating conditions...")
         simulated = len(ticker_results) - skipped
         print(f"  {simulated} tickers with signals, "
@@ -341,6 +345,9 @@ class BacktestEngine:
     ) -> pd.DataFrame:
         """Add indicator columns to DataFrame.
 
+        Deduplicates identical indicator computations and avoids
+        unnecessary DataFrame copies.
+
         Args:
             ticker: Stock symbol.
             df: Raw OHLCV DataFrame.
@@ -350,10 +357,18 @@ class BacktestEngine:
         """
         enriched = df.copy()
 
+        # Cache indicator results to avoid recomputing duplicates
+        indicator_cache: dict[tuple, pd.Series] = {}
+
         for cond in self.conditions:
-            series = compute_indicator(
-                enriched, cond.indicator, cond.params, cond.component
-            )
+            cache_key = (cond.indicator, cond.params, cond.component)
+            if cache_key in indicator_cache:
+                series = indicator_cache[cache_key]
+            else:
+                series = compute_indicator(
+                    enriched, cond.indicator, cond.params, cond.component
+                )
+                indicator_cache[cache_key] = series
             col_name = self._condition_col_name(cond)
             enriched[col_name] = series
 
@@ -459,6 +474,9 @@ class BacktestEngine:
         Entry: all conditions simultaneously true.
         Exit: after hold_period bars or stop-loss trigger.
 
+        Uses precomputed entry bars for speed — only iterates over
+        bars where conditions are met, skipping non-signal bars.
+
         Args:
             ticker: Stock symbol.
             df: DataFrame with indicator columns.
@@ -470,74 +488,97 @@ class BacktestEngine:
         trades: list[Trade] = []
         hold = self.config["hold"]
         stop_loss = self.config.get("stop_loss")
-        i = 0
 
-        while i < len(df):
-            if self._evaluate_conditions(df.iloc[i]):
-                entry_date = df.index[i]
-                entry_price = df.iloc[i]["Close"]
+        # Precompute signal mask vectorially
+        mask = pd.Series(True, index=df.index, dtype=bool)
+        for cond in self.conditions:
+            col = self._condition_col_name(cond)
+            if col not in df.columns:
+                return trades
+            col_data = df[col]
+            mask &= col_data.notna()
+            if cond.operator == ">":
+                mask &= (col_data > cond.value).fillna(False)
+            elif cond.operator == "<":
+                mask &= (col_data < cond.value).fillna(False)
+            elif cond.operator == ">=":
+                mask &= (col_data >= cond.value).fillna(False)
+            elif cond.operator == "<=":
+                mask &= (col_data <= cond.value).fillna(False)
+            elif cond.operator == "==":
+                mask &= (col_data == cond.value).fillna(False)
 
-                if pd.isna(entry_price) or entry_price <= 0:
-                    i += 1
-                    continue
+        # Get all entry bar positions
+        entry_positions = np.where(mask.values)[0]
+        if len(entry_positions) == 0:
+            return trades
 
-                # Skip if hold period extends past available data
-                if i + hold >= len(df):
-                    break
+        # Pre-extract Close prices as numpy array for fast access
+        close_arr = df["Close"].values
+        idx = df.index
 
-                # Position sizing via portfolio
-                shares = 0.0
-                invested = 0.0
-                if portfolio is not None:
-                    shares = portfolio.calculate_buy_amount(
-                        ticker, entry_price
-                    )
-                    if shares <= 0:
-                        i += 1
-                        continue
-                    portfolio.buy(ticker, shares, entry_price)
-                    invested = shares * entry_price
+        # Iterate only over signal bars
+        last_exit = -1
+        for pos in entry_positions:
+            # Skip if within cooldown period of last exit
+            if pos <= last_exit:
+                continue
 
-                exit_idx = i + hold
+            entry_price = close_arr[pos]
+            if pd.isna(entry_price) or entry_price <= 0:
+                continue
 
-                # Check stop-loss during hold period
-                if stop_loss is not None:
-                    for j in range(i + 1, min(exit_idx + 1, len(df))):
-                        current_price = df.iloc[j]["Close"]
-                        ret = (
-                            (current_price - entry_price)
-                            / entry_price
-                        )
-                        if ret <= -stop_loss / 100.0:
-                            exit_idx = j
-                            break
+            # Skip if hold period extends past available data
+            if pos + hold >= len(df):
+                break
 
-                if exit_idx >= len(df):
-                    break
-
-                exit_date = df.index[exit_idx]
-                exit_price = df.iloc[exit_idx]["Close"]
-                ret = (exit_price - entry_price) / entry_price
-
-                # Sell from portfolio
-                if portfolio is not None and shares > 0:
-                    portfolio.sell(ticker, exit_price)
-
-                trades.append(
-                    Trade(
-                        ticker=ticker,
-                        entry_date=entry_date,
-                        entry_price=entry_price,
-                        exit_date=exit_date,
-                        exit_price=exit_price,
-                        hold_bars=exit_idx - i,
-                        return_pct=ret,
-                        shares=shares,
-                        invested=invested,
-                    )
+            # Position sizing via portfolio
+            shares = 0.0
+            invested = 0.0
+            if portfolio is not None:
+                shares = portfolio.calculate_buy_amount(
+                    ticker, entry_price
                 )
-                i = exit_idx + 1 + hold  # cooldown
-            else:
-                i += 1
+                if shares <= 0:
+                    continue
+                portfolio.buy(ticker, shares, entry_price)
+                invested = shares * entry_price
+
+            exit_idx = pos + hold
+
+            # Check stop-loss during hold period
+            if stop_loss is not None:
+                threshold = -stop_loss / 100.0
+                for j in range(pos + 1, min(exit_idx + 1, len(df))):
+                    ret = (close_arr[j] - entry_price) / entry_price
+                    if ret <= threshold:
+                        exit_idx = j
+                        break
+
+            if exit_idx >= len(df):
+                break
+
+            exit_date = idx[exit_idx]
+            exit_price = close_arr[exit_idx]
+            ret = (exit_price - entry_price) / entry_price
+
+            # Sell from portfolio
+            if portfolio is not None and shares > 0:
+                portfolio.sell(ticker, exit_price)
+
+            trades.append(
+                Trade(
+                    ticker=ticker,
+                    entry_date=idx[pos],
+                    entry_price=entry_price,
+                    exit_date=exit_date,
+                    exit_price=exit_price,
+                    hold_bars=exit_idx - pos,
+                    return_pct=ret,
+                    shares=shares,
+                    invested=invested,
+                )
+            )
+            last_exit = exit_idx + hold  # cooldown
 
         return trades

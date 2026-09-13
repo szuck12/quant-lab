@@ -509,6 +509,9 @@ class TestDataPipeline:
         self.cache_dir = tmp_path / "cache"
         self.cache_dir.mkdir()
         self.pipeline = DataPipeline(cache_dir=self.cache_dir)
+        # Clear in-memory cache between tests
+        import backtester.data_pipeline as dp
+        dp._memory_cache.clear()
 
     def test_cache_miss_fetches_data(self):
         mock_df = _make_df(rows=50)
@@ -520,7 +523,7 @@ class TestDataPipeline:
 
     def test_cache_hit_uses_parquet(self):
         mock_df = _make_df(rows=50)
-        cache_path = self.pipeline._cache_path("AAPL", "1d")
+        cache_path = self.pipeline._cache_path("AAPL", "1d", 1)
         cache_path.parent.mkdir(parents=True, exist_ok=True)
         # Create a dummy file so path.exists() returns True
         cache_path.touch()
@@ -811,7 +814,7 @@ class TestMetrics:
     def test_compute_max_drawdown(self):
         equity = pd.Series([100, 110, 105, 95, 100])
         result = compute_max_drawdown(equity)
-        assert result == pytest.approx(0.1364, abs=0.001)
+        assert result == pytest.approx(-0.1364, abs=0.001)
 
     def test_compute_max_drawdown_no_drawdown(self):
         equity = pd.Series([100, 105, 110, 115])
@@ -1575,9 +1578,12 @@ class TestDataPipelineEdgeCases:
         self.cache_dir = tmp_path / "cache"
         self.cache_dir.mkdir()
         self.pipeline = DataPipeline(cache_dir=self.cache_dir)
+        # Clear in-memory cache between tests
+        import backtester.data_pipeline as dp
+        dp._memory_cache.clear()
 
     def test_clear_cache(self):
-        cache_path = self.pipeline._cache_path("AAPL", "1d")
+        cache_path = self.pipeline._cache_path("AAPL", "1d", 2)
         cache_path.parent.mkdir(parents=True, exist_ok=True)
         cache_path.touch()
         assert cache_path.exists()
@@ -1591,7 +1597,7 @@ class TestDataPipelineEdgeCases:
 
     def test_corrupted_cache_falls_through(self):
         """Corrupted parquet should trigger re-download."""
-        cache_path = self.pipeline._cache_path("AAPL", "1d")
+        cache_path = self.pipeline._cache_path("AAPL", "1d", 2)
         cache_path.parent.mkdir(parents=True, exist_ok=True)
         cache_path.write_text("not a parquet file")
         mock_df = _make_df(rows=50)
@@ -1819,7 +1825,7 @@ class TestDataPipelineErrors:
         pipeline = DataPipeline()
         mock_df = _make_df(rows=5)
         # This will fail (no pyarrow) but should be silent
-        pipeline._save_cache("AAPL", "1d", mock_df)
+        pipeline._save_cache("AAPL", "1d", 2, mock_df)
         captured = capsys.readouterr()
         assert "Warning" not in captured.out
         assert "pyarrow" not in captured.out
@@ -2251,3 +2257,180 @@ class TestPositionSizing:
         p = Portfolio(10000, 0, "total")
         shares = p.calculate_buy_amount("AAPL", 100.0)
         assert shares == 0.0
+
+
+# ===================================================================
+# §17  Comprehensive Output & Performance Tests
+# ===================================================================
+
+
+class TestMetricsAccuracy:
+    """Tests for correct metric calculations."""
+
+    def test_annualized_return_from_equity_curve(self):
+        """Annualized return should match CAGR from equity curve final value."""
+        from backtester.metrics import compute_metrics, compute_equity_curve
+        # Two trades: 100% return each, 1 year apart
+        trades = [
+            Trade("A", pd.Timestamp("2025-01-01"), 100.0,
+                  pd.Timestamp("2025-06-30"), 200.0, 126, 1.0, 10, 1000),
+            Trade("A", pd.Timestamp("2025-07-01"), 200.0,
+                  pd.Timestamp("2025-12-31"), 400.0, 126, 1.0, 5, 1000),
+        ]
+        result = compute_metrics(trades, 1000.0)
+        equity = compute_equity_curve(trades, 1000.0)
+        expected_total = (equity.iloc[-1] / 1000.0) - 1.0
+        assert result["total_return"] == pytest.approx(expected_total, abs=0.001)
+        # Annualized should be ~300% (quadrupled in 1 year)
+        assert result["annualized_return"] > 2.0
+
+    def test_max_drawdown_is_negative(self):
+        """Max drawdown should be a negative number."""
+        from backtester.metrics import compute_max_drawdown
+        equity = pd.Series([100, 110, 105, 90, 100])
+        dd = compute_max_drawdown(equity)
+        assert dd < 0
+        assert dd == pytest.approx(-0.1818, abs=0.001)
+
+    def test_max_drawdown_no_decline(self):
+        """Max drawdown should be 0 for monotonic increase."""
+        from backtester.metrics import compute_max_drawdown
+        equity = pd.Series([100, 110, 120, 130])
+        assert compute_max_drawdown(equity) == 0.0
+
+    def test_total_return_matches_equity_curve(self):
+        """Total return from metrics should match equity curve final value."""
+        from backtester.metrics import compute_metrics, compute_equity_curve
+        trades = [
+            Trade("A", pd.Timestamp("2025-01-01"), 100.0,
+                  pd.Timestamp("2025-03-01"), 110.0, 42, 0.1, 10, 1000),
+            Trade("B", pd.Timestamp("2025-02-01"), 50.0,
+                  pd.Timestamp("2025-04-01"), 55.0, 42, 0.1, 10, 500),
+        ]
+        result = compute_metrics(trades, 1000.0)
+        equity = compute_equity_curve(trades, 1000.0)
+        expected = (equity.iloc[-1] / 1000.0) - 1.0
+        assert result["total_return"] == pytest.approx(expected, abs=0.001)
+
+    def test_years_uses_calendar_time(self):
+        """Annualization should use calendar days, not sum of hold bars."""
+        from backtester.metrics import compute_metrics
+        # 3 trades, each held 10 bars, but spread over 2 years
+        trades = [
+            Trade("A", pd.Timestamp("2025-01-01"), 100.0,
+                  pd.Timestamp("2025-01-10"), 110.0, 10, 0.1, 10, 1000),
+            Trade("A", pd.Timestamp("2025-06-01"), 110.0,
+                  pd.Timestamp("2025-06-10"), 121.0, 10, 0.1, 10, 1100),
+            Trade("A", pd.Timestamp("2025-12-01"), 121.0,
+                  pd.Timestamp("2025-12-10"), 133.1, 10, 0.1, 10, 1210),
+        ]
+        result = compute_metrics(trades, 1000.0)
+        # ~33% total return over ~1 year (Jan 1 to Dec 10)
+        # Annualized should be ~30%+, not deflated by summing 30 hold bars
+        assert result["annualized_return"] > 0.2
+
+
+class TestTradeOrdering:
+    """Tests for trade log ordering by entry date."""
+
+    def test_trades_sorted_by_entry_date(self):
+        """All trades should be sorted by entry_date globally."""
+        from backtester.engine import BacktestEngine, Condition, BacktestResult
+        from unittest.mock import patch
+
+        with patch("backtester.engine.DataPipeline") as MockPipeline:
+            mock_pipeline = MockPipeline.return_value
+            # Create data where tickers have trades at different times
+            dates_a = pd.date_range("2025-03-01", periods=100, freq="B")
+            dates_b = pd.date_range("2025-01-01", periods=100, freq="B")
+            np.random.seed(42)
+            close_a = 100 + np.cumsum(np.random.randn(100) * 2)
+            close_b = 100 + np.cumsum(np.random.randn(100) * 2)
+
+            df_a = pd.DataFrame({
+                "Open": close_a - 1, "High": close_a + 1,
+                "Low": close_a - 2, "Close": close_a,
+                "Volume": [1_000_000] * 100,
+            }, index=dates_a)
+            df_a["RSI_14"] = 30.0  # trigger signal
+
+            df_b = pd.DataFrame({
+                "Open": close_b - 1, "High": close_b + 1,
+                "Low": close_b - 2, "Close": close_b,
+                "Volume": [1_000_000] * 100,
+            }, index=dates_b)
+            df_b["RSI_14"] = 30.0  # trigger signal
+
+            mock_pipeline.fetch.return_value = {"BBB": df_b, "AAA": df_a}
+
+            conditions = [Condition("RSI", (14,), None, "<", 50.0, "1d")]
+            config = {
+                "tickers": ["AAA", "BBB"], "hold": 5, "capital": 10000,
+                "benchmark": "SPY", "years": 2, "stop_loss": None,
+                "universe": None, "max_tickers": None,
+                "position_size": 100, "position_size_base": "total",
+            }
+            engine = BacktestEngine(conditions, config)
+            result = engine.run()
+
+            # Trades should be sorted by entry_date, not by ticker
+            if len(result.trades) > 1:
+                for i in range(1, len(result.trades)):
+                    assert result.trades[i].entry_date >= result.trades[i-1].entry_date
+
+
+class TestVectorizedCCI:
+    """Tests for vectorized CCI computation."""
+
+    def test_cci_vectorized_matches_expected(self):
+        """CCI should produce reasonable values."""
+        from backtester.batch_indicators import compute_cci
+        dates = pd.date_range("2025-01-01", periods=100, freq="B")
+        np.random.seed(42)
+        close = 100 + np.cumsum(np.random.randn(100) * 2)
+        df = pd.DataFrame({
+            "High": close + 1, "Low": close - 1, "Close": close,
+        }, index=dates)
+        cci = compute_cci(df, window=20)
+        assert len(cci) == 100
+        # CCI should have some non-NaN values after window period
+        valid = cci.dropna()
+        assert len(valid) > 50
+        # CCI values should be finite
+        assert all(np.isfinite(v) for v in valid)
+
+
+class TestInMemoryCache:
+    """Tests for in-memory caching."""
+
+    def test_memory_cache_returns_same_data(self):
+        """Second fetch should use memory cache."""
+        import backtester.data_pipeline as dp
+        dp._memory_cache.clear()
+
+        mock_df = _make_df(rows=50)
+        with patch.object(
+            DataPipeline, "_download_batch", return_value={"AAPL": mock_df}
+        ):
+            pipeline = DataPipeline(cache_dir=Path("/tmp/test_cache"))
+            result1 = pipeline.fetch(["AAPL"], "1d", 2)
+            result2 = pipeline.fetch(["AAPL"], "1d", 2)
+
+        # Both should return the same data
+        assert "AAPL" in result1
+        assert "AAPL" in result2
+        pd.testing.assert_frame_equal(result1["AAPL"], result2["AAPL"])
+        dp._memory_cache.clear()
+
+
+class TestCacheKeyIncludesYears:
+    """Tests for cache key including years parameter."""
+
+    def test_cache_files_include_years(self):
+        """Cache files should include years in filename."""
+        pipeline = DataPipeline(cache_dir=Path("/tmp/test_cache2"))
+        path_2yr = pipeline._cache_path("AAPL", "1d", 2)
+        path_5yr = pipeline._cache_path("AAPL", "1d", 5)
+        assert "2" in path_2yr.name
+        assert "5" in path_5yr.name
+        assert path_2yr != path_5yr

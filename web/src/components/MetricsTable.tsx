@@ -64,7 +64,7 @@ export function MetricsTable({ strategy, benchmark }: Props) {
           <tr className="border-b border-slate-200 text-xs font-medium text-slate-400">
             <th className="pb-2 pr-4" />
             <th className="pb-2 pr-4 text-right">Strategy</th>
-            <th className="pb-2 text-right">Benchmark</th>
+            <th className="pb-2 text-right">Benchmark (SPY)</th>
           </tr>
         </thead>
         <tbody>
