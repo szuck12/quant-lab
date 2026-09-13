@@ -24,6 +24,7 @@ class IndicatorInfo(BaseModel):
     """Available indicator with its parameter schema."""
 
     name: str
+    description: str = ""
     params: list[ParamInfo]
     components: list[str]
     value_hint: str = ""  # suggested range for the comparison value

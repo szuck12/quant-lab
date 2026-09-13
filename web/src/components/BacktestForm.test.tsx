@@ -5,9 +5,10 @@ import { BacktestForm } from './BacktestForm';
 
 const mockIndicator = {
   name: 'RSI',
-  params: [{ name: 'window', type: 'int', default: 14, min: 2, max: 200, hint: 'period' }],
+  description: 'Momentum oscillator (0–100)',
+  params: [{ name: 'window', type: 'int', default: 14, min: 2, max: 50, hint: 'Lookback period' }],
   components: ['value'],
-  value_hint: '0–100',
+  value_hint: '0–100 (30 = oversold, 70 = overbought)',
 };
 
 beforeEach(() => {

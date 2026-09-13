@@ -6,11 +6,12 @@ import type { IndicatorInfo, ConditionRequest } from '../types';
 const indicators: IndicatorInfo[] = [
   {
     name: 'RSI',
+    description: 'Momentum oscillator (0–100)',
     params: [
-      { name: 'window', type: 'int', default: 14, min: 2, max: 200, hint: 'period' },
+      { name: 'window', type: 'int', default: 14, min: 2, max: 50, hint: 'Lookback period' },
     ],
     components: ['value'],
-    value_hint: '0–100',
+    value_hint: '0–100 (30 = oversold, 70 = overbought)',
   },
 ];
 
@@ -230,5 +231,117 @@ describe('ConditionRow interval dropdown', () => {
     const spacers = row1!.querySelectorAll('.condition-field ~ span.h-3');
 
     expect(spacers.length).toBeGreaterThanOrEqual(4);
+  });
+});
+
+describe('ConditionRow indicator display', () => {
+  it('shows indicator description under the indicator select', () => {
+    render(
+      <ConditionRow
+        index={0}
+        condition={condition}
+        indicators={indicators}
+        onChange={() => {}}
+        onRemove={() => {}}
+        canRemove={false}
+      />,
+    );
+
+    expect(screen.getByText(/momentum oscillator/i)).toBeInTheDocument();
+  });
+
+  it('shows value_hint under the indicator select', () => {
+    render(
+      <ConditionRow
+        index={0}
+        condition={condition}
+        indicators={indicators}
+        onChange={() => {}}
+        onRemove={() => {}}
+        canRemove={false}
+      />,
+    );
+
+    expect(screen.getByText(/30 = oversold/i)).toBeInTheDocument();
+  });
+
+  it('formats component names without underscores', () => {
+    const adxIndicator: IndicatorInfo[] = [
+      {
+        name: 'ADX',
+        description: 'Trend strength oscillator (0–100)',
+        params: [
+          { name: 'window', type: 'int', default: 14, min: 5, max: 50, hint: 'DI smoothing period' },
+        ],
+        components: ['plus_di', 'minus_di', 'adx'],
+        value_hint: '0–100',
+      },
+    ];
+
+    render(
+      <ConditionRow
+        index={0}
+        condition={{ ...condition, indicator: 'ADX' }}
+        indicators={adxIndicator}
+        onChange={() => {}}
+        onRemove={() => {}}
+        canRemove={false}
+      />,
+    );
+
+    const componentSelect = screen.getByRole('combobox', { name: /component/i });
+    const options = Array.from(componentSelect.querySelectorAll('option'));
+    const labels = options.map((o) => o.textContent);
+
+    expect(labels).toContain('+DI');
+    expect(labels).toContain('−DI');
+    expect(labels).toContain('ADX');
+    expect(labels).not.toContainEqual(expect.stringContaining('_'));
+  });
+
+  it('shows Default and Range for parameter hints', () => {
+    render(
+      <ConditionRow
+        index={0}
+        condition={condition}
+        indicators={indicators}
+        onChange={() => {}}
+        onRemove={() => {}}
+        canRemove={false}
+      />,
+    );
+
+    expect(screen.getByText(/Default: 14, 2–50/)).toBeInTheDocument();
+  });
+
+  it('formats parameter names properly', () => {
+    const stochIndicator: IndicatorInfo[] = [
+      {
+        name: 'STOCH',
+        description: 'Momentum vs high-low range (0–100)',
+        params: [
+          { name: 'window', type: 'int', default: 14, min: 5, max: 50, hint: 'Lookback period' },
+          { name: 'smooth_k', type: 'int', default: 3, min: 1, max: 20, hint: '%K smoothing' },
+          { name: 'smooth_d', type: 'int', default: 3, min: 1, max: 20, hint: '%D smoothing' },
+        ],
+        components: ['k', 'd'],
+        value_hint: '0–100',
+      },
+    ];
+
+    render(
+      <ConditionRow
+        index={0}
+        condition={{ ...condition, indicator: 'STOCH' }}
+        indicators={stochIndicator}
+        onChange={() => {}}
+        onRemove={() => {}}
+        canRemove={false}
+      />,
+    );
+
+    expect(screen.getByText('Window')).toBeInTheDocument();
+    expect(screen.getByText('Smooth %K')).toBeInTheDocument();
+    expect(screen.getByText('Smooth %D')).toBeInTheDocument();
   });
 });

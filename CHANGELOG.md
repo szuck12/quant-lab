@@ -22,6 +22,12 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   percentages (e.g. 3.5%) in addition to whole numbers.
 - **Condition parameter labels** — parameter names are now
   title-cased in the form (e.g. "Window" instead of "window").
+- **Indicator descriptions** — condition row now shows a short
+  description and typical value range under each indicator select.
+- **Component display names** — multi-component indicators show
+  formatted labels (e.g. "+DI" not "plus_di", "Upper Band" not "upper").
+- **Parameter hint format** — parameter ranges now show
+  "Default: X, Min–Max" instead of just "Min–Max".
 
 ### Changed
 - **Backtest interval options** — expanded from 3 (Daily, Weekly,

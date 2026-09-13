@@ -28,60 +28,64 @@ MAX_YEARS = 20  # yfinance max reliable history
 # Indicator metadata for the frontend form
 INDICATOR_SCHEMA: dict[str, dict] = {
     "ADX": {
+        "description": "Trend strength oscillator (0–100)",
         "params": [
             {
                 "name": "window",
                 "type": "int",
                 "default": 14,
-                "min": 2,
-                "max": 200,
+                "min": 5,
+                "max": 50,
                 "hint": "DI smoothing period",
             },
             {
                 "name": "adx_window",
                 "type": "int",
                 "default": 14,
-                "min": 2,
-                "max": 200,
+                "min": 5,
+                "max": 50,
                 "hint": "ADX smoothing period",
             },
         ],
         "value_hint": "0–100 (typically 20–25 for trend threshold)",
     },
     "ATR": {
+        "description": "Volatility in price units",
         "params": [
             {
                 "name": "window",
                 "type": "int",
                 "default": 14,
-                "min": 2,
-                "max": 200,
+                "min": 5,
+                "max": 50,
                 "hint": "Lookback period",
             },
         ],
         "value_hint": "Positive number (price units, e.g. 2.0 for $2 ATR)",
     },
     "AV": {
+        "description": "Rolling average of trading volume",
         "params": [
             {
                 "name": "window",
                 "type": "int",
                 "default": 20,
                 "min": 2,
-                "max": 500,
+                "max": 200,
                 "hint": "Lookback period",
             },
         ],
         "value_hint": "Volume units (e.g. 5000000 for 5M shares)",
     },
     "BB": {
+        "description": "Volatility envelope around price",
         "params": [
             {
                 "name": "window",
                 "type": "int",
                 "default": 20,
-                "min": 2,
-                "max": 500,
+                "min": 5,
+                "max": 100,
                 "hint": "SMA period",
             },
             {
@@ -96,47 +100,50 @@ INDICATOR_SCHEMA: dict[str, dict] = {
         "value_hint": "Price level (e.g. 150 for upper band)",
     },
     "CCI": {
+        "description": "Price deviation from statistical mean",
         "params": [
             {
                 "name": "window",
                 "type": "int",
                 "default": 20,
-                "min": 2,
-                "max": 200,
+                "min": 5,
+                "max": 50,
                 "hint": "Lookback period",
             },
         ],
         "value_hint": "Typical range: -200 to +200 (±100 = overbought/oversold)",
     },
     "EMA": {
+        "description": "Exponential moving average of price",
         "params": [
             {
                 "name": "window",
                 "type": "int",
                 "default": 20,
                 "min": 2,
-                "max": 500,
+                "max": 200,
                 "hint": "Lookback period",
             },
         ],
         "value_hint": "Price level (e.g. 150 for $150 EMA)",
     },
     "MACD": {
+        "description": "Trend-following momentum indicator",
         "params": [
             {
                 "name": "fast",
                 "type": "int",
                 "default": 12,
                 "min": 2,
-                "max": 100,
+                "max": 50,
                 "hint": "Fast EMA period",
             },
             {
                 "name": "slow",
                 "type": "int",
                 "default": 26,
-                "min": 5,
-                "max": 200,
+                "min": 10,
+                "max": 100,
                 "hint": "Slow EMA period",
             },
             {
@@ -144,85 +151,91 @@ INDICATOR_SCHEMA: dict[str, dict] = {
                 "type": "int",
                 "default": 9,
                 "min": 2,
-                "max": 50,
+                "max": 30,
                 "hint": "Signal line period",
             },
         ],
         "value_hint": "MACD units (e.g. 0 for crossover, 0.5 for momentum)",
     },
     "OBV": {
+        "description": "Cumulative volume momentum",
         "params": [
             {
                 "name": "window",
                 "type": "int",
                 "default": 30,
                 "min": 2,
-                "max": 500,
+                "max": 200,
                 "hint": "Smoothing period",
             },
         ],
         "value_hint": "Volume units (OBV is cumulative, large numbers)",
     },
     "ROC": {
+        "description": "Price rate of change over N bars",
         "params": [
             {
                 "name": "window",
                 "type": "int",
                 "default": 9,
                 "min": 2,
-                "max": 200,
+                "max": 50,
                 "hint": "Lookback period",
             },
         ],
         "value_hint": "Percentage (e.g. 5 for 5% change, -3 for -3%)",
     },
     "RSI": {
+        "description": "Momentum oscillator (0–100)",
         "params": [
             {
                 "name": "window",
                 "type": "int",
                 "default": 14,
                 "min": 2,
-                "max": 200,
+                "max": 50,
                 "hint": "Lookback period",
             },
         ],
         "value_hint": "0–100 (30 = oversold, 70 = overbought)",
     },
     "RVOL": {
+        "description": "Volume relative to its average",
         "params": [
             {
                 "name": "window",
                 "type": "int",
                 "default": 10,
                 "min": 2,
-                "max": 200,
+                "max": 50,
                 "hint": "Average volume period",
             },
         ],
         "value_hint": "Ratio (1.0 = average, 2.0 = double average)",
     },
     "SMA": {
+        "description": "Simple moving average of price",
         "params": [
             {
                 "name": "window",
                 "type": "int",
                 "default": 50,
                 "min": 2,
-                "max": 500,
+                "max": 200,
                 "hint": "Lookback period",
             },
         ],
         "value_hint": "Price level (e.g. 150 for $150 SMA)",
     },
     "STOCH": {
+        "description": "Momentum vs high-low range (0–100)",
         "params": [
             {
                 "name": "window",
                 "type": "int",
                 "default": 14,
-                "min": 2,
-                "max": 200,
+                "min": 5,
+                "max": 50,
                 "hint": "Lookback period",
             },
             {
@@ -230,7 +243,7 @@ INDICATOR_SCHEMA: dict[str, dict] = {
                 "type": "int",
                 "default": 3,
                 "min": 1,
-                "max": 50,
+                "max": 20,
                 "hint": "%K smoothing",
             },
             {
@@ -238,20 +251,21 @@ INDICATOR_SCHEMA: dict[str, dict] = {
                 "type": "int",
                 "default": 3,
                 "min": 1,
-                "max": 50,
+                "max": 20,
                 "hint": "%D smoothing",
             },
         ],
         "value_hint": "0–100 (20 = oversold, 80 = overbought)",
     },
     "VWAP": {
+        "description": "Volume-weighted average price",
         "params": [
             {
                 "name": "window",
                 "type": "int",
                 "default": 20,
                 "min": 2,
-                "max": 500,
+                "max": 200,
                 "hint": "Rolling period",
             },
         ],
@@ -271,9 +285,11 @@ def list_indicators() -> list[IndicatorInfo]:
         components = COMPONENT_MAP.get(name, ["value"])
         params = [ParamInfo(**p) for p in schema["params"]]
         value_hint = schema.get("value_hint", "")
+        description = schema.get("description", "")
         results.append(
             IndicatorInfo(
                 name=name,
+                description=description,
                 params=params,
                 components=components,
                 value_hint=value_hint,

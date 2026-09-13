@@ -9,6 +9,7 @@ export interface ParamInfo {
 
 export interface IndicatorInfo {
   name: string;
+  description: string;
   params: ParamInfo[];
   components: string[];
   value_hint?: string;

@@ -10,6 +10,39 @@ interface Props {
   canRemove: boolean;
 }
 
+const COMPONENT_LABELS: Record<string, string> = {
+  plus_di: '+DI',
+  minus_di: '−DI',
+  adx: 'ADX',
+  upper: 'Upper Band',
+  middle: 'Middle Band',
+  lower: 'Lower Band',
+  line: 'MACD Line',
+  signal: 'Signal Line',
+  hist: 'Histogram',
+  k: '%K',
+  d: '%D',
+  value: 'Value',
+};
+
+function formatComponent(c: string): string {
+  return COMPONENT_LABELS[c] ?? c;
+}
+
+function formatParamName(name: string): string {
+  const labels: Record<string, string> = {
+    window: 'Window',
+    adx_window: 'ADX Window',
+    num_std: 'Std Deviations',
+    fast: 'Fast Period',
+    slow: 'Slow Period',
+    signal: 'Signal Period',
+    smooth_k: 'Smooth %K',
+    smooth_d: 'Smooth %D',
+  };
+  return labels[name] ?? name.charAt(0).toUpperCase() + name.slice(1);
+}
+
 export function ConditionRow({
   index,
   condition,
@@ -67,7 +100,11 @@ export function ConditionRow({
               </option>
             ))}
           </select>
-          <span className="h-3" />
+          <span className="mt-1 h-3 text-[10px] text-slate-400">
+            {selected?.description
+              ? `${selected.description}${selected.value_hint ? ` — ${selected.value_hint}` : ''}`
+              : '\u00A0'}
+          </span>
         </label>
 
         {/* Component */}
@@ -86,7 +123,7 @@ export function ConditionRow({
               <option value="">value</option>
               {components.map((c) => (
                 <option key={c} value={c}>
-                  {c}
+                  {formatComponent(c)}
                 </option>
               ))}
             </select>
@@ -166,45 +203,34 @@ export function ConditionRow({
         )}
       </div>
 
-      {/* Row 2: Parameters + Value hint */}
-      <div className="flex flex-wrap items-end gap-3 border-t border-slate-200/60 pt-3">
-        {/* Params */}
-        {selected?.params.map((p) => (
-          <label key={p.name} className="flex flex-col">
-            <span className="mb-1 font-display text-xs font-medium text-slate-500">
-              {p.name.charAt(0).toUpperCase() + p.name.slice(1)}
-              {p.hint && (
-                <span className="ml-1 font-normal text-slate-400">
-                  ({p.hint})
-                </span>
-              )}
-            </span>
-            <div className="flex items-center gap-1.5">
-              <input
-                type="number"
-                step={p.type === 'float' ? '0.1' : '1'}
-                min={p.min}
-                max={p.max}
-                value={condition.params[p.name] ?? p.default}
-                onChange={(e) => setParam(p.name, e.target.value)}
-                className="w-20 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm tabular-nums transition-colors focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/20"
-              />
-              {p.min !== undefined && p.max !== undefined && (
-                <span className="text-[10px] text-slate-400">
-                  {p.min}–{p.max}
-                </span>
-              )}
-            </div>
-          </label>
-        ))}
-
-        {/* Value hint */}
-        {selected?.value_hint && (
-          <span className="ml-auto self-end pb-2 text-[10px] text-slate-400">
-            {selected.value_hint}
-          </span>
-        )}
-      </div>
+      {/* Row 2: Parameters */}
+      {selected && selected.params.length > 0 && (
+        <div className="flex flex-wrap items-end gap-3 border-t border-slate-200/60 pt-3">
+          {selected.params.map((p) => (
+            <label key={p.name} className="flex flex-col">
+              <span className="mb-1 font-display text-xs font-medium text-slate-500">
+                {formatParamName(p.name)}
+              </span>
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="number"
+                  step={p.type === 'float' ? '0.1' : '1'}
+                  min={p.min}
+                  max={p.max}
+                  value={condition.params[p.name] ?? p.default}
+                  onChange={(e) => setParam(p.name, e.target.value)}
+                  className="w-20 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm tabular-nums transition-colors focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/20"
+                />
+                {p.min !== undefined && p.max !== undefined && (
+                  <span className="text-[10px] text-slate-400">
+                    Default: {p.default}, {p.min}–{p.max}
+                  </span>
+                )}
+              </div>
+            </label>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -237,5 +237,10 @@ Agents read this at session start and append at session end.
 - **2026-09-12**: Frontend rigor lesson — always evaluate the FULL
   layout context when making CSS/spacing changes. Check sibling
   elements, parent alignment (items-end vs items-center), and how
-  conditional content affects sibling heights. Test both states
-  (with and without the conditional content).
+   conditional content affects sibling heights. Test both states
+   (with and without the conditional content).
+- **2026-09-12**: Customer-facing naming — never display internal
+   API field names (snake_case) to users. Always format: component
+   names (plus_di → +DI, upper → Upper Band), parameter names
+   (adx_window → ADX Window, smooth_k → Smooth %K). Use a
+   lookup table in the frontend, not string manipulation.
