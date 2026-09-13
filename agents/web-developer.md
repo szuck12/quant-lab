@@ -105,6 +105,12 @@ between the two.
   endpoint must validate request bodies with schemas.
 - MUST NOT return raw Python dicts from FastAPI — always use
   Pydantic response models.
+- MUST NOT expose internal/technical error text to users. Log the real
+  exception server-side and return a plain-language message (use
+  `GENERIC_BACKTEST_ERROR` for unexpected failures). Global handlers
+  must sanitize unhandled exceptions and validation errors, and the
+  frontend `api.ts` must map network/5xx/array-detail responses to
+  friendly strings.
 - MUST NOT modify test files, docs files, or security
   configuration.
 - MUST NOT introduce new dependencies without checking that they

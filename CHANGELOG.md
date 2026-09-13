@@ -27,11 +27,22 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   generic "Backtest failed".
 - **Clearer failure reasons** — no-data and no-trades runs now return
   actionable messages (e.g. Yahoo Finance may be rate-limiting).
+- **Duplicate-column crash** — a frame with duplicate column labels
+  (e.g. two `Close` columns) raised the internal pandas error "arg must
+  be a list, tuple, 1-d array, or Series". Columns are now de-duplicated
+  during normalization.
+- **Customer-facing errors** — internal exceptions are logged
+  server-side and replaced with plain-language messages. The API never
+  returns raw exception text (e.g. pandas errors), Pydantic validation
+  errors are summarized, and the UI shows a friendly network/server
+  message instead of raw browser errors.
 
 ### Added
 - **Data health probe** — `GET /health/data` fetches a small SPY
   slice and reports row/column/timezone info to diagnose production
   data issues without running a full backtest.
+- **Global error handlers** — unhandled exceptions and malformed
+  requests return sanitized, customer-friendly responses.
 - **Benchmark resilience** — a benchmark-only failure is non-fatal;
   the strategy result is still returned with an empty benchmark.
 

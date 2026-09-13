@@ -2766,3 +2766,33 @@ class TestEngineDataRobustness:
                         _sim_df(dates, np.linspace(100, 105, 120)))
         if res.trades:
             assert res.reason == ""
+
+
+class TestNormalizeFrameDuplicates:
+    """Duplicate column labels must not crash normalization."""
+
+    def test_duplicate_close_columns(self):
+        from backtester.data_pipeline import _normalize_frame
+        dates = pd.date_range("2023-01-02", periods=4, freq="B")
+        df = pd.DataFrame(
+            [[1.0, 2.0, 3.0, 4.0]] * 4,
+            index=dates,
+            columns=["Close", "Close", "Open", "Open"],
+        )
+        out = _normalize_frame(df)
+        assert out.columns.is_unique
+        assert "Close" in out.columns
+
+    def test_multiindex_two_tickers_close_flatten(self):
+        from backtester.data_pipeline import _normalize_frame
+        dates = pd.date_range("2023-01-02", periods=4, freq="B")
+        mi = pd.DataFrame(
+            np.zeros((4, 4)),
+            index=dates,
+            columns=pd.MultiIndex.from_tuples(
+                [("Close", "A"), ("Close", "B"), ("Open", "A"), ("Open", "B")]
+            ),
+        )
+        out = _normalize_frame(mi)
+        assert out.columns.is_unique
+        assert "Close" in out.columns

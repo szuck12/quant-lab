@@ -1006,3 +1006,96 @@ class TestDataRobustnessAPI:
         backtest_id = resp.json()["backtest_id"]
         status = _poll(client, backtest_id)
         assert status["status"] == "done", status
+
+
+# -- Customer-facing error message tests --
+
+
+class TestCustomerFacingErrors:
+    """Public errors must never leak internal details."""
+
+    @patch("api.routes.BacktestEngine")
+    def test_sync_unexpected_error_is_generic(self, MockEngine, client):
+        MockEngine.side_effect = ValueError("internal pandas detail")
+        resp = client.post(
+            "/api/backtest",
+            json={
+                "conditions": [
+                    {
+                        "indicator": "RSI",
+                        "operator": "<",
+                        "value": 30,
+                        "interval": "1d",
+                    }
+                ],
+                "years": 2,
+            },
+        )
+        assert resp.status_code == 500
+        detail = resp.json()["detail"]
+        assert "internal" not in detail
+        assert "wrong" in detail.lower()
+
+    @patch("api.routes.BacktestEngine")
+    def test_background_unexpected_error_is_generic(
+        self, MockEngine, client
+    ):
+        MockEngine.side_effect = ValueError("internal pandas detail")
+        resp = client.post(
+            "/api/backtest/start",
+            json={
+                "conditions": [
+                    {
+                        "indicator": "RSI",
+                        "operator": "<",
+                        "value": 30,
+                        "interval": "1d",
+                    }
+                ],
+                "years": 2,
+            },
+        )
+        backtest_id = resp.json()["backtest_id"]
+        status = _poll(client, backtest_id)
+        assert status["status"] == "error"
+        assert "internal" not in status["detail"]
+        assert "wrong" in status["detail"].lower()
+
+    def test_validation_error_is_friendly(self, client):
+        resp = client.post("/api/backtest", json={"conditions": []})
+        assert resp.status_code == 422
+        detail = resp.json()["detail"]
+        assert isinstance(detail, str)
+        assert "invalid" in detail.lower()
+
+    @patch("backtester.data_pipeline.DataPipeline")
+    def test_health_data_failure_is_friendly(self, MockDP, client):
+        MockDP.side_effect = RuntimeError("internal pandas detail")
+        resp = client.get("/health/data")
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["status"] == "error"
+        assert "internal" not in body["detail"]
+
+    @patch("api.routes.BacktestEngine")
+    def test_raw_pandas_message_never_leaks(self, MockEngine, client):
+        """The specific production message must not reach the user."""
+        MockEngine.side_effect = TypeError(
+            "arg must be a list, tuple, 1-d array, or Series"
+        )
+        resp = client.post(
+            "/api/backtest",
+            json={
+                "conditions": [
+                    {
+                        "indicator": "RSI",
+                        "operator": "<",
+                        "value": 30,
+                        "interval": "1d",
+                    }
+                ],
+                "years": 2,
+            },
+        )
+        assert resp.status_code == 500
+        assert "1-d array" not in resp.json()["detail"]

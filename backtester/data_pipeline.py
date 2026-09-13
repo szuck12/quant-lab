@@ -58,6 +58,11 @@ def _normalize_frame(df: pd.DataFrame | None) -> pd.DataFrame:
             chosen = 0
         frame.columns = frame.columns.get_level_values(chosen)
 
+    # Drop duplicate column labels (e.g. two "Close" columns) so that
+    # frame[col] is always a Series, never a DataFrame.
+    if not frame.columns.is_unique:
+        frame = frame.loc[:, ~frame.columns.duplicated(keep="first")]
+
     # Keep only the required OHLCV columns that are present. A usable
     # frame must have a Close series.
     if "Close" not in frame.columns:
@@ -66,7 +71,10 @@ def _normalize_frame(df: pd.DataFrame | None) -> pd.DataFrame:
     frame = frame.loc[:, cols]
 
     for col in cols:
-        frame[col] = pd.to_numeric(frame[col], errors="coerce")
+        series = frame[col]
+        if isinstance(series, pd.DataFrame):  # defensive
+            series = series.iloc[:, 0]
+        frame[col] = pd.to_numeric(series, errors="coerce")
 
     # Drop rows with no usable data (e.g. a fully-failed ticker).
     frame = frame.dropna(how="all")

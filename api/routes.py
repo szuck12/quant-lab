@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import logging
 import threading
 from typing import Any
 
@@ -23,9 +24,18 @@ from backtester.batch_indicators import COMPONENT_MAP, INDICATORS
 from backtester.engine import BacktestEngine, BacktestResult
 from fastapi import APIRouter, HTTPException
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter()
 
 MAX_YEARS = 20  # yfinance max reliable history
+
+# Customer-facing message for any unexpected internal failure. The real
+# exception is logged server-side; users never see internal details.
+GENERIC_BACKTEST_ERROR = (
+    "Something went wrong while running your backtest. "
+    "Please try again in a moment."
+)
 
 # Indicator metadata for the frontend form
 INDICATOR_SCHEMA: dict[str, dict] = {
@@ -387,10 +397,13 @@ def run_backtest(req: BacktestRequest) -> BacktestResponse:
     try:
         engine = BacktestEngine(conditions, config)
         result = engine.run()
-    except Exception as e:
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Backtest failed")
         raise HTTPException(
             status_code=500,
-            detail=f"Backtest failed: {e}",
+            detail=GENERIC_BACKTEST_ERROR,
         )
 
     if not result.trades:
@@ -670,9 +683,10 @@ def _run_backtest_background(
         _backtest_progress[backtest_id].update(
             {"status": "done", "progress": 100, "result": response}
         )
-    except Exception as e:
+    except Exception:
+        logger.exception("Background backtest %s failed", backtest_id)
         _backtest_progress[backtest_id].update(
-            {"status": "error", "detail": str(e)}
+            {"status": "error", "detail": GENERIC_BACKTEST_ERROR}
         )
 
 

@@ -300,3 +300,14 @@ Agents read this at session start and append at session end.
    non-fatal; `/progress` returns `detail`; `/health/data` probes the
    data shape. Lesson: normalize market data at the boundary — never
    assume flat columns, unique/sorted index, or tz-naive timestamps.
+- **2026-09-12**: v3.9.1 — customer-facing error policy. Users must
+   NEVER see internal/technical error text (e.g. pandas "arg must be a
+   list, tuple, 1-d array, or Series"). Rules: log the real exception
+   server-side (`logger.exception`) and return a plain-language message;
+   `GENERIC_BACKTEST_ERROR` is the canonical unexpected-failure string;
+   global FastAPI handlers sanitize unhandled exceptions and
+   RequestValidationError; the frontend `api.ts` centralizes error
+   mapping (network → "Could not reach the server…", 5xx → generic,
+   string `detail` → shown, array `detail` → generic). Also fixed the
+   duplicate-column crash in `_normalize_frame` (drop duplicate labels).
+   Lesson: treat every externally visible string as public.
