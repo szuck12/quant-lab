@@ -73,28 +73,19 @@ export function ConditionRow({
   const components = selected?.components ?? [];
 
   // Local state for raw input strings (allows empty state)
+  // Initialize directly from condition.params — no need to wait for selected
   const [paramRaw, setParamRaw] = useState<Record<string, string>>(() => {
     const init: Record<string, string> = {};
-    selected?.params.forEach((p) => {
-      init[p.name] = String(condition.params[p.name] ?? p.default);
-    });
+    if (condition.params) {
+      Object.entries(condition.params).forEach(([key, val]) => {
+        init[key] = String(val);
+      });
+    }
     return init;
   });
   const [valueRaw, setValueRaw] = useState(String(condition.value));
   const [paramErrors, setParamErrors] = useState<Record<string, string>>({});
   const [valueError, setValueError] = useState('');
-
-  // Initialize paramRaw when indicators first load (paramRaw is empty)
-  useEffect(() => {
-    if (selected && Object.keys(paramRaw).length === 0) {
-      const init: Record<string, string> = {};
-      selected.params.forEach((p) => {
-        init[p.name] = String(condition.params[p.name] ?? p.default);
-      });
-      setParamRaw(init);
-      setValueRaw(String(condition.value));
-    }
-  }, [selected]);
 
   // Reset local state when indicator changes
   useEffect(() => {
